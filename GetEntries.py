@@ -13,7 +13,7 @@ import DiagnosticTool_Subfunctions as dts
 
 def GetFiles(folderpath):
     filenames = []    
-    for root, dirs, files in os.walk(folderpath):
+    for root, files in os.walk(folderpath):
         for file in files:
             filenames.append(os.path.join(root, file))
     return(filenames)
