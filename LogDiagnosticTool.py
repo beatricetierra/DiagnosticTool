@@ -5,10 +5,10 @@ Created on Fri May  8 10:43:42 2020
 @author: btierra
 """
 import tkinter as tk
-from tkinter import filedialog, ttk
-import os
+from tkinter import messagebox, filedialog, ttk
+import pandas as pd
 from pandastable import Table
-import GetEntries as get
+import Diagnostic
 
 class LogDiagnosticToolTempalte():
     
@@ -26,22 +26,25 @@ class LogDiagnosticToolTempalte():
         self.button2 = tk.Button(self.topFrame, text='Get Entries', font=25, bg='#D3D3D3', command=findEntries)
         self.button2.place(relx=0.01, rely=0.25, relwidth=0.1, relheight=0.2)
         
+        self.button3 = tk.Button(self.topFrame, text='Save Results', font=25, bg='#D3D3D3', command=exportExcel)
+        self.button3.place(relx=0.01, rely=0.47, relwidth=0.1, relheight=0.2)
+        
         self.labelFiles = tk.Label(self.topFrame, text='Files:', font=12, anchor='w')
         self.labelFiles.place(relx=0.12, rely=0.01, relwidth=0.05, relheight=0.25)
 
         # File List
         self.scrollFrame = tk.Frame(self.topFrame, bd=1, relief='solid')
-        self.scrollFrame.place(relx=0.17, rely=0.01, relwidth=0.6, relheight=0.82)
+        self.scrollFrame.place(relx=0.16, rely=0.01, relwidth=0.6, relheight=0.82)
         
         # Info Dashboard
-        # self.infoFrame = tk.Frame(self.topFrame, bd=1, relief='solid')
-        # self.infoFrame.place(relx=0.18, rely=0.3, relwidth=0.82, relheight=0.62)
-        
-        # self.labelInfo1 = tk.Label(self.infoFrame, text='Number of Total Interlocks:', font=12, anchor='w')
-        # self.labelInfo1.place(relwidth=0.3, relheight=0.25)
-        
-        # self.labelInfo2 = tk.Label(self.infoFrame, text='Number of Unexpected Interlocks:', font=12, anchor='w')
-        # self.labelInfo2.place(rely=0.4, relwidth=0.3, relheight=0.25)
+        self.infoFrame = tk.Frame(self.topFrame, bd=1, relief='solid')
+        self.infoFrame.place(relx=0.77, rely=0.01, relwidth=0.22, relheight=0.82)
+    
+        self.labelInfo1 = tk.Label(self.infoFrame, text='Number of Total Interlocks:', font=10, anchor='w')
+        self.labelInfo1.place(relwidth=0.65, relheight=0.25)
+    
+        self.labelInfo2 = tk.Label(self.infoFrame, text='Number of Unexpected Interlocks:', font=10, anchor='w')
+        self.labelInfo2.place(rely=0.4, relwidth=0.78, relheight=0.25)
         
         # ***Bottom Frame***
         self.bottomFrame = tk.Frame(master)
@@ -69,23 +72,48 @@ def addFiles():
     textbox.insert(tk.END, file_list)
     
 def findEntries():
+    global kvct_df, kvct_filtered, kvct_analysis
+    
     statusbar.config(text='Loading...')
-
-    kvct_df, kvct_filtered, kvct_analysis = get.Diagnostic(files)
     
-    table1 = Table(app.tab1, dataframe=kvct_df) #displays interlocks
-    table1.show()
+    try:
+        kvct_df = Diagnostic.GetEntries(files)
+        table1 = Table(app.tab1, dataframe=kvct_df) #displays interlocks
+        table1.show()
+    except:
+        messagebox.showerror("Error", "Cannot find entries for listed files.")
+        pass
     
-    table2 = Table(app.tab2, dataframe=kvct_filtered) #displays filtered interlocks
-    table2.show()
-    
-    table3 = Table(app.tab3, dataframe=kvct_analysis) #displays filtered interlocks
-    table3.show()
-    
+    try:
+        kvct_filtered = Diagnostic.FilteredEntries(kvct_df)
+        table2 = Table(app.tab2, dataframe=kvct_filtered) #displays filtered interlocks
+        table2.show()
+    except:
+        messagebox.showerror("Error", "Cannot filter interlocks.")
+        pass
+        
+    try:
+        kvct_analysis = Diagnostic.Analysis(kvct_filtered)
+        table3 = Table(app.tab3, dataframe=kvct_analysis) #displays analysis
+        table3.show()
+    except:
+        messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
+        pass
+        
     statusbar.config(text='Done')
     
     labelInfo3.config(text=len(kvct_df), font=14) 
     labelInfo4.config(text=len(kvct_filtered), font=14)
+
+    
+def exportExcel():
+    
+    export_filepath = filedialog.asksaveasfilename(defaultextension='.xlsx')
+    excel_writer = pd.ExcelWriter(export_filepath, engine='xlsxwriter')
+    kvct_df.to_excel(excel_writer, sheet_name='All Interlocks')
+    kvct_filtered.to_excel(excel_writer, sheet_name='Filtered Interlocks')
+    kvct_analysis.to_excel(excel_writer, sheet_name='Analysis')
+    excel_writer.save()
     
 root = tk.Tk()
 app = LogDiagnosticToolTempalte(root)
@@ -99,11 +127,11 @@ textbox.pack(expand=0, fill='both')
 scrollbar.config(command=textbox.yview)
 
 
-# labelInfo3 = tk.Label(app.infoFrame, anchor='w')
-# labelInfo3.place(relx=0.18, relwidth=0.1, relheight=0.25)
+labelInfo3 = tk.Label(app.infoFrame, anchor='w')
+labelInfo3.place(relx=0.66, relwidth=0.1, relheight=0.25)
 
-# labelInfo4 = tk.Label(app.infoFrame, anchor='w')
-# labelInfo4.place(relx=0.22, rely=0.4, relwidth=0.1, relheight=0.25)
+labelInfo4 = tk.Label(app.infoFrame, anchor='w')
+labelInfo4.place(relx=0.8, rely=0.4, relwidth=0.1, relheight=0.25)
 
 # Bottom Frame
 statusbar = tk.Label(app.bottomFrame, bd=1, relief='sunken', anchor='w')
