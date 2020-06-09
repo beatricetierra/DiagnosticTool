@@ -101,15 +101,9 @@ def kvct_df(kvct_log, sys_log, kvct_start_times):
     
     kvct_df['Date'] = kvct_df['Date'].dt.date
     kvct_df = kvct_df.reindex(columns= columns)
-   
-    # Invalid Interlocks
-    kvct_filtered = dts.filter_expected(kvct_df)
     
-    # Startup Interlocks (clears interlocks with in 5 minutes of node startup)
-    kvct_filtered = dts.filter_startup(kvct_filtered, kvct_filtered['Time from KVCT Start'], '0:5:0.0')
-        
-    return(kvct_df, kvct_filtered)
-    
+    return(kvct_df)
+       
 # Find pet interlocks and analysis 
 def pet_df(pet_log, sys_log, pet_start_times):
     
