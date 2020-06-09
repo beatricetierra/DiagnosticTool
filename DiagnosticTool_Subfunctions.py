@@ -120,10 +120,9 @@ def interlock_duration(interlock_df):
     time_delta = []
     for idx, (active, inactive) in enumerate(zip(interlock_df['Active Time'], interlock_df['Inactive Time'])):
         date = interlock_df['Date'][idx].to_pydatetime()
-        date = datetime.date(2020, 6, 3)
         try:
-            inactive_time = datetime.datetime.combine(date, inactive)
-            active_time = datetime.datetime.combine(date, active)
+            inactive_time = datetime.datetime.combine(date.date(), inactive)
+            active_time = datetime.datetime.combine(date.date(), active)
             time_delta.append(timedelta_format(inactive_time - active_time))
         except:
             if not active:
@@ -156,7 +155,8 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
     return(last_entries)
 
 # Add column "Sysnode Relevant Interlocks" to given dataframe
-def sys_interlocks(interlock_df, entries_df):
+# Finds top relevant interlocks that occur before kvct interlock
+def sys_interlocks_before(interlock_df, entries_df):
     interlock_df['Sysnode Relevant Interlock'] = ''*len(interlock_df)
     interlock_times = interlock_df['Date'].tolist()
         
@@ -169,6 +169,7 @@ def sys_interlocks(interlock_df, entries_df):
         except:
             pass
     return(interlock_df)
+    
     
 # filter expected interlocks     
 def filter_expected(interlocks_df):
