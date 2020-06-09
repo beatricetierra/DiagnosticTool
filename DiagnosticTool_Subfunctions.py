@@ -80,7 +80,7 @@ def find_interlocks(node_interlocks):
     return(interlocks_df)
     
 def find_node_start(interlocks_df, interlock_start_times):
-    start_times = pd.DataFrame({'Interlock Number': '====== NODE RESTART ======', 'Datetime': interlock_start_times,
+    start_times = pd.DataFrame({'Interlock Number': '------ NODE RESTART ------', 'Datetime': interlock_start_times,
                                'Active Time': '', 'Inactive Time': ''})
     result = pd.concat([interlocks_df, start_times], sort=False)
     result.reset_index(drop=True, inplace=True)
@@ -100,7 +100,7 @@ def find_node_start(interlocks_df, interlock_start_times):
 # Time since start of node
 def node_start_delta(interlocks_df):
     interlocks_df['Time from KVCT Start'] = ''*len(interlocks_df)
-    restart_times = interlocks_df.loc[interlocks_df['Interlock Number'] == '====== NODE RESTART ======']['Date']
+    restart_times = interlocks_df.loc[interlocks_df['Interlock Number'] == '------ NODE RESTART ------']['Date']
     restart_times_idx = restart_times.index.values
     
     for idx, active_time in enumerate(interlocks_df['Date']):
@@ -206,7 +206,7 @@ def filter_startup(interlocks_df, column, time_threshold):
     return(filtered_df)
 
 def analysis(filtered_df):
-    filtered_df = filtered_df[filtered_df['Interlock Number'] != '====== NODE RESTART ======']
+    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE RESTART ------']
 
     #counter column
     filtered_df['Count'] = 1
