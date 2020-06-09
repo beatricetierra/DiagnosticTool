@@ -154,32 +154,48 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
             last_entries.append('')
     return(last_entries)
 
-# Add column "Sysnode Relevant Interlocks" to given dataframe
+# Add column "Sysnode Relevant Interlocks (before)" to given dataframe
 # Finds top relevant interlocks that occur before kvct interlock
 def sys_interlocks_before(interlock_df, entries_df):
-    interlock_df['Sysnode Relevant Interlock'] = ''*len(interlock_df)
+    interlock_df['Sysnode Relevant Interlock (before)'] = ''*len(interlock_df)
     interlock_times = interlock_df['Date'].tolist()
         
     for idx in range(0,len(entries_df)):
         try:
             sys_interlock_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
             nearest_times_idx = nearest(interlock_times, sys_interlock_time)
-            previous = interlock_df['Sysnode Relevant Interlock'][nearest_times_idx]
-            interlock_df['Sysnode Relevant Interlock'][nearest_times_idx] = previous + str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
+            previous = interlock_df['Sysnode Relevant Interlock (before)'][nearest_times_idx]
+            interlock_df['Sysnode Relevant Interlock (before)'][nearest_times_idx] = previous + str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
         except:
             pass
     return(interlock_df)
+
+# Add column "Sysnode Relevant Interlocks (during)" to given dataframe
+# Finds top relevant interlocks that occur while kvct interlock is active
+def sys_interlocks_during(interlock_df, entries_df):
+    interlock_df['Sysnode Relevant Interlock (during)'] = ''*len(interlock_df)
     
-    
+    for idx in range(0,len(entries_df)):
+            sys_interlock_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
+            for row, (active_time, inactive_time) in enumerate(zip(interlock_df['Date'], interlock_df['Inactive Time'])):
+                try:
+                    inactive_time = datetime.datetime.combine(active_time.date(), inactive_time)
+                    if active_time < sys_interlock_time < inactive_time:
+                        previous = interlock_df['Sysnode Relevant Interlock (during)'][row]
+                        interlock_df['Sysnode Relevant Interlock (during)'][row] = previous + str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
+                except:
+                    pass
+    return(interlock_df)
+
 # filter expected interlocks     
 def filter_expected(interlocks_df):
     indices = []
     for idx in range(0, len(interlocks_df)):
         # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
-        if 'ViewAvgTooHigh' in interlocks_df['Interlock Number'][idx] and '' in interlocks_df['Sysnode Relevant Interlock'][idx]:
+        if 'ViewAvgTooHigh' in interlocks_df['Interlock Number'][idx] and '' in interlocks_df['Sysnode Relevant Interlock (before)'][idx]:
             indices.append(idx)
         # Filter Interlock 161216:(DMS.Status.RCB.ExternalTriggerInvalid)  when in MV_READY state
-        if 'ExternalTriggerInvalid' in interlocks_df['Interlock Number'][idx] and '' in interlocks_df['Sysnode Relevant Interlock'][idx]: 
+        if 'ExternalTriggerInvalid' in interlocks_df['Interlock Number'][idx] and '' in interlocks_df['Sysnode Relevant Interlock (before)'][idx]: 
             indices.append(idx)
         # Filter all interlocks right after shutdown 
         if interlocks_df['Sysnode State'][idx] == 'NODE_STATE_SHUTDOWN':
