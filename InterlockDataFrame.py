@@ -91,7 +91,7 @@ def kvct_df(kvct_log, sys_log, kvct_start_times):
     kvct_df['Sysnode State'] = dts.find_last_entry(kvct_df, kvct_df['Active Time'], sys_state_transition)
     
     # add relevant sys interlock after interlock
-    kvct_df = dts.sys_interlocks(kvct_df, sys_relevant_interlock)
+    kvct_df = dts.sys_interlocks_before(kvct_df, sys_relevant_interlock)
     
     # Clean up final kvct_df
     columns = ['Date','Active Time', 'Inactive Time', 'Interlock Number', 'Time from KVCT Start', 'Interlock Duration', 'HV last status (before active)', 
