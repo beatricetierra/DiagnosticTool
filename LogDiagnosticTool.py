@@ -53,13 +53,16 @@ class LogDiagnosticToolTempalte():
         self.tabControl = ttk.Notebook(self.bottomFrame)        
         
         self.tab1 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab1, text = 'Interlocks')
+        self.tabControl.add(self.tab1, text = 'All Interlocks')
         
         self.tab2 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab2, text = 'Interlocks (Filtered)')
+        self.tabControl.add(self.tab2, text = 'Filtered Interlocks)')
         
         self.tab3 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab3, text = 'Analysis')
+        self.tabControl.add(self.tab3, text = 'Expected Interlock Analysis')
+        
+        self.tab4 = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.tab4, text = 'Unexpected Interlock Analysis')
         
         self.tabControl.pack(expan=1, fill='both')
         
@@ -86,17 +89,19 @@ def findEntries():
         pass
     # Filter interlocks
     try:
-        kvct_filtered = Diagnostic.FilteredEntries(kvct_df)
+        kvct_filtered, count = Diagnostic.FilteredEntries(kvct_df)
         table2 = Table(app.tab2, dataframe=kvct_filtered) #displays filtered interlocks
         table2.show()
+        table3 = Table(app.tab3, dataframe=count) # displays expected interlock (interlocks that were filtered out) anlaysis
+        table3.show()
     except:
         messagebox.showerror("Error", "Cannot filter interlocks.")
         pass
     # Interlock Analysis
     try:
         kvct_analysis = Diagnostic.Analysis(kvct_filtered)
-        table3 = Table(app.tab3, dataframe=kvct_analysis) #displays analysis
-        table3.show()
+        table4 = Table(app.tab4, dataframe=kvct_analysis) #display unexpected interlock analysis
+        table4.show()
     except:
         messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
         pass
@@ -107,8 +112,7 @@ def findEntries():
     labelInfo4.config(text=len(kvct_filtered), font=14)
 
     
-def exportExcel():
-    
+def exportExcel():  
     export_filepath = filedialog.asksaveasfilename(defaultextension='.xlsx')
     excel_writer = pd.ExcelWriter(export_filepath, engine='xlsxwriter')
     kvct_df.to_excel(excel_writer, sheet_name='All Interlocks')

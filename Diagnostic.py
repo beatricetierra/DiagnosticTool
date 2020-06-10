@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import datetime
 import InterlockDataFrame as idf
-import DiagnosticTool_Subfunctions as dts 
+import DiagnosticTool_Analysis as dta
 
 def GetFiles(folderpath):
     filenames = []    
@@ -106,14 +106,17 @@ def GetEntries(filenames):
     
 def FilteredEntries(interlocks):    
     # Remove Invalid Interlocks
-    kvct_filtered = dts.filter_expected(interlocks)
+    kvct_filtered, count = dta.filter_expected(interlocks)
     
     # Startup Interlocks (clears interlocks with in 5 minutes of node startup)
-    kvct_filtered = dts.filter_startup(kvct_filtered, kvct_filtered['Time from KVCT Start'], '0:5:0.0')
+    kvct_filtered, startup_count = dta.filter_startup(kvct_filtered, kvct_filtered['Time from KVCT Start'], '0:5:0.0')
     
-    return(kvct_filtered)
+    # combine expected interlock count
+    count['Startup #'] = [startup_count]
+    
+    return(kvct_filtered, count)
     
 def Analysis(filtered_interlocks):    
-    analysis_df = dts.analysis(filtered_interlocks)
+    analysis_df = dta.analysis(filtered_interlocks)
     return(analysis_df)
 
