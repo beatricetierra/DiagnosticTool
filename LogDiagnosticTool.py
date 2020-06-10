@@ -82,7 +82,7 @@ def findEntries():
     # Fine all interlocks
     try:
         kvct_df = Diagnostic.GetEntries(files)
-        table1 = Table(app.tab1, dataframe=kvct_df) #displays interlocks
+        table1 = Table(app.tab1, dataframe=kvct_df) #displays all interlocks
         table1.show()
     except:
         messagebox.showerror("Error", "Cannot find entries for listed files.")
