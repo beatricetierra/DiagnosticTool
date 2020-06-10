@@ -8,12 +8,14 @@ import numpy as np
 import pandas as pd
 import datetime
 
-def filter_expected(interlocks_df):
+def filter_expected(interlocks_df, column, time_threshold):
     indices = []
     view_avg_count = 0
     invalid_count = 0
+    startup_count = 0
     shutdown_count = 0
 
+    # filter expected interlocks
     for idx in range(0, len(interlocks_df)):
         # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
         if 'ViewAvgTooHigh' in interlocks_df['Interlock Number'][idx] and '' in interlocks_df['Sysnode Relevant Interlock (before)'][idx]:
@@ -28,30 +30,23 @@ def filter_expected(interlocks_df):
             indices.append(idx)
             shutdown_count += 1
             
-    filtered_df = interlocks_df.drop(indices)        
-    filtered_df.reset_index(drop=True, inplace=True)
-    
-    count_df = pd.DataFrame({'ViewAvgTooHigh #': [view_avg_count], 'ExternalTriggerInvalid #': [invalid_count], 'Shutdown #': [shutdown_count]})
-                             
-    return(filtered_df, count_df)
-
-# filtered startup interlocks
-def filter_startup(interlocks_df, column, time_threshold):
-    # filtered startup interlocks
-    indices = []
-    startup_count = 0
+    # filter startup interlocks
     for idx, start_delt in enumerate(column):
         threshold = datetime.datetime.strptime(time_threshold, '%H:%M:%S.%f')
         try:
             start_delt_time = datetime.datetime.strptime(start_delt, '%H:%M:%S.%f')
             if start_delt_time < threshold:
                 indices.append(idx)
+                startup_count += 1
         except:
             pass
     
-    filtered_df = interlocks_df.drop(indices)
+    filtered_df = interlocks_df.drop(indices)        
     filtered_df.reset_index(drop=True, inplace=True)
-    return(filtered_df, startup_count)
+    
+    count_df = pd.DataFrame({'ViewAvgTooHigh #': [view_avg_count], 'ExternalTriggerInvalid #': [invalid_count], 'Startup Interlocks': [startup_count], 'Shutdown Interlocks': [shutdown_count]})
+                             
+    return(filtered_df, count_df)
 
 def analysis(filtered_df):
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE RESTART ------']

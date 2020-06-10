@@ -105,14 +105,8 @@ def GetEntries(filenames):
     return(kvct_interlocks)
     
 def FilteredEntries(interlocks):    
-    # Remove Invalid Interlocks
-    kvct_filtered, count = dta.filter_expected(interlocks)
-    
-    # Startup Interlocks (clears interlocks with in 5 minutes of node startup)
-    kvct_filtered, startup_count = dta.filter_startup(kvct_filtered, kvct_filtered['Time from KVCT Start'], '0:5:0.0')
-    
-    # combine expected interlock count
-    count['Startup #'] = [startup_count]
+    # Remove Expected, Startup, and Shutdown Interlocks
+    kvct_filtered, count = dta.filter_expected(interlocks, interlocks['Time from KVCT Start'], '0:5:0.0')
     
     return(kvct_filtered, count)
     
