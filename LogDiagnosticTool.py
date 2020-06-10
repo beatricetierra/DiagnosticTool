@@ -16,7 +16,7 @@ class LogDiagnosticToolTempalte():
         self.canvas = tk.Canvas(master, height=800, width=1400)
         self.canvas.pack()
         
-        # ***Top Frame***
+        # ----- Top Frame -----
         self.topFrame = tk.Frame(master)
         self.topFrame.place(relx=0.5, rely=0.02, relwidth=0.98, relheight=0.12, anchor='n')
         
@@ -34,7 +34,7 @@ class LogDiagnosticToolTempalte():
 
         # File List
         self.scrollFrame = tk.Frame(self.topFrame, bd=1, relief='solid')
-        self.scrollFrame.place(relx=0.16, rely=0.01, relwidth=0.6, relheight=0.82)
+        self.scrollFrame.place(relx=0.16, rely=0.01, relwidth=0.6, relheight=0.92)
         
         # Info Dashboard
         self.infoFrame = tk.Frame(self.topFrame, bd=1, relief='solid')
@@ -46,7 +46,7 @@ class LogDiagnosticToolTempalte():
         self.labelInfo2 = tk.Label(self.infoFrame, text='Number of Unexpected Interlocks:', font=10, anchor='w')
         self.labelInfo2.place(rely=0.4, relwidth=0.78, relheight=0.25)
         
-        # ***Bottom Frame***
+        # ----- Bottom Frame -----
         self.bottomFrame = tk.Frame(master)
         self.bottomFrame.place(relx=0.5, rely=0.13, relwidth=1, relheight=0.87, anchor='n')
         
@@ -68,14 +68,15 @@ def addFiles():
     
     root.update()
     files = filedialog.askopenfilenames(parent=app.topFrame,title='Choose files', defaultextension='.log')
-    file_list = "\n".join(map(str,files))
-    textbox.insert(tk.END, file_list)
+    [listbox.insert(tk.END, item) for item in files]
+
     
 def findEntries():
     global kvct_df, kvct_filtered, kvct_analysis
     
     statusbar.config(text='Loading...')
     
+    # Fine all interlocks
     try:
         kvct_df = Diagnostic.GetEntries(files)
         table1 = Table(app.tab1, dataframe=kvct_df) #displays interlocks
@@ -83,7 +84,7 @@ def findEntries():
     except:
         messagebox.showerror("Error", "Cannot find entries for listed files.")
         pass
-    
+    # Filter interlocks
     try:
         kvct_filtered = Diagnostic.FilteredEntries(kvct_df)
         table2 = Table(app.tab2, dataframe=kvct_filtered) #displays filtered interlocks
@@ -91,7 +92,7 @@ def findEntries():
     except:
         messagebox.showerror("Error", "Cannot filter interlocks.")
         pass
-        
+    # Interlock Analysis
     try:
         kvct_analysis = Diagnostic.Analysis(kvct_filtered)
         table3 = Table(app.tab3, dataframe=kvct_analysis) #displays analysis
@@ -118,22 +119,27 @@ def exportExcel():
 root = tk.Tk()
 app = LogDiagnosticToolTempalte(root)
 
-# Top Frame
-scrollbar = tk.Scrollbar(app.scrollFrame)
-scrollbar.pack(side='right', fill='y')
+# ----- Top Frame ------
+# List chosen files
+scrollbar_x = tk.Scrollbar(app.scrollFrame, orient='horizontal')
+scrollbar_x.pack(side='bottom', fill='x')
 
-textbox = tk.Text(app.scrollFrame, height = 500, width = 350, yscrollcommand=scrollbar.set)
-textbox.pack(expand=0, fill='both')
-scrollbar.config(command=textbox.yview)
+scrollbar_y = tk.Scrollbar(app.scrollFrame)
+scrollbar_y.pack(side='right', fill='y')
 
+listbox= tk.Listbox(app.scrollFrame, height = 500, width = 350, xscrollcommand=scrollbar_x.set, yscrollcommand=scrollbar_y.set)
+listbox.pack(expand=0, fill='both')
+scrollbar_x.config(command=listbox.xview)
+scrollbar_y.config(command=listbox.yview)
 
+# Summary of tables
 labelInfo3 = tk.Label(app.infoFrame, anchor='w')
 labelInfo3.place(relx=0.66, relwidth=0.1, relheight=0.25)
 
 labelInfo4 = tk.Label(app.infoFrame, anchor='w')
 labelInfo4.place(relx=0.8, rely=0.4, relwidth=0.1, relheight=0.25)
 
-# Bottom Frame
+# ----- Bottom Frame ------
 statusbar = tk.Label(app.bottomFrame, bd=1, relief='sunken', anchor='w')
 statusbar.pack(side='bottom', fill='x')
 
