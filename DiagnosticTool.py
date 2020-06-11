@@ -104,7 +104,7 @@ def GetEntries(filenames):
     kvct_interlocks = idf.kvct_df(kvct_log, sys_log, kvct_start_times)
     return(kvct_interlocks)
     
-def FilteredEntries(interlocks):    
+def FilterEntries(interlocks):    
     # Remove Expected, Startup, and Shutdown Interlocks
     kvct_filtered, filtered_out = dta.filter_expected(interlocks, interlocks['Time from KVCT Start'], '0:5:0.0')
     
