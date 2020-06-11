@@ -106,9 +106,9 @@ def GetEntries(filenames):
     
 def FilteredEntries(interlocks):    
     # Remove Expected, Startup, and Shutdown Interlocks
-    kvct_filtered, count = dta.filter_expected(interlocks, interlocks['Time from KVCT Start'], '0:5:0.0')
+    kvct_filtered, filtered_out = dta.filter_expected(interlocks, interlocks['Time from KVCT Start'], '0:5:0.0')
     
-    return(kvct_filtered, count)
+    return(kvct_filtered, filtered_out)
     
 def Analysis(filtered_interlocks):    
     analysis_df = dta.analysis(filtered_interlocks)

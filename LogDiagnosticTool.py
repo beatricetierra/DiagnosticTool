@@ -8,7 +8,7 @@ import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
 from pandastable import Table
-import Diagnostic
+import DiagnosticTool
 
 class LogDiagnosticToolTempalte():
     
@@ -56,7 +56,7 @@ class LogDiagnosticToolTempalte():
         self.tabControl.add(self.tab1, text = 'All Interlocks')
         
         self.tab2 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab2, text = 'Filtered Interlocks)')
+        self.tabControl.add(self.tab2, text = 'Filtered Interlocks')
         
         self.tab3 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab3, text = 'Expected Interlock Analysis')
@@ -75,13 +75,13 @@ def addFiles():
 
     
 def findEntries():
-    global kvct_df, kvct_filtered, kvct_analysis
+    global kvct_df, kvct_filtered, filtered_out, kvct_analysis
     
     statusbar.config(text='Loading...')
     
-    # Fine all interlocks
+    # Find all interlocks
     try:
-        kvct_df = Diagnostic.GetEntries(files)
+        kvct_df = DiagnosticTool.GetEntries(files)
         table1 = Table(app.tab1, dataframe=kvct_df) #displays all interlocks
         table1.show()
     except:
@@ -89,17 +89,17 @@ def findEntries():
         pass
     # Filter interlocks
     try:
-        kvct_filtered, count = Diagnostic.FilteredEntries(kvct_df)
+        kvct_filtered, filtered_out = DiagnosticTool.FilteredEntries(kvct_df)
         table2 = Table(app.tab2, dataframe=kvct_filtered) #displays filtered interlocks
         table2.show()
-        table3 = Table(app.tab3, dataframe=count) # displays expected interlock (interlocks that were filtered out) anlaysis
+        table3 = Table(app.tab3, dataframe=filtered_out) # displays expected interlock (interlocks that were filtered out)
         table3.show()
     except:
         messagebox.showerror("Error", "Cannot filter interlocks.")
         pass
     # Interlock Analysis
     try:
-        kvct_analysis = Diagnostic.Analysis(kvct_filtered)
+        kvct_analysis = DiagnosticTool.Analysis(kvct_filtered)
         table4 = Table(app.tab4, dataframe=kvct_analysis) #display unexpected interlock analysis
         table4.show()
     except:
@@ -117,6 +117,7 @@ def exportExcel():
     excel_writer = pd.ExcelWriter(export_filepath, engine='xlsxwriter')
     kvct_df.to_excel(excel_writer, sheet_name='All Interlocks')
     kvct_filtered.to_excel(excel_writer, sheet_name='Filtered Interlocks')
+    filtered_out.to_excel(excel_writer, sheet_name='Filtered Out')
     kvct_analysis.to_excel(excel_writer, sheet_name='Analysis')
     excel_writer.save()
     
