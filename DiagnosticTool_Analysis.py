@@ -86,32 +86,49 @@ def expected_analysis(filtered_out):
             session_num[idx] = 'Session: ' + str(session)
                   
     filtered_out.insert(0, 'Session', session_num) 
-    filtered_out.replace('', np.nan)
+    filtered_out.replace('', np.nan, inplace=True)
     
     # Convert time durations to total seconds
     filtered_out['Time from KVCT Start'] = total_seconds(filtered_out, filtered_out['Time from KVCT Start'])
     filtered_out['Interlock Duration'] = total_seconds(filtered_out, filtered_out['Interlock Duration'])
     
-#    # Analyze per session
+    # Analyze per session
+    columns = ['ViewAvgTooHigh Interlock','ExternalTriggerInvalid Interlock','Startup Interlock','Shutdown Interlock',
+               'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)', ]
     sessions = list(set(session_num))
+    
     for session in sessions:
         df = filtered_out.loc[filtered_out['Session'] == 'Session: 5']
         # Count 
-        df_count_type = df.groupby('Type').count()['Session']
-        df_count_sys_before = df.groupby('Type').count()['Sysnode Relevant Interlock (before)']
-        df_count_sys_during = df.groupby('Type').count()['Sysnode Relevant Interlock (during)']
-
-        # Average 
-        df_avg_start = df.groupby('Type').mean()
-        df_avg_duration = df.groupby('Type').mean()
+        df['Count'] = 1
+        df_count = df.groupby('Type').count()
+        df_count = df_count[['Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)', 'Count']]
         
-    return(filtered_out, df_count_type, df_count_sys_before, df_count_sys_during, df_avg_start, df_avg_duration)
+        # Average 
+        df_avg = df.groupby('Type').mean()
+        df_avg = df_avg[['Time from KVCT Start', 'Interlock Duration']]
+        df_avg.columns = ['Time from KVCT Start (AVG)', 'Interlock Duration (AVG)']
+        
+        # Min
+        df_min = df.groupby('Type').min()
+        df_min = df_min[['Time from KVCT Start', 'Interlock Duration']]
+        df_min.columns = ['Time from KVCT Start (Min)', 'Interlock Duration (Min)']
+        
+        # Max
+        df_max = df.groupby('Type').max()
+        df_max = df_max[['Time from KVCT Start', 'Interlock Duration']]
+        df_max.columns = ['Time from KVCT Start (Max)', 'Interlock Duration (Max)']
+        
+        # Combine
+        df = pd.concat([df_count, df_avg, df_min, df_max], axis = 1)
+    return(filtered_out, df)
     
 # overall analysis
 def analysis(filtered_df):
     # remove restart entries
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE RESTART ------']
 
+        
     #counter column
     filtered_df['Count'] = 1
     count = pd.DataFrame(filtered_df.groupby('Interlock Number').count()['Count'])
