@@ -48,15 +48,65 @@ def filter_expected(interlocks_df, column, time_threshold):
             pass
     
     filtered_out['Type'] = interlock_type
+
     filtered_df = interlocks_df.drop(indices)        
     filtered_df.reset_index(drop=True, inplace=True)
                              
     return(filtered_df, filtered_out)
     
+def total_seconds(filtered_out, column):
+    timedelta = []
+    for duration in column:
+        try:
+            duration = datetime.datetime.strptime(duration, '%H:%M:%S.%f')
+            total = duration - datetime.datetime(1900, 1, 1)
+            timedelta.append(total.total_seconds())
+        except:
+            timedelta.append(np.nan)
+    return(timedelta)
+    
 def expected_analysis(filtered_out):
+    # Extract columns needed for analysis 
+    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from KVCT Start', 'Interlock Duration', 'Sysnode Relevant Interlock (before)',
+               'Sysnode Relevant Interlock (during)', 'Type']
+    filtered_out = filtered_out.reindex(columns= columns)
     
+    # Find indices which 
+    restart_indices = filtered_out.loc[filtered_out['Interlock Number'] == '------ NODE RESTART ------'].index.values
     
-    return()
+    # Divide into different sessions 
+    session_num = [None] * len(filtered_out)
+    
+    for session, restart_idx in enumerate(restart_indices):
+        try:
+            end = restart_indices[session + 1]
+        except:
+            end = len(filtered_out)
+        for idx in range(restart_idx, end):
+            session_num[idx] = 'Session: ' + str(session)
+                  
+    filtered_out.insert(0, 'Session', session_num) 
+    filtered_out.replace('', np.nan)
+    
+    # Convert time durations to total seconds
+    filtered_out['Time from KVCT Start'] = total_seconds(filtered_out, filtered_out['Time from KVCT Start'])
+    filtered_out['Interlock Duration'] = total_seconds(filtered_out, filtered_out['Interlock Duration'])
+    
+#    # Analyze per session
+    sessions = list(set(session_num))
+    for session in sessions:
+        df = filtered_out.loc[filtered_out['Session'] == 'Session: 5']
+        # Count 
+        df_count_type = df.groupby('Type').count()['Session']
+        df_count_sys_before = df.groupby('Type').count()['Sysnode Relevant Interlock (before)']
+        df_count_sys_during = df.groupby('Type').count()['Sysnode Relevant Interlock (during)']
+
+        # Average 
+        df_avg_start = df.groupby('Type').mean()
+        df_avg_duration = df.groupby('Type').mean()
+        
+    return(filtered_out, df_count_type, df_count_sys_before, df_count_sys_during, df_avg_start, df_avg_duration)
+    
 # overall analysis
 def analysis(filtered_df):
     # remove restart entries

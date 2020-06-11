@@ -89,7 +89,7 @@ def findEntries():
         pass
     # Filter interlocks
     try:
-        kvct_filtered, filtered_out = DiagnosticTool.FilteredEntries(kvct_df)
+        kvct_filtered, filtered_out = DiagnosticTool.FilterEntries(kvct_df)
         table2 = Table(app.tab2, dataframe=kvct_filtered) #displays filtered interlocks
         table2.show()
         table3 = Table(app.tab3, dataframe=filtered_out) # displays expected interlock (interlocks that were filtered out)
