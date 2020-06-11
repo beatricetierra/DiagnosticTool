@@ -81,6 +81,7 @@ def find_interlocks(node_interlocks):
 def find_node_start(interlocks_df, interlock_start_times):
     start_times = pd.DataFrame({'Interlock Number': '------ NODE RESTART ------', 'Datetime': interlock_start_times,
                                'Active Time': '', 'Inactive Time': ''})
+    start_times['Active Time'] = start_times['Datetime'].dt.time
     result = pd.concat([interlocks_df, start_times], sort=False)
     result.reset_index(drop=True, inplace=True)
     
@@ -124,7 +125,7 @@ def interlock_duration(interlock_df):
             active_time = datetime.datetime.combine(date.date(), active)
             time_delta.append(timedelta_format(inactive_time - active_time))
         except:
-            if not active:
+            if not active or not inactive:
                 time_delta.append('')
             else:
                 time_delta.append('Still Active')
