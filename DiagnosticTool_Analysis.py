@@ -84,7 +84,7 @@ def expected_analysis(filtered_out):
         except:
             end = len(filtered_out)
         for idx in range(restart_idx, end):
-            session_num[idx] = 'Session: ' + str(session)
+            session_num[idx] = 'Session: ' + str(session+1)
                   
     filtered_out.insert(0, 'Session', session_num) 
     filtered_out.replace('', np.nan, inplace=True)
@@ -94,12 +94,21 @@ def expected_analysis(filtered_out):
     filtered_out['Interlock Duration'] = total_seconds(filtered_out, filtered_out['Interlock Duration'])
     
     # Analyze per session
-    columns = ['ViewAvgTooHigh Interlock','ExternalTriggerInvalid Interlock','Startup Interlock','Shutdown Interlock',
-               'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)', ]
-    sessions = list(set(session_num))
+    # Initialize expected dataframe
+    columns = ['Session', 'Type', 'Count', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)', 
+               'Time from KVCT Start (AVG)', 'Time from KVCT Start (Min)', 'Time from KVCT Start (Max)',
+               'Interlock Duration (AVG)', 'Interlock Duration (Min)', 'Interlock Duration (Max)']
     
+    sessions = list(set(session_num))
+    rows = 4*len(sessions)
+    
+    df_analysis = pd.DataFrame(columns=columns, index=list(range(0, rows)))
+    idx = 0
+
     for session in sessions:
-        df = filtered_out.loc[filtered_out['Session'] == 'Session: 5']
+        df = filtered_out.loc[filtered_out['Session'] == session]
+        df_analysis['Session'][idx:idx+4] = session
+        
         # Count 
         df['Count'] = 1
         df_count = df.groupby('Type').count()
@@ -122,7 +131,24 @@ def expected_analysis(filtered_out):
         
         # Combine
         df = pd.concat([df_count, df_avg, df_min, df_max], axis = 1)
-    return(filtered_out, df)
+        
+        # construct df_analysis
+        inter_types = ['ViewAvgTooHigh Interlock','ExternalTriggerInvalid Interlock', 'Startup Interlock', 'Shutdown Interlock']
+        
+        for i in range(0, len(inter_types)):
+            df_analysis['Type'][idx+i] = inter_types[i]
+
+        for inter_type in inter_types:
+            try:
+                row = df_analysis.loc[df_analysis['Session']==session].loc[df_analysis['Type'] == inter_type].index.values[0]
+                df_analysis['Count'][row] = df.loc[inter_type, 'Count']
+                print(session, inter_type)
+            except:
+                pass
+
+        idx += 4   
+        
+    return(filtered_out, df, df_analysis)
     
 # overall analysis
 def analysis(filtered_df):
