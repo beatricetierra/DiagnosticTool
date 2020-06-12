@@ -53,7 +53,8 @@ def filter_expected(interlocks_df, column, time_threshold):
     filtered_df.reset_index(drop=True, inplace=True)
                              
     return(filtered_df, filtered_out)
-    
+
+# Converts strings -> timedelta -> total seconds(int)
 def total_seconds(filtered_out, column):
     timedelta = []
     for duration in column:
@@ -128,23 +129,13 @@ def analysis(filtered_df):
     # remove restart entries
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE RESTART ------']
 
-        
     #counter column
     filtered_df['Count'] = 1
     count = pd.DataFrame(filtered_df.groupby('Interlock Number').count()['Count'])
     
     #average, min, and max duration
-        #first convert strings -> timedelta -> integer 
-    timedelta = []
-    for duration in filtered_df['Interlock Duration']:
-        try:
-            duration = datetime.datetime.strptime(duration, '%H:%M:%S.%f')
-            total = duration - datetime.datetime(1900, 1, 1)
-            timedelta.append(total.total_seconds())
-        except:
-            timedelta.append(np.nan)
-    
-    filtered_df['Interlock Duration(sec)'] = timedelta
+    filtered_df['Interlock Duration(sec)'] = total_seconds(filtered_df, filtered_df['Interlock Duration'])
+
     avg_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').mean()['Interlock Duration(sec)'])
     min_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').min()['Interlock Duration(sec)'])
     max_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').max()['Interlock Duration(sec)'])
@@ -160,68 +151,8 @@ def analysis(filtered_df):
 
 # analyze per day
 def analysis_per_day(filtered_df):
-    # remove restart entries
-    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE RESTART ------']
-
-    #counter column
-    filtered_df['Count'] = 1
-    count = pd.DataFrame(filtered_df.groupby('Interlock Number').count()['Count'])
-    
-    #average, min, and max duration
-        #first convert strings -> timedelta -> integer 
-    timedelta = []
-    for duration in filtered_df['Interlock Duration']:
-        try:
-            duration = datetime.datetime.strptime(duration, '%H:%M:%S.%f')
-            total = duration - datetime.datetime(1900, 1, 1)
-            timedelta.append(total.total_seconds())
-        except:
-            timedelta.append(np.nan)
-    
-    filtered_df['Interlock Duration(sec)'] = timedelta
-    avg_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').mean()['Interlock Duration(sec)'])
-    min_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').min()['Interlock Duration(sec)'])
-    max_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').max()['Interlock Duration(sec)'])
-    
-    #combine
-    analysis_df = count.merge(avg_duration, left_index=True, right_index=True)
-    analysis_df = analysis_df.merge(min_duration, left_index=True, right_index=True)
-    analysis_df = analysis_df.merge(max_duration, left_index=True, right_index=True)
-    analysis_df.columns = ['Count', 'Avg Duration(sec)', 'Min Duration(sec)', 'Max Duration(sec)']
-    analysis_df.reset_index(inplace=True)
-
     return(analysis_df)
     
-# analyze per session (every node restart)
-def analysis_per_session(filtered_df):
-    # remove restart entries
-    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE RESTART ------']
-
-    #counter column
-    filtered_df['Count'] = 1
-    count = pd.DataFrame(filtered_df.groupby('Interlock Number').count()['Count'])
-    
-    #average, min, and max duration
-        #first convert strings -> timedelta -> integer 
-    timedelta = []
-    for duration in filtered_df['Interlock Duration']:
-        try:
-            duration = datetime.datetime.strptime(duration, '%H:%M:%S.%f')
-            total = duration - datetime.datetime(1900, 1, 1)
-            timedelta.append(total.total_seconds())
-        except:
-            timedelta.append(np.nan)
-    
-    filtered_df['Interlock Duration(sec)'] = timedelta
-    avg_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').mean()['Interlock Duration(sec)'])
-    min_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').min()['Interlock Duration(sec)'])
-    max_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').max()['Interlock Duration(sec)'])
-    
-    #combine
-    analysis_df = count.merge(avg_duration, left_index=True, right_index=True)
-    analysis_df = analysis_df.merge(min_duration, left_index=True, right_index=True)
-    analysis_df = analysis_df.merge(max_duration, left_index=True, right_index=True)
-    analysis_df.columns = ['Count', 'Avg Duration(sec)', 'Min Duration(sec)', 'Max Duration(sec)']
-    analysis_df.reset_index(inplace=True)
-
+# analyze per session
+def analysis_per_day(filtered_df):
     return(analysis_df)
