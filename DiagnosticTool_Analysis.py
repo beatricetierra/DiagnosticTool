@@ -112,7 +112,7 @@ def expected_analysis(filtered_out):
         # Count 
         df['Count'] = 1
         df_count = df.groupby('Type').count()
-        df_count = df_count[['Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)', 'Count']]
+        df_count = df_count[[columns[2], columns[3], columns[4]]]
         
         # Average 
         df_avg = df.groupby('Type').mean()
@@ -133,22 +133,23 @@ def expected_analysis(filtered_out):
         df = pd.concat([df_count, df_avg, df_min, df_max], axis = 1)
         
         # construct df_analysis
+        # Count
         inter_types = ['ViewAvgTooHigh Interlock','ExternalTriggerInvalid Interlock', 'Startup Interlock', 'Shutdown Interlock']
-        
         for i in range(0, len(inter_types)):
             df_analysis['Type'][idx+i] = inter_types[i]
 
         for inter_type in inter_types:
             try:
                 row = df_analysis.loc[df_analysis['Session']==session].loc[df_analysis['Type'] == inter_type].index.values[0]
-                df_analysis['Count'][row] = df.loc[inter_type, 'Count']
-                print(session, inter_type)
+                for col in columns[2:]:
+                    df_analysis[col][row] = df.loc[inter_type, col]
             except:
                 pass
-
-        idx += 4   
+            
+        df_analysis.sort_values(by=['Session'], inplace=True)
         
-    return(filtered_out, df, df_analysis)
+        idx += 4   
+    return(df_analysis)
     
 # overall analysis
 def analysis(filtered_df):

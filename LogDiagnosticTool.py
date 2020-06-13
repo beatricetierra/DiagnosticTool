@@ -56,13 +56,16 @@ class LogDiagnosticToolTempalte():
         self.tabControl.add(self.tab1, text = 'All Interlocks')
         
         self.tab2 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab2, text = 'Filtered Interlocks')
+        self.tabControl.add(self.tab2, text = 'Unexpected Interlocks')
         
         self.tab3 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab3, text = 'Expected Interlock Analysis')
+        self.tabControl.add(self.tab3, text = 'Expected Interlocks')
         
         self.tab4 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab4, text = 'Unexpected Interlock Analysis')
+        
+        self.tab5 = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.tab5, text = 'Expected Interlock Analysis')
         
         self.tabControl.pack(expan=1, fill='both')
         
@@ -75,7 +78,7 @@ def addFiles():
 
     
 def findEntries():
-    global kvct_df, kvct_filtered, filtered_out, kvct_analysis
+    global kvct_df, kvct_filtered, filtered_out, filtered_analysis, unfiltered_analysis
     
     statusbar.config(text='Loading...')
     
@@ -99,9 +102,11 @@ def findEntries():
         pass
     # Interlock Analysis
     try:
-        kvct_analysis = DiagnosticTool.Analysis(kvct_filtered)
-        table4 = Table(app.tab4, dataframe=kvct_analysis) #display unexpected interlock analysis
+        filtered_analysis, unfiltered_analysis = DiagnosticTool.Analysis(kvct_filtered, filtered_out)
+        table4 = Table(app.tab4, dataframe=filtered_analysis) #display unexpected interlock analysis
         table4.show()
+        table5 = Table(app.tab5, dataframe=unfiltered_analysis) #display unexpected interlock analysis
+        table5.show()
     except:
         messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
         pass
@@ -116,9 +121,10 @@ def exportExcel():
     export_filepath = filedialog.asksaveasfilename(defaultextension='.xlsx')
     excel_writer = pd.ExcelWriter(export_filepath, engine='xlsxwriter')
     kvct_df.to_excel(excel_writer, sheet_name='All Interlocks')
-    kvct_filtered.to_excel(excel_writer, sheet_name='Filtered Interlocks')
-    filtered_out.to_excel(excel_writer, sheet_name='Filtered Out')
-    kvct_analysis.to_excel(excel_writer, sheet_name='Analysis')
+    kvct_filtered.to_excel(excel_writer, sheet_name='Unexpected Interlocks')
+    filtered_out.to_excel(excel_writer, sheet_name='Expected Interlocks')
+    filtered_analysis.to_excel(excel_writer, sheet_name='Unexpected Interlock Analysis')
+    unfiltered_analysis.to_excel(excel_writer, sheet_name='Expected Interlock Analysis')
     excel_writer.save()
     
 root = tk.Tk()
