@@ -78,7 +78,7 @@ def addFiles():
 
     
 def findEntries():
-    global kvct_df, kvct_filtered, filtered_out, filtered_analysis, unfiltered_analysis
+    global kvct_df, kvct_filtered, filtered_out, filtered_analysis, unfiltered_analysis, unfilter_analysis_export
     
     statusbar.config(text='Loading...')
     
@@ -105,6 +105,8 @@ def findEntries():
         filtered_analysis, unfiltered_analysis = DiagnosticTool.Analysis(kvct_filtered, filtered_out)
         table4 = Table(app.tab4, dataframe=filtered_analysis) #display unexpected interlock analysis
         table4.show()
+        
+        unfilter_analysis_export = unfiltered_analysis.set_index(['Session', 'Type'])
         table5 = Table(app.tab5, dataframe=unfiltered_analysis) #display unexpected interlock analysis
         table5.show()
     except:
@@ -124,7 +126,7 @@ def exportExcel():
     kvct_filtered.to_excel(excel_writer, sheet_name='Unexpected Interlocks')
     filtered_out.to_excel(excel_writer, sheet_name='Expected Interlocks')
     filtered_analysis.to_excel(excel_writer, sheet_name='Unexpected Interlock Analysis')
-    unfiltered_analysis.to_excel(excel_writer, sheet_name='Expected Interlock Analysis')
+    unfilter_analysis_export.to_excel(excel_writer, sheet_name='Expected Interlock Analysis')
     excel_writer.save()
     
 root = tk.Tk()
