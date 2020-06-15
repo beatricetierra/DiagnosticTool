@@ -187,8 +187,46 @@ def analysis(filtered_df):
 
 # analyze per day
 def analysis_per_day(filtered_df):
-    return(analysis_df)
+    # Extract important columns
+    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from KVCT Start', 'Interlock Duration', 'Sysnode Relevant Interlock (before)',
+               'Sysnode Relevant Interlock (during)']
+    filtered_df = filtered_df.reindex(columns= columns)
+    
+    # Find indices at each new day
+    new_day = list(set(filtered_df['Date']))
+    
+    
+    return(new_day)
     
 # analyze per session
 def analysis_per_session(filtered_df):
-    return(analysis_df)
+    # Extract important columns
+    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from KVCT Start', 'Interlock Duration', 'Sysnode Relevant Interlock (before)',
+               'Sysnode Relevant Interlock (during)']
+    filtered_df = filtered_df.reindex(columns= columns)
+    
+    # Find indices which 
+    restart_indices = filtered_df.loc[filtered_df['Interlock Number'] == '------ NODE RESTART ------'].index.values
+    
+    # Divide into different sessions 
+    session_num = [None] * len(filtered_df)
+    for session, restart_idx in enumerate(restart_indices):
+        try:
+            end = restart_indices[session + 1]
+        except:
+            end = len(filtered_df)
+        for idx in range(restart_idx, end):
+            session_num[idx] = 'Session: ' + str(session+1)
+                  
+    filtered_df.insert(0, 'Session', session_num) 
+    filtered_df.replace('', np.nan, inplace=True)
+    
+    # Convert time durations to total seconds
+    filtered_df['Time from KVCT Start'] = total_seconds(filtered_df, filtered_df['Time from KVCT Start'])
+    filtered_df['Interlock Duration'] = total_seconds(filtered_df, filtered_df['Interlock Duration'])    
+    
+    # Count
+    filtered_df['Total Interlocks'] = 1
+    df_count = filtered_df.groupby('Session').count()[['Total Interlocks','Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']]
+    
+    return(filtered_df, df_count)
