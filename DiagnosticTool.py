@@ -112,6 +112,7 @@ def FilterEntries(interlocks):
     
 def Analysis(filtered_interlocks, filtered_out):    
     filtered = dta.analysis(filtered_interlocks)
-    unfiltered = dta.expected_analysis(filtered_out)
-    return(filtered, unfiltered)
+    unfiltered, plotting_data = dta.analysis_expected(filtered_out)
+    
+    return(filtered, unfiltered, plotting_data)
 

@@ -66,7 +66,7 @@ def total_seconds(filtered_out, column):
             timedelta.append(np.nan)
     return(timedelta)
     
-def expected_analysis(filtered_out):
+def analysis_expected(filtered_out):
     # Extract columns needed for analysis 
     columns = ['Date', 'Active Time', 'Interlock Number', 'Time from KVCT Start', 'Interlock Duration', 'Sysnode Relevant Interlock (before)',
                'Sysnode Relevant Interlock (during)', 'Type']
@@ -133,7 +133,6 @@ def expected_analysis(filtered_out):
         df = pd.concat([df_count, df_avg, df_min, df_max], axis = 1)
         
         # construct df_analysis
-        # Count
         inter_types = ['ViewAvgTooHigh Interlock','ExternalTriggerInvalid Interlock', 'Startup Interlock', 'Shutdown Interlock']
         for i in range(0, len(inter_types)):
             df_analysis['Type'][idx+i] = inter_types[i]
@@ -147,9 +146,19 @@ def expected_analysis(filtered_out):
                 pass
             
         df_analysis.sort_values(by=['Session'], inplace=True)
-        
-        idx += 4   
-    return(df_analysis)
+        idx += 4
+    
+    # Plot analysis
+    dummies = pd.get_dummies(df_analysis['Type'])
+    dummies = pd.concat([dummies, df_analysis[['Session','Count']]], axis=1)
+     
+    for col in dummies.columns:
+        for row in range(0,len(dummies)):
+            if dummies[col][row] == 1:
+                dummies[col][row] = dummies['Count'][row]
+            
+    plotting_data = dummies.groupby('Session').sum()
+    return(df_analysis, plotting_data)
     
 # overall analysis
 def analysis(filtered_df):
@@ -181,5 +190,5 @@ def analysis_per_day(filtered_df):
     return(analysis_df)
     
 # analyze per session
-def analysis_per_day(filtered_df):
+def analysis_per_session(filtered_df):
     return(analysis_df)

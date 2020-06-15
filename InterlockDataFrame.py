@@ -53,7 +53,7 @@ def kvct_df(kvct_log, sys_log, kvct_start_times):
             sys_state_transition = sys_state_transition.append(sys_log.iloc[idx], ignore_index=True)
         if find_keys[5] in entry:
             sys_relevant_interlock = sys_relevant_interlock.append(sys_log.iloc[idx], ignore_index=True)
-    
+
     # Construct kvct_df 
     # Get kvct interlocks active vs inactive
     kvct_df = dts.find_interlocks(kvct_interlocks)

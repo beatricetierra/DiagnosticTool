@@ -6,6 +6,7 @@ Created on Fri May  8 10:43:42 2020
 """
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
+import matplotlib.pyplot as plt
 import pandas as pd
 from pandastable import Table
 import DiagnosticTool
@@ -18,23 +19,20 @@ class LogDiagnosticToolTempalte():
         
         # ----- Top Frame -----
         self.topFrame = tk.Frame(master)
-        self.topFrame.place(relx=0.5, rely=0.02, relwidth=0.98, relheight=0.12, anchor='n')
+        self.topFrame.place(relx=0.5, relwidth=.98, relheight=0.12, anchor='n')
         
-        self.button1 = tk.Button(self.topFrame, text='Choose Files', font=25, bg='#D3D3D3', command=addFiles)
-        self.button1.place(relx=0.01, rely=0.03, relwidth=0.1, relheight=0.2)
+        self.button1 = tk.Button(self.topFrame, text='Get Entries', font=25, bg='#D3D3D3', command=findEntries)
+        self.button1.place(relwidth=0.1, relheight=0.2)
         
-        self.button2 = tk.Button(self.topFrame, text='Get Entries', font=25, bg='#D3D3D3', command=findEntries)
-        self.button2.place(relx=0.01, rely=0.25, relwidth=0.1, relheight=0.2)
-        
-        self.button3 = tk.Button(self.topFrame, text='Save Results', font=25, bg='#D3D3D3', command=exportExcel)
-        self.button3.place(relx=0.01, rely=0.47, relwidth=0.1, relheight=0.2)
+        self.button2 = tk.Button(self.topFrame, text='Graphs', font=25, bg='#D3D3D3', command=graphs)
+        self.button2.place(rely=0.22, relwidth=0.1, relheight=0.2)
         
         self.labelFiles = tk.Label(self.topFrame, text='Files:', font=12, anchor='w')
-        self.labelFiles.place(relx=0.12, rely=0.01, relwidth=0.05, relheight=0.25)
+        self.labelFiles.place(relx=0.12, relwidth=0.04, relheight=0.25)
 
         # File List
         self.scrollFrame = tk.Frame(self.topFrame, bd=1, relief='solid')
-        self.scrollFrame.place(relx=0.16, rely=0.01, relwidth=0.6, relheight=0.92)
+        self.scrollFrame.place(relx=0.16, relwidth=0.6, relheight=0.92)
         
         # Info Dashboard
         self.infoFrame = tk.Frame(self.topFrame, bd=1, relief='solid')
@@ -78,7 +76,7 @@ def addFiles():
 
     
 def findEntries():
-    global kvct_df, kvct_filtered, filtered_out, filtered_analysis, unfiltered_analysis, unfilter_analysis_export
+    global kvct_df, kvct_filtered, filtered_out, filtered_analysis, unfiltered_analysis, unfilter_analysis_export, plotting_data
     
     statusbar.config(text='Loading...')
     
@@ -102,13 +100,14 @@ def findEntries():
         pass
     # Interlock Analysis
     try:
-        filtered_analysis, unfiltered_analysis = DiagnosticTool.Analysis(kvct_filtered, filtered_out)
+        filtered_analysis, unfiltered_analysis, plotting_data = DiagnosticTool.Analysis(kvct_filtered, filtered_out)
         table4 = Table(app.tab4, dataframe=filtered_analysis) #display unexpected interlock analysis
         table4.show()
         
         unfilter_analysis_export = unfiltered_analysis.set_index(['Session', 'Type'])
         table5 = Table(app.tab5, dataframe=unfiltered_analysis) #display unexpected interlock analysis
         table5.show()
+
     except:
         messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
         pass
@@ -117,7 +116,10 @@ def findEntries():
     
     labelInfo3.config(text=len(kvct_df), font=14) 
     labelInfo4.config(text=len(kvct_filtered), font=14)
-
+    
+def graphs():
+    plotting_data.plot(kind='bar', figsize=(8,5))
+    plt.show()
     
 def exportExcel():  
     export_filepath = filedialog.asksaveasfilename(defaultextension='.xlsx')
@@ -133,6 +135,16 @@ root = tk.Tk()
 app = LogDiagnosticToolTempalte(root)
 
 # ----- Top Frame ------
+# Menu Bar
+menubar = tk.Menu(app.topFrame)
+
+file = tk.Menu(menubar, tearoff=0)
+menubar.add_cascade(label='File', menu = file)
+file.add_command(label='Choose Files', command=addFiles)
+file.add_command(label='Save Results', command = exportExcel)
+
+root.config(menu=menubar)
+
 # List chosen files
 scrollbar_x = tk.Scrollbar(app.scrollFrame, orient='horizontal')
 scrollbar_x.pack(side='bottom', fill='x')
