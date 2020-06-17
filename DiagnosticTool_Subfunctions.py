@@ -99,7 +99,7 @@ def find_node_start(interlocks_df, interlock_start_times):
 
 # Time since start of node
 def node_start_delta(interlocks_df):
-    interlocks_df['Time from KVCT Start'] = ''*len(interlocks_df)
+    interlocks_df['Time from Node Start'] = ''*len(interlocks_df)
     restart_times = interlocks_df.loc[interlocks_df['Interlock Number'] == '------ NODE RESTART ------']['Date']
     restart_times_idx = restart_times.index.values
     
@@ -110,7 +110,7 @@ def node_start_delta(interlocks_df):
                 if start_time < active_time:
                     restart.append(start_time)
             try:
-                interlocks_df['Time from KVCT Start'][idx] = timedelta_format(active_time - restart[-1])
+                interlocks_df['Time from Node Start'][idx] = timedelta_format(active_time - restart[-1])
             except:
                 pass
     return(interlocks_df)

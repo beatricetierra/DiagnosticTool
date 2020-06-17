@@ -19,7 +19,7 @@ def GetFiles(folderpath):
     return(filenames)
 
 def GetEntries(filenames):
-    find_keys = ['is active', 'is inactive', 'Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock']
+    find_keys = ['is active', 'is inactive', 'Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock', 'Received command']
     
     entries = [] 
     start_entries = []
@@ -102,17 +102,21 @@ def GetEntries(filenames):
     sys_log.drop(columns='Node', inplace = True)
     
     kvct_interlocks = idf.kvct_df(kvct_log, sys_log, kvct_start_times)
-    return(kvct_interlocks)
+    pet_interlocks = idf.pet_df(pet_log, sys_log, pet_start_times)
     
-def FilterEntries(interlocks):    
+    return(kvct_interlocks, pet_interlocks)
+    
+def FilterEntries(kvct_interlocks):    
     # Remove Expected, Startup, and Shutdown Interlocks
-    filtered, filtered_out = dta.filter_expected(interlocks, interlocks['Time from KVCT Start'], '0:5:0.0')
+    kvct_filtered, kvct_filtered_out = dta.filter_expected(kvct_interlocks, kvct_interlocks['Time from Node Start'], '0:5:0.0')
     
-    return(filtered, filtered_out)
+    return(kvct_filtered, kvct_filtered_out)
     
-def Analysis(filtered_interlocks, filtered_out):    
-    filtered = dta.analysis(filtered_interlocks)
-    unfiltered, plotting_data = dta.analysis_expected(filtered_out)
+def Analysis(kvct_filtered, kvct_filtered_out, pet_interlocks):    
+    kvct_analysis = dta.analysis(kvct_filtered)
+    kvct_unfiltered_analysis, plotting_data = dta.analysis_expected(kvct_filtered_out)
     
-    return(filtered, unfiltered, plotting_data)
+    pet_analysis = dta.analysis(pet_interlocks)
+    
+    return(kvct_analysis, kvct_unfiltered_analysis, plotting_data, pet_analysis)
 

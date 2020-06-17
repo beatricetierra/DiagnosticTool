@@ -184,19 +184,6 @@ def analysis(filtered_df):
     analysis_df.reset_index(inplace=True)
 
     return(analysis_df)
-
-# analyze per day
-def analysis_per_day(filtered_df):
-    # Extract important columns
-    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from KVCT Start', 'Interlock Duration', 'Sysnode Relevant Interlock (before)',
-               'Sysnode Relevant Interlock (during)']
-    filtered_df = filtered_df.reindex(columns= columns)
-    
-    # Find indices at each new day
-    new_day = list(set(filtered_df['Date']))
-    
-    
-    return(new_day)
     
 # analyze per session
 def analysis_per_session(filtered_df):

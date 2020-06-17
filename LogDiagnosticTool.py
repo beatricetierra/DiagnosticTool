@@ -76,13 +76,14 @@ def addFiles():
 
     
 def findEntries():
-    global kvct_df, kvct_filtered, filtered_out, filtered_analysis, unfiltered_analysis, unfilter_analysis_export, plotting_data
+    global kvct_df, pet_df, kvct_filtered, filtered_out 
+    global filtered_analysis, unfiltered_analysis, unfilter_analysis_export, plotting_data, pet_analysis
     
     statusbar.config(text='Loading...')
     
     # Find all interlocks
     try:
-        kvct_df = DiagnosticTool.GetEntries(files)
+        kvct_df, pet_df = DiagnosticTool.GetEntries(files)
         table1 = Table(app.tab1, dataframe=kvct_df) #displays all interlocks
         table1.show()
     except:
@@ -100,7 +101,7 @@ def findEntries():
         pass
     # Interlock Analysis
     try:
-        filtered_analysis, unfiltered_analysis, plotting_data = DiagnosticTool.Analysis(kvct_filtered, filtered_out)
+        filtered_analysis, unfiltered_analysis, plotting_data, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, filtered_out)
         table4 = Table(app.tab4, dataframe=filtered_analysis) #display unexpected interlock analysis
         table4.show()
         

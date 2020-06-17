@@ -97,7 +97,7 @@ def kvct_df(kvct_log, sys_log, kvct_start_times):
     kvct_df = dts.sys_interlocks_during(kvct_df, sys_relevant_interlock)
     
     # Clean up final kvct_df
-    columns = ['Date','Active Time', 'Inactive Time', 'Interlock Number', 'Time from KVCT Start', 'Interlock Duration', 'HV last status (before active)', 
+    columns = ['Date','Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'HV last status (before active)', 
             'HV last status (before inactive)', 'Machine last state (before active)', 'Machine last state (before inactive)', 
             'Last command received (before active)', 'Last command received (before inactive)', 'Last user input', 'Sysnode State',
             'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
@@ -119,7 +119,7 @@ def pet_df(pet_log, sys_log, pet_start_times):
             pet_interlocks = pet_interlocks.append(pet_log.iloc[idx], ignore_index=True)
 
     # Group pet node entries
-    find_keys = ['State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock']
+    find_keys = ['State machine', 'State set', 'Received command', 'State transition', 'Top relevant interlock']
     
     pet_machine_state = pd.DataFrame(columns=columns)
     pet_node_state = pd.DataFrame(columns=columns)
@@ -153,10 +153,10 @@ def pet_df(pet_log, sys_log, pet_start_times):
     # Get pet_recon interlocks
     pet_df = dts.find_interlocks(pet_interlocks)
     
-    # insert start/restart of kvct node entries
+    # insert start/restart of pet node entries
     pet_df = dts.find_node_start(pet_df, pet_start_times)
     
-    # Time since start/restart of kvct node
+    # Time since start/restart of pet node
     pet_df = dts.node_start_delta(pet_df)
             
     # Duration of pet_recon interlock
@@ -172,8 +172,13 @@ def pet_df(pet_log, sys_log, pet_start_times):
     pet_df['Machine last state (before inactive)'] = dts.find_last_entry(pet_df, pet_df['Inactive Time'], pet_machine_state)
     
     # last command received before active/ inactive interlock
-#    pet_df['Last command received (before active)'] = dts.find_last_entry(pet_df, pet_df['Active Time'], pet_received_command)
-#    pet_df['Last command received (before inactive)'] = dts.find_last_entry(pet_df, pet_df['Inactive Time'], pet_received_command)
+    for idx, descr in enumerate(pet_received_command['Description']):
+        try:
+            pet_received_command['Description'][idx] = descr.split(" ")[3].split("'")[1]
+        except:
+            pass
+    pet_df['Last command received (before active)'] = dts.find_last_entry(pet_df, pet_df['Active Time'], pet_received_command)
+    pet_df['Last command received (before inactive)'] = dts.find_last_entry(pet_df, pet_df['Inactive Time'], pet_received_command)
     
     # last user action 
     sys_user_action['Description'] = ["***" + description.split(" = ")[1].split(" ")[0] for description in sys_user_action['Description']]
@@ -184,18 +189,18 @@ def pet_df(pet_log, sys_log, pet_start_times):
     pet_df['Sysnode State'] = dts.find_last_entry(pet_df, pet_df['Active Time'], sys_state_transition)
     
     # relevant sys interlock after interlock
-    pet_df = dts.sys_interlocks(pet_df, sys_relevant_interlock)
+    pet_df = dts.sys_interlocks_before(pet_df, sys_relevant_interlock)
+    
+    # add relevant sys interlocks that occur while kvct interlock is active 
+    pet_df = dts.sys_interlocks_during(pet_df, sys_relevant_interlock)
     
     # Finalize placement of columns
-    columns = ['Active Time', 'Inactive Time', 'Interlock Number', 'Time from KVCT Start', 'Interlock Duration', 
-               'HV last status (before active)', 'HV last status (before inactive)', 'Machine last state (before active)', 
-               'Machine last state (before inactive)', 'Last user input', 'Sysnode State', 'Sysnode Relevant Interlock']
+    columns = ['Date','Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'HV last status (before active)', 
+            'HV last status (before inactive)', 'Machine last state (before active)', 'Machine last state (before inactive)', 
+            'Last command received (before active)', 'Last command received (before inactive)', 'Last user input', 'Sysnode State',
+            'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
     
+    pet_df['Date'] = pet_df['Date'].dt.date
     pet_df = pet_df.reindex(columns= columns)
     
-    # Invalid Interlocks???
-    
-    # Startup Interlocks (clears interlocks with in 5 minutes of node startup)
-    pet_filtered = dts.filter_startup(pet_df, pet_df['Time from KVCT Start'], '0:5:0.0')
-    
-    return(pet_df, pet_filtered)
+    return(pet_df)
