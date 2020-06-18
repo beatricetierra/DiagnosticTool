@@ -114,9 +114,9 @@ def FilterEntries(kvct_interlocks):
     
 def Analysis(kvct_filtered, kvct_filtered_out, pet_interlocks):    
     kvct_analysis = dta.analysis(kvct_filtered)
-    kvct_unfiltered_analysis, plotting_data = dta.analysis_expected(kvct_filtered_out)
+    kvct_unfiltered_analysis = dta.analysis_expected(kvct_filtered_out)
     
     pet_analysis = dta.analysis(pet_interlocks)
     
-    return(kvct_analysis, kvct_unfiltered_analysis, plotting_data, pet_analysis)
+    return(kvct_analysis, kvct_unfiltered_analysis, pet_analysis)
 

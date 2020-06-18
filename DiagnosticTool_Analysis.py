@@ -68,8 +68,8 @@ def total_seconds(filtered_out, column):
     
 def analysis_expected(filtered_out):
     # Extract columns needed for analysis 
-    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from KVCT Start', 'Interlock Duration', 'Sysnode Relevant Interlock (before)',
-               'Sysnode Relevant Interlock (during)', 'Type']
+    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'Sysnode Relevant Interlock (before)',
+               'Sysnode Relevant Interlock (during)']
     filtered_out = filtered_out.reindex(columns= columns)
     
     # Find indices which 
@@ -90,75 +90,60 @@ def analysis_expected(filtered_out):
     filtered_out.replace('', np.nan, inplace=True)
     
     # Convert time durations to total seconds
-    filtered_out['Time from KVCT Start'] = total_seconds(filtered_out, filtered_out['Time from KVCT Start'])
+    filtered_out['Time from Node Start'] = total_seconds(filtered_out, filtered_out['Time from Node Start'])
     filtered_out['Interlock Duration'] = total_seconds(filtered_out, filtered_out['Interlock Duration'])
     
     # Analyze per session
     # Initialize expected dataframe
-    columns = ['Session', 'Type', 'Count', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)', 
-               'Time from KVCT Start (AVG)', 'Time from KVCT Start (Min)', 'Time from KVCT Start (Max)',
+    columns = ['Session', 'Interlock Number', 'Count', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)', 
+               'Time from Node Start (AVG)', 'Time from Node Start (Min)', 'Time from Node Start (Max)',
                'Interlock Duration (AVG)', 'Interlock Duration (Min)', 'Interlock Duration (Max)']
     
     sessions = list(set(session_num))
-    rows = 4*len(sessions)
-    
-    df_analysis = pd.DataFrame(columns=columns, index=list(range(0, rows)))
-    idx = 0
+    idx = 0 
+    analysis_df = pd.DataFrame(columns=columns)
 
     for session in sessions:
         df = filtered_out.loc[filtered_out['Session'] == session]
-        df_analysis['Session'][idx:idx+4] = session
-        
         # Count 
         df['Count'] = 1
-        df_count = df.groupby('Type').count()
+        df_count = df.groupby('Interlock Number').count()
         df_count = df_count[[columns[2], columns[3], columns[4]]]
         
         # Average 
-        df_avg = df.groupby('Type').mean()
-        df_avg = df_avg[['Time from KVCT Start', 'Interlock Duration']]
-        df_avg.columns = ['Time from KVCT Start (AVG)', 'Interlock Duration (AVG)']
+        df_avg = df.groupby('Interlock Number').mean()
+        df_avg = df_avg[['Time from Node Start', 'Interlock Duration']]
+        df_avg.columns = ['Time from Node Start (AVG)', 'Interlock Duration (AVG)']
         
         # Min
-        df_min = df.groupby('Type').min()
-        df_min = df_min[['Time from KVCT Start', 'Interlock Duration']]
-        df_min.columns = ['Time from KVCT Start (Min)', 'Interlock Duration (Min)']
+        df_min = df.groupby('Interlock Number').min()
+        df_min = df_min[['Time from Node Start', 'Interlock Duration']]
+        df_min.columns = ['Time from Node Start (Min)', 'Interlock Duration (Min)']
         
         # Max
-        df_max = df.groupby('Type').max()
-        df_max = df_max[['Time from KVCT Start', 'Interlock Duration']]
-        df_max.columns = ['Time from KVCT Start (Max)', 'Interlock Duration (Max)']
+        df_max = df.groupby('Interlock Number').max()
+        df_max = df_max[['Time from Node Start', 'Interlock Duration']]
+        df_max.columns = ['Time from Node Start (Max)', 'Interlock Duration (Max)']
         
         # Combine
         df = pd.concat([df_count, df_avg, df_min, df_max], axis = 1)
         
-        # construct df_analysis
-        inter_types = ['ViewAvgTooHigh Interlock','ExternalTriggerInvalid Interlock', 'Startup Interlock', 'Shutdown Interlock']
-        for i in range(0, len(inter_types)):
-            df_analysis['Type'][idx+i] = inter_types[i]
-
-        for inter_type in inter_types:
-            try:
-                row = df_analysis.loc[df_analysis['Session']==session].loc[df_analysis['Type'] == inter_type].index.values[0]
-                for col in columns[2:]:
-                    df_analysis[col][row] = df.loc[inter_type, col]
-            except:
-                pass
-            
-        df_analysis.sort_values(by=['Session'], inplace=True)
-        idx += 4
-    
+        # Construct columns
+        rows = len(df)
+        df['Session'] = rows*[session]
+        df['Interlock Number'] = df.index.tolist()
+        
+        # Append to analysis_df
+        analysis_df = analysis_df.append(df, ignore_index=True)
+        analysis_df = analysis_df[~analysis_df['Interlock Number'].isin(['------ NODE RESTART ------'])]
+        analysis_df = analysis_df.reindex(columns= columns)
+        analysis_df.sort_values(by=['Session'], inplace=True)
+        
     # Plot analysis
-    dummies = pd.get_dummies(df_analysis['Type'])
-    dummies = pd.concat([dummies, df_analysis[['Session','Count']]], axis=1)
-     
-    for col in dummies.columns:
-        for row in range(0,len(dummies)):
-            if dummies[col][row] == 1:
-                dummies[col][row] = dummies['Count'][row]
-            
-    plotting_data = dummies.groupby('Session').sum()
-    return(df_analysis, plotting_data)
+#    dummies = pd.get_dummies(analysis_df['Session'])
+#    dummies = pd.concat([dummies, analysis_df.iloc[:,1:]], axis=1)
+
+    return(analysis_df)
     
 # overall analysis
 def analysis(filtered_df):

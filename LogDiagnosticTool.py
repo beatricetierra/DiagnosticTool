@@ -104,35 +104,36 @@ def findEntries():
         kvct_df, pet_df = DiagnosticTool.GetEntries(files)
         table1 = Table(app.tab1_left, dataframe=kvct_df, fontsize=5, rowheight=20) #displays all interlocks
         table1.show()
-        table2 = Table(app.tab2_left, dataframe=pet_df, fontsize=5, rowheight=20)
+        table2 = Table(app.tab4_left, dataframe=pet_df, fontsize=5, rowheight=20)
         table2.show()
+        
+        labelInfo3.config(text=len(kvct_df), font=14) 
     except:
         messagebox.showerror("Error", "Cannot find entries for listed files.")
         pass
     # Filter interlocks
     try:
         kvct_filtered, kvct_filtered_out = DiagnosticTool.FilterEntries(kvct_df)
-        table3 = Table(app.tab3_left, dataframe=kvct_filtered, fontsize=5, rowheight=20) #displays filtered interlocks
+        table3 = Table(app.tab2_left, dataframe=kvct_filtered, fontsize=5, rowheight=20) #displays filtered interlocks
         table3.show()
-        table4 = Table(app.tab4_left, dataframe=kvct_filtered_out, fontsize=5, rowheight=20) # displays expected interlock (interlocks that were filtered out)
+        table4 = Table(app.tab3_left, dataframe=kvct_filtered_out, fontsize=5, rowheight=20) # displays expected interlock (interlocks that were filtered out)
         table4.show()
+        
+        labelInfo4.config(text=len(kvct_filtered), font=14)
     except:
         messagebox.showerror("Error", "Cannot filter interlocks.")
         pass
-    
-    labelInfo3.config(text=len(kvct_df), font=14) 
-    labelInfo4.config(text=len(kvct_filtered), font=14)
 
 def analyze():
-    global filtered_analysis, unfiltered_analysis, unfilter_analysis_export, plotting_data, pet_analysis
+    global filtered_analysis, unfiltered_analysis, unfilter_analysis_export, pet_analysis
     
     try:
-        filtered_analysis, unfiltered_analysis, plotting_data, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
+        filtered_analysis, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
         
         table5 = Table(app.tab1_right, dataframe=filtered_analysis, fontsize=5, rowheight=20) #display unexpected interlock analysis
         table5.show()
         
-        unfilter_analysis_export = unfiltered_analysis.set_index(['Session', 'Type'])
+        unfilter_analysis_export = unfiltered_analysis.set_index(['Session','Interlock Number'])
         table6 = Table(app.tab2_right, dataframe=unfiltered_analysis, fontsize=5, rowheight=20) #display unexpected interlock analysis
         table6.show()
         
