@@ -27,11 +27,7 @@ def GetEntries(filenames):
     for file in filenames:
         if '-log-' in file: # read compiled log file from gateway
             with open(file, encoding="cp437") as log:
-                first_line = log.readline()
-                if 'A2' in first_line:      #for A2 system
-                    parse_idx = [3,4,7,9]
-                else:                       #for A4 and B1 system
-                    parse_idx = [3,4,7,10]
+                parse_idx = [3,4,7,10]  #only keep date, time, node, and description
                 for line in log:
                     if 'kvct connected' in line or 'pet_recon connected' in line:   # entry for start of node
                         start = (line.split(" ", 9))
@@ -40,12 +36,12 @@ def GetEntries(filenames):
                         if 'SysNode' in line and '***' in line:
                             if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
                                 entry = line.split(" ", 10)
-                                entries.append([entry[i] for i in parse_idx]) #only keep date, time, node, and description
+                                entries.append([entry[i] for i in parse_idx]) 
                         else: 
                             for word in find_keys:
                                 if word in line:
                                     entry = line.split(" ", 10)
-                                    entries.append([entry[i] for i in parse_idx]) #only keep date, time, node, and description
+                                    entries.append([entry[i] for i in parse_idx])
                                     
         else:   # read separate kvct, pet_recon, and sysnode log files 
             with open(file) as log:
@@ -61,8 +57,9 @@ def GetEntries(filenames):
                         for word in find_keys:
                             if word in line:
                                 entry = line.split(" ", 7)
-                                entries.append([entry[i] for i in [0,1,4,7]])            
-    
+                                entries.append([entry[i] for i in [0,1,4,7]])
+                            
+
     # Create dataframe of all entries
     columns = ['Date', 'Time', 'Node', 'Description']
     
@@ -73,7 +70,6 @@ def GetEntries(filenames):
     nodes = ['KV', 'PR', 'SY']  #only keep kvct, pet_recon, sysnode and gantry entries
     entries_df = entries_df.loc[entries_df['Node'].isin(nodes)]
     entries_df.reset_index(inplace=True, drop=True)
-    
     
     # Find kvct and pet start/ restart times
     start_times = pd.DataFrame(start_entries, columns = columns[0:3])
