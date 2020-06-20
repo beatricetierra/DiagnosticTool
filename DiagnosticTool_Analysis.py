@@ -109,6 +109,7 @@ def analysis_expected(filtered_out):
         df['Count'] = 1
         df_count = df.groupby('Interlock Number').count()
         df_count = df_count[[columns[2], columns[3], columns[4]]]
+        df_count = df_count.astype(float)
         
         # Average 
         df_avg = df.groupby('Interlock Number').mean()
@@ -138,14 +139,24 @@ def analysis_expected(filtered_out):
         analysis_df = analysis_df[~analysis_df['Interlock Number'].isin(['------ NODE RESTART ------'])]
         analysis_df = analysis_df.reindex(columns= columns)
         analysis_df.sort_values(by=['Session'], inplace=True)
-        
-    # Plot analysis
-#    dummies = pd.get_dummies(analysis_df['Session'])
-#    dummies = pd.concat([dummies, analysis_df.iloc[:,1:]], axis=1)
-
     return(analysis_df)
     
-# overall analysis
+def graphing(unfilt_analysis):
+    # Total count vs interlocks
+    count = unfilt_analysis.groupby('Interlock Number').sum().iloc[:,:3]
+    count.plot(kind='bar')
+    
+    # total count vs session
+    session = unfilt_analysis.groupby('Session').sum().iloc[:,:3]
+    session.plot(kind='bar')
+    
+    # total count vs interlocks per session
+    sessions = list(set(unfilt_analysis['Session']))
+    for session in sessions:
+        df = unfilt_analysis.loc[unfilt_analysis['Session'] == session].iloc[:,:5]
+        df = df.groupby('Interlock Number').sum()
+        df.plot(kind='bar', title=session)
+        
 def analysis(filtered_df):
     # remove restart entries
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE RESTART ------']

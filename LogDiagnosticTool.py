@@ -30,22 +30,28 @@ class LogDiagnosticToolTempalte():
         self.button3 = tk.Button(self.topFrame, text='Graphs', font=25, bg='#D3D3D3', command=graphs)
         self.button3.place(rely=0.50, relwidth=0.08, relheight=0.2)
         
-        self.labelFiles = tk.Label(self.topFrame, text='Files:', font=12, anchor='w')
-        self.labelFiles.place(relx=0.09, relwidth=0.04, relheight=0.25)
+        self.labelFiles = tk.Label(self.topFrame, text='Files:', font=5, anchor='w')
+        self.labelFiles.place(relx=0.09, rely=0.02, relwidth=0.04, relheight=0.1)
 
         # File List
         self.scrollFrame = tk.Frame(self.topFrame, bd=1, relief='solid')
-        self.scrollFrame.place(relx=0.13, relwidth=0.6, relheight=0.92)
+        self.scrollFrame.place(relx=0.13, relwidth=0.5, relheight=0.92)
         
         # Info Dashboard
         self.infoFrame = tk.Frame(self.topFrame, bd=1, relief='solid')
-        self.infoFrame.place(relx=0.74, relwidth=0.25, relheight=0.87)
+        self.infoFrame.place(relx=0.64, relwidth=0.35, relheight=0.87)
     
-        self.labelInfo1 = tk.Label(self.infoFrame, text='Number of Total Interlocks:', font=10, anchor='w')
-        self.labelInfo1.place(relwidth=0.65, relheight=0.25)
+        self.labelInfo1 = tk.Label(self.infoFrame, text='System: ', font=10, anchor='w')
+        self.labelInfo1.place(rely=0.08, relwidth=0.2, relheight=0.18)
     
-        self.labelInfo2 = tk.Label(self.infoFrame, text='Number of Unexpected Interlocks:', font=10, anchor='w')
-        self.labelInfo2.place(rely=0.4, relwidth=0.78, relheight=0.25)
+        self.labelInfo2 = tk.Label(self.infoFrame, text='Log Dates:', font=10, anchor='w')
+        self.labelInfo2.place(rely=0.3, relwidth=0.2, relheight=0.18)
+        
+        self.labelInfo3 = tk.Label(self.infoFrame, text='Total KVCT Interlocks:', font=10, anchor='w')
+        self.labelInfo3.place(rely=0.52, relwidth=.34, relheight=0.18)
+        
+        self.labelInfo4 = tk.Label(self.infoFrame, text='Total PET Interlocks:', font=10, anchor='w')
+        self.labelInfo4.place(rely=0.74, relwidth=.3, relheight=0.18)
         
         # ----- Bottom Frame -----
         self.bottomFrame = tk.Frame(master)
@@ -107,7 +113,7 @@ def findEntries():
         table2 = Table(app.tab4_left, dataframe=pet_df, fontsize=5, rowheight=20)
         table2.show()
         
-        labelInfo3.config(text=len(kvct_df), font=14) 
+        labelInfo6.config(text=len(kvct_df), font=14) 
     except:
         messagebox.showerror("Error", "Cannot find entries for listed files.")
         pass
@@ -119,7 +125,7 @@ def findEntries():
         table4 = Table(app.tab3_left, dataframe=kvct_filtered_out, fontsize=5, rowheight=20) # displays expected interlock (interlocks that were filtered out)
         table4.show()
         
-        labelInfo4.config(text=len(kvct_filtered), font=14)
+        labelInfo6.config(text=len(pet_df), font=14)
     except:
         messagebox.showerror("Error", "Cannot filter interlocks.")
         pass
@@ -191,10 +197,10 @@ scrollbar_x.config(command=listbox.xview)
 scrollbar_y.config(command=listbox.yview)
 
 # Summary of tables
-labelInfo3 = tk.Label(app.infoFrame, anchor='w')
-labelInfo3.place(relx=0.66, relwidth=0.1, relheight=0.25)
+labelInfo5 = tk.Label(app.infoFrame, anchor='w')
+labelInfo5.place(relx=0.4, rely=0.52, relwidth=0.1, relheight=0.25)
 
-labelInfo4 = tk.Label(app.infoFrame, anchor='w')
-labelInfo4.place(relx=0.8, rely=0.4, relwidth=0.1, relheight=0.25)
+labelInfo6 = tk.Label(app.infoFrame, anchor='w')
+labelInfo6.place(relx=0.3, rely=0.74, relwidth=0.1, relheight=0.25)
 
 root.mainloop()
