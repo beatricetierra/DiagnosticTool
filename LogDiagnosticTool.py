@@ -151,7 +151,7 @@ def analyze():
         pass
     
 def graphs():
-    plotting_data.plot(kind='bar', figsize=(8,5))
+    DiagnosticTool.Graph(unfiltered_analysis)
     plt.show()
     
 def exportExcel():  
