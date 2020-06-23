@@ -75,18 +75,20 @@ def analysis(filtered_df):
     filtered_df['Count'] = 1
     count = pd.DataFrame(filtered_df.groupby('Interlock Number').count()['Count'])
     
-    #average, min, and max duration
+    #average, std, min, and max duration
     filtered_df['Interlock Duration(sec)'] = total_seconds(filtered_df, filtered_df['Interlock Duration'])
 
     avg_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').mean()['Interlock Duration(sec)'])
+    std_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').std()['Interlock Duration(sec)'])
     min_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').min()['Interlock Duration(sec)'])
     max_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').max()['Interlock Duration(sec)'])
     
     #combine
     analysis_df = count.merge(avg_duration, left_index=True, right_index=True)
+    analysis_df = analysis_df.merge(std_duration, left_index=True, right_index=True)
     analysis_df = analysis_df.merge(min_duration, left_index=True, right_index=True)
     analysis_df = analysis_df.merge(max_duration, left_index=True, right_index=True)
-    analysis_df.columns = ['Count', 'Avg Duration(sec)', 'Min Duration(sec)', 'Max Duration(sec)']
+    analysis_df.columns = ['Count', 'Avg Duration(sec)', 'Std Duration (sec)', 'Min Duration(sec)', 'Max Duration(sec)']
     analysis_df.reset_index(inplace=True)
 
     return(analysis_df)
@@ -122,8 +124,8 @@ def analysis_expected(filtered_out):
     # Analyze per session
     # Initialize expected dataframe
     columns = ['Session', 'Interlock Number', 'Count', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)', 
-               'Time from Node Start (AVG)', 'Time from Node Start (Min)', 'Time from Node Start (Max)',
-               'Interlock Duration (AVG)', 'Interlock Duration (Min)', 'Interlock Duration (Max)']
+               'Time from Node Start (AVG)', 'Time from Node Start (STD)', 'Time from Node Start (Min)', 'Time from Node Start (Max)',
+               'Interlock Duration (AVG)', 'Interlock Duration (STD)', 'Interlock Duration (Min)', 'Interlock Duration (Max)']
     
     sessions = list(set(session_num))
     idx = 0 
@@ -142,6 +144,11 @@ def analysis_expected(filtered_out):
         df_avg = df_avg[['Time from Node Start', 'Interlock Duration']]
         df_avg.columns = ['Time from Node Start (AVG)', 'Interlock Duration (AVG)']
         
+        # Standard Deviation
+        df_std = df.groupby('Interlock Number').std()
+        df_std = df_std[['Time from Node Start', 'Interlock Duration']]
+        df_std.columns = ['Time from Node Start (STD)', 'Interlock Duration (STD)']
+        
         # Min
         df_min = df.groupby('Interlock Number').min()
         df_min = df_min[['Time from Node Start', 'Interlock Duration']]
@@ -153,7 +160,7 @@ def analysis_expected(filtered_out):
         df_max.columns = ['Time from Node Start (Max)', 'Interlock Duration (Max)']
         
         # Combine
-        df = pd.concat([df_count, df_avg, df_min, df_max], axis = 1)
+        df = pd.concat([df_count, df_avg, df_std, df_min, df_max], axis = 1)
         
         # Construct columns
         rows = len(df)
@@ -166,7 +173,3 @@ def analysis_expected(filtered_out):
         analysis_df = analysis_df.reindex(columns= columns)
         analysis_df.sort_values(by=['Session'], inplace=True)
     return(analysis_df)
-
-        
-
-    

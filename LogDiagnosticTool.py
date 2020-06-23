@@ -157,6 +157,7 @@ def graphs():
 def exportExcel():  
     export_filepath = filedialog.askdirectory()
     
+    # Add datafames to excel sheets
     kvct_excel_writer = pd.ExcelWriter(export_filepath + '\KVCT Interlocks.xlsx', engine='xlsxwriter')
     kvct_df.to_excel(kvct_excel_writer, sheet_name='All Interlocks')
     kvct_filtered.to_excel(kvct_excel_writer, sheet_name='Unexpected Interlocks')
@@ -169,6 +170,8 @@ def exportExcel():
     pet_df.to_excel(pet_excel_writer, sheet_name='Interlocks')
     pet_analysis.to_excel(pet_excel_writer, sheet_name='Analysis')
     pet_excel_writer.save()
+    
+    # Add plots to excel sheets
     
 root = tk.Tk()
 app = LogDiagnosticToolTempalte(root)
