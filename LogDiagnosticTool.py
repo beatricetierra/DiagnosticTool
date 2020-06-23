@@ -132,15 +132,15 @@ def findEntries():
 
 def analyze():
     global filtered_analysis, unfiltered_analysis, unfilter_analysis_export, pet_analysis
-    
-    try:
+
+    try: 
         filtered_analysis, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
         
         table5 = Table(app.tab1_right, dataframe=filtered_analysis, fontsize=5, rowheight=20) #display unexpected interlock analysis
         table5.show()
         
         unfilter_analysis_export = unfiltered_analysis.set_index(['Session','Interlock Number'])
-        table6 = Table(app.tab2_right, dataframe=unfiltered_analysis, fontsize=5, rowheight=20) #display unexpected interlock analysis
+        table6 = Table(app.tab2_right, dataframe=unfiltered_analysis, fontsize=5, rowheight=20) #display expected interlock analysis
         table6.show()
         
         table7 = Table(app.tab3_right, dataframe=pet_analysis, fontsize=5, rowheight=20)
