@@ -18,7 +18,7 @@ def filtered_graphing(filtered_analysis):
     
     # Start of Node and Interlock Duration Times
     average = filtered_analysis.groupby('Interlock Number').sum()['Avg Duration(sec)']
-    std = filtered_analysis.groupby('Interlock Number').sum()['Std Duration (sec)']
+    std = filtered_analysis.groupby('Interlock Number').sum()['Std Duration(sec)']
     average.plot(kind='bar', yerr=std)
     
 def unfilt_graphing(unfilt_analysis):

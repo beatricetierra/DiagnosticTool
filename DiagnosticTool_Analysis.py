@@ -88,7 +88,7 @@ def analysis(filtered_df):
     analysis_df = analysis_df.merge(std_duration, left_index=True, right_index=True)
     analysis_df = analysis_df.merge(min_duration, left_index=True, right_index=True)
     analysis_df = analysis_df.merge(max_duration, left_index=True, right_index=True)
-    analysis_df.columns = ['Count', 'Avg Duration(sec)', 'Std Duration (sec)', 'Min Duration(sec)', 'Max Duration(sec)']
+    analysis_df.columns = ['Count', 'Avg Duration(sec)', 'Std Duration(sec)', 'Min Duration(sec)', 'Max Duration(sec)']
     analysis_df.reset_index(inplace=True)
 
     return(analysis_df)
