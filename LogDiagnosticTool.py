@@ -151,7 +151,7 @@ def analyze():
         pass
     
 def graphs():
-    DiagnosticTool.Graph(unfiltered_analysis)
+    DiagnosticTool.Graph(unfiltered_analysis, filtered_analysis)
     plt.show()
     
 def exportExcel():  
