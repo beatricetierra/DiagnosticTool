@@ -113,7 +113,8 @@ def findEntries():
         table2 = Table(app.tab4_left, dataframe=pet_df, fontsize=5, rowheight=20)
         table2.show()
         
-        labelInfo6.config(text=len(kvct_df), font=14) 
+        labelInfo7.config(text=len(kvct_df), font=14) 
+        labelInfo8.config(text=len(pet_df), font=14)
     except:
         messagebox.showerror("Error", "Cannot find entries for listed files.")
         pass
@@ -124,8 +125,6 @@ def findEntries():
         table3.show()
         table4 = Table(app.tab3_left, dataframe=kvct_filtered_out, fontsize=5, rowheight=20) # displays expected interlock (interlocks that were filtered out)
         table4.show()
-        
-        labelInfo6.config(text=len(pet_df), font=14)
     except:
         messagebox.showerror("Error", "Cannot filter interlocks.")
         pass
@@ -200,10 +199,16 @@ scrollbar_x.config(command=listbox.xview)
 scrollbar_y.config(command=listbox.yview)
 
 # Summary of tables
-labelInfo5 = tk.Label(app.infoFrame, anchor='w')
-labelInfo5.place(relx=0.4, rely=0.52, relwidth=0.1, relheight=0.25)
+labelInfo5 = tk.Label(app.infoFrame, anchor='w', text='insert A1/A2/A4/B1', font=14)
+labelInfo5.place(relx=0.2, rely=0.05, relwidth=0.5, relheight=0.25)
 
-labelInfo6 = tk.Label(app.infoFrame, anchor='w')
-labelInfo6.place(relx=0.3, rely=0.74, relwidth=0.1, relheight=0.25)
+labelInfo6 = tk.Label(app.infoFrame, anchor='w', text='MM/DD - MM/DD/YYYY', font=14)
+labelInfo6.place(relx=0.2, rely=0.28, relwidth=0.5, relheight=0.25)
+
+labelInfo7 = tk.Label(app.infoFrame, anchor='w')
+labelInfo7.place(relx=0.32, rely=0.50, relwidth=0.5, relheight=0.25)
+
+labelInfo8 = tk.Label(app.infoFrame, anchor='w')
+labelInfo8.place(relx=0.3, rely=0.70, relwidth=0.5, relheight=0.25)
 
 root.mainloop()
