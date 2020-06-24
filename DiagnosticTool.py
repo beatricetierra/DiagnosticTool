@@ -8,7 +8,7 @@ Created on Wed May 20 17:58:42 2020
 import os
 import pandas as pd
 import datetime
-import InterlockDataFrame as idf
+import InterlockDateFrame as idf
 import DiagnosticTool_Analysis as dta
 import DiagnosticTool_Graphs as dtg
 
@@ -103,15 +103,17 @@ def GetEntries(filenames):
     # Seperate entries by nodes
     kvct_log = entries_df.loc[entries_df['Node'] == 'KV']
     kvct_log.drop(columns='Node', inplace = True)
+    kvct_log.name = 'kvct_log'
     
     pet_log = entries_df.loc[entries_df['Node'] == 'PR']
     pet_log.drop(columns='Node', inplace = True)
+    pet_log.name = 'pet_log'
     
     sys_log = entries_df.loc[entries_df['Node'] == 'SY']
     sys_log.drop(columns='Node', inplace = True)
     
-    kvct_df = idf.kvct_df(kvct_log, sys_log, kvct_start_times)
-    pet_interlocks = idf.pet_df(pet_log, sys_log, pet_start_times)
+    kvct_df = idf.NodeInterlockDf(kvct_log, sys_log, kvct_start_times)
+    pet_interlocks = idf.NodeInterlockDf(pet_log, sys_log, pet_start_times)
     
     return(system_model, kvct_df, pet_interlocks)
     

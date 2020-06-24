@@ -26,7 +26,7 @@ def NodeInterlockDf(node_log, sys_log, node_start_times):
     node_state = pd.DataFrame(columns=columns)
     received_command = pd.DataFrame(columns=columns) 
     
-    if node_log == 'kvct_log':
+    if node_log.name == 'kvct_log':
         global kvct_HV_status 
         
         kvct_HV_status = pd.DataFrame(columns=columns)
@@ -40,7 +40,7 @@ def NodeInterlockDf(node_log, sys_log, node_start_times):
                 node_state = node_state.append(node_log.iloc[idx], ignore_index=True)
             if find_keys[3] in entry:
                 received_command = received_command.append(node_log.iloc[idx], ignore_index=True)
-    if node_log == 'pet_log':
+    if node_log.name == 'pet_log':
         for idx, entry in enumerate(node_log['Description']):
             if find_keys[1] in entry:
                 machine_state = machine_state.append(node_log.iloc[idx], ignore_index=True)
