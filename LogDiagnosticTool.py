@@ -107,12 +107,23 @@ def findEntries():
 
     # Find all interlocks
     try:
-        kvct_df, pet_df = DiagnosticTool.GetEntries(files)
+        system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
         table1 = Table(app.tab1_left, dataframe=kvct_df, fontsize=5, rowheight=20) #displays all interlocks
         table1.show()
         table2 = Table(app.tab4_left, dataframe=pet_df, fontsize=5, rowheight=20)
         table2.show()
         
+        # Show which system files came from
+        if system == 'SN-unknown':
+            system = 'B1'
+        labelInfo5.config(text=system, font=14)
+        
+        # Show dates analyzed
+        start_date = kvct_df['Date'][0]
+        end_date = kvct_df['Date'][len(kvct_df)-1]
+        labelInfo6.config(text= str(start_date)+' - '+str(end_date), font=14)
+        
+        # Show number of interlocks for kvct and pet_recon nodes
         labelInfo7.config(text=len(kvct_df), font=14) 
         labelInfo8.config(text=len(pet_df), font=14)
     except:
@@ -199,14 +210,14 @@ scrollbar_x.config(command=listbox.xview)
 scrollbar_y.config(command=listbox.yview)
 
 # Summary of tables
-labelInfo5 = tk.Label(app.infoFrame, anchor='w', text='insert A1/A2/A4/B1', font=14)
-labelInfo5.place(relx=0.2, rely=0.05, relwidth=0.5, relheight=0.25)
+labelInfo5 = tk.Label(app.infoFrame, anchor='w')
+labelInfo5.place(relx=0.15, rely=0.05, relwidth=0.5, relheight=0.25)
 
-labelInfo6 = tk.Label(app.infoFrame, anchor='w', text='MM/DD - MM/DD/YYYY', font=14)
-labelInfo6.place(relx=0.2, rely=0.28, relwidth=0.5, relheight=0.25)
+labelInfo6 = tk.Label(app.infoFrame, anchor='w')
+labelInfo6.place(relx=0.15, rely=0.28, relwidth=0.5, relheight=0.25)
 
 labelInfo7 = tk.Label(app.infoFrame, anchor='w')
-labelInfo7.place(relx=0.32, rely=0.50, relwidth=0.5, relheight=0.25)
+labelInfo7.place(relx=0.34, rely=0.50, relwidth=0.5, relheight=0.25)
 
 labelInfo8 = tk.Label(app.infoFrame, anchor='w')
 labelInfo8.place(relx=0.3, rely=0.70, relwidth=0.5, relheight=0.25)

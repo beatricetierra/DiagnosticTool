@@ -102,6 +102,7 @@ def kvct_df(kvct_log, sys_log, kvct_start_times):
             'Last command received (before active)', 'Last command received (before inactive)', 'Last user input', 'Sysnode State',
             'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
     
+    kvct_df.sort_values('Date', ascending=True, inplace=True)
     kvct_df['Date'] = kvct_df['Date'].dt.date
     kvct_df = kvct_df.reindex(columns= columns)
     
@@ -200,6 +201,7 @@ def pet_df(pet_log, sys_log, pet_start_times):
             'Last command received (before active)', 'Last command received (before inactive)', 'Last user input', 'Sysnode State',
             'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
     
+    pet_df.sort_values('Date', ascending=True, inplace=True)
     pet_df['Date'] = pet_df['Date'].dt.date
     pet_df = pet_df.reindex(columns= columns)
     

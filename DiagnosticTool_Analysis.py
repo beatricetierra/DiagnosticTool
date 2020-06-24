@@ -46,8 +46,10 @@ def filter_expected(interlocks_df, column, time_threshold):
                 interlock_type.append('Startup Interlock')
         except:
             pass
-    
+        
     filtered_out['Type'] = interlock_type
+    filtered_out.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True)
+    filtered_out.reset_index(drop=True, inplace=True)
 
     filtered_df = interlocks_df.drop(indices)        
     filtered_df.reset_index(drop=True, inplace=True)
