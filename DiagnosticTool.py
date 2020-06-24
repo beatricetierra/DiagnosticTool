@@ -20,13 +20,22 @@ def GetFiles(folderpath):
     return(filenames)
 
 def GetEntries(filenames):
+    # Keep only necessary files
+    files = []
+    acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
+    for word in acceptable_files:
+        for file in filenames:
+            if word in file:
+                files.append(file)
+    
+    # Find entries of interest
     find_keys = ['is active', 'is inactive', 'Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock', 'Received command']
     
     entries = [] 
     start_entries = []
     system = []
     
-    for file in filenames:
+    for file in files:
         if '-log-' in file: # read compiled log file from gateway
             with open(file, encoding="cp437") as log:
                 first_line = log.readline()     #read first line and find system (A1,A2,A4, or B1)
@@ -134,4 +143,3 @@ def Graph(kvct_unfiltered_analysis, kvct_filtered):
     dtg.filtered_graphing(kvct_filtered)
     dtg.unfilt_graphing(kvct_unfiltered_analysis)
     return()
-
