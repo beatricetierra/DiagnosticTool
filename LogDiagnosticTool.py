@@ -42,16 +42,19 @@ class LogDiagnosticToolTempalte():
         self.infoFrame.place(relx=0.64, relwidth=0.35, relheight=0.87)
     
         self.labelInfo1 = tk.Label(self.infoFrame, text='System: ', font=10, anchor='w')
-        self.labelInfo1.place(rely=0.08, relwidth=0.2, relheight=0.18)
+        self.labelInfo1.place(rely=0.02, relwidth=0.2, relheight=0.15)
     
         self.labelInfo2 = tk.Label(self.infoFrame, text='Log Dates:', font=10, anchor='w')
-        self.labelInfo2.place(rely=0.3, relwidth=0.2, relheight=0.18)
+        self.labelInfo2.place(rely=0.22, relwidth=0.35, relheight=0.15)
         
-        self.labelInfo3 = tk.Label(self.infoFrame, text='Total KVCT Interlocks:', font=10, anchor='w')
-        self.labelInfo3.place(rely=0.52, relwidth=.34, relheight=0.18)
+        self.labelInfo3 = tk.Label(self.infoFrame, text='Total Sessions:', font=10, anchor='w')
+        self.labelInfo3.place(rely=0.42, relwidth=0.35, relheight=0.15)
         
-        self.labelInfo4 = tk.Label(self.infoFrame, text='Total PET Interlocks:', font=10, anchor='w')
-        self.labelInfo4.place(rely=0.74, relwidth=.3, relheight=0.18)
+        self.labelInfo4 = tk.Label(self.infoFrame, text='Total KVCT Interlocks:', font=10, anchor='w')
+        self.labelInfo4.place(rely=0.62, relwidth=.35, relheight=0.15)
+        
+        self.labelInfo5 = tk.Label(self.infoFrame, text='Total PET Interlocks:', font=10, anchor='w')
+        self.labelInfo5.place(rely=0.82, relwidth=.35, relheight=0.15)
         
         # ----- Bottom Frame -----
         self.bottomFrame = tk.Frame(master)
@@ -116,16 +119,16 @@ def findEntries():
         # Show which system files came from
         if system == 'SN-unknown':
             system = 'B1'
-        labelInfo5.config(text=system, font=14)
+        labelInfo6.config(text=system, font=12)
         
         # Show dates analyzed
         start_date = kvct_df['Date'][0]
         end_date = kvct_df['Date'][len(kvct_df)-1]
-        labelInfo6.config(text= str(start_date)+' - '+str(end_date), font=14)
+        labelInfo7.config(text= str(start_date)+' - '+str(end_date), font=12)
         
         # Show number of interlocks for kvct and pet_recon nodes
-        labelInfo7.config(text=len(kvct_df), font=14) 
-        labelInfo8.config(text=len(pet_df), font=14)
+        labelInfo9.config(text=len(kvct_df), font=12) 
+        labelInfo10.config(text=len(pet_df), font=12)
     except:
         messagebox.showerror("Error", "Cannot find entries for listed files.")
         pass
@@ -144,7 +147,7 @@ def analyze():
     global filtered_analysis, unfiltered_analysis, unfilter_analysis_export, pet_analysis
 
     try: 
-        filtered_analysis, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
+        filtered_analysis, sessions, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
         
         table5 = Table(app.tab1_right, dataframe=filtered_analysis, fontsize=5, rowheight=20) #display unexpected interlock analysis
         table5.show()
@@ -155,6 +158,8 @@ def analyze():
         
         table7 = Table(app.tab3_right, dataframe=pet_analysis, fontsize=5, rowheight=20)
         table7.show()
+        
+        labelInfo8.config(text=str(sessions), font=12)
 
     except:
         messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
@@ -210,16 +215,19 @@ scrollbar_x.config(command=listbox.xview)
 scrollbar_y.config(command=listbox.yview)
 
 # Summary of tables
-labelInfo5 = tk.Label(app.infoFrame, anchor='w')
-labelInfo5.place(relx=0.15, rely=0.05, relwidth=0.5, relheight=0.25)
-
 labelInfo6 = tk.Label(app.infoFrame, anchor='w')
-labelInfo6.place(relx=0.15, rely=0.28, relwidth=0.5, relheight=0.25)
+labelInfo6.place(relx=0.15, relwidth=0.5, relheight=0.2)
 
 labelInfo7 = tk.Label(app.infoFrame, anchor='w')
-labelInfo7.place(relx=0.34, rely=0.50, relwidth=0.5, relheight=0.25)
+labelInfo7.place(relx=0.2, rely=0.20, relwidth=0.5, relheight=0.2)
 
 labelInfo8 = tk.Label(app.infoFrame, anchor='w')
-labelInfo8.place(relx=0.3, rely=0.70, relwidth=0.5, relheight=0.25)
+labelInfo8.place(relx=0.25, rely=0.40, relwidth=0.5, relheight=0.2)
+
+labelInfo9 = tk.Label(app.infoFrame, anchor='w')
+labelInfo9.place(relx=0.35, rely=0.60, relwidth=0.5, relheight=0.2)
+
+labelInfo10 = tk.Label(app.infoFrame, anchor='w')
+labelInfo10.place(relx=0.35, rely=0.80, relwidth=0.5, relheight=0.2)
 
 root.mainloop()

@@ -130,6 +130,7 @@ def analysis_expected(filtered_out):
                'Interlock Duration (AVG)', 'Interlock Duration (STD)', 'Interlock Duration (Min)', 'Interlock Duration (Max)']
     
     sessions = list(set(session_num))
+    tot_sessions = len(sessions)
     idx = 0 
     analysis_df = pd.DataFrame(columns=columns)
 
@@ -174,4 +175,4 @@ def analysis_expected(filtered_out):
         analysis_df = analysis_df[~analysis_df['Interlock Number'].isin(['------ NODE RESTART ------'])]
         analysis_df = analysis_df.reindex(columns= columns)
         analysis_df.sort_values(by=['Session'], inplace=True)
-    return(analysis_df)
+    return(tot_sessions, analysis_df)
