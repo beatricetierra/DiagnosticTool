@@ -110,19 +110,23 @@ def GetEntries(filenames):
             pet_start_times.append(time)
     
     # Seperate entries by nodes
+    sys_log = entries_df.loc[entries_df['Node'] == 'SY']
+    sys_log.drop(columns='Node', inplace = True)
+    
     kvct_log = entries_df.loc[entries_df['Node'] == 'KV']
     kvct_log.drop(columns='Node', inplace = True)
     kvct_log.name = 'kvct_log'
     
-    pet_log = entries_df.loc[entries_df['Node'] == 'PR']
-    pet_log.drop(columns='Node', inplace = True)
-    pet_log.name = 'pet_log'
-    
-    sys_log = entries_df.loc[entries_df['Node'] == 'SY']
-    sys_log.drop(columns='Node', inplace = True)
-    
     kvct_df = idf.NodeInterlockDf(kvct_log, sys_log, kvct_start_times)
-    pet_interlocks = idf.NodeInterlockDf(pet_log, sys_log, pet_start_times)
+    
+    try:
+        pet_log = entries_df.loc[entries_df['Node'] == 'PR']
+        pet_log.drop(columns='Node', inplace = True)
+        pet_log.name = 'pet_log'
+        
+        pet_interlocks = idf.NodeInterlockDf(pet_log, sys_log, pet_start_times)
+    except:
+        pet_interlocks = pd.DataFrame()
     
     return(system_model, kvct_df, pet_interlocks)
     
