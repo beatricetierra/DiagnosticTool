@@ -98,8 +98,7 @@ def analysis(filtered_df):
 # Analyzes expected interlocks (startup/shutdown interlocks, ViewAvgTooHigh, TriggerInvalid)
 def analysis_expected(filtered_out):
     # Extract columns needed for analysis 
-    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'Sysnode Relevant Interlock (before)',
-               'Sysnode Relevant Interlock (during)']
+    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration']
     filtered_out = filtered_out.reindex(columns= columns)
     
     # Find indices which 
@@ -114,65 +113,26 @@ def analysis_expected(filtered_out):
         except:
             end = len(filtered_out)
         for idx in range(restart_idx, end):
-            session_num[idx] = 'Session: ' + str(session+1)
-                  
+            session_num[idx] = session+1
+    
+    total_sessions = session+1
     filtered_out.insert(0, 'Session', session_num) 
     filtered_out.replace('', np.nan, inplace=True)
     
     # Convert time durations to total seconds
     filtered_out['Time from Node Start'] = total_seconds(filtered_out, filtered_out['Time from Node Start'])
     filtered_out['Interlock Duration'] = total_seconds(filtered_out, filtered_out['Interlock Duration'])
+    filtered_out = filtered_out[~filtered_out['Interlock Number'].str.contains('RESTART')]
     
     # Analyze per session
-    # Initialize expected dataframe
-    columns = ['Session', 'Interlock Number', 'Count', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)', 
-               'Time from Node Start (AVG)', 'Time from Node Start (STD)', 'Time from Node Start (Min)', 'Time from Node Start (Max)',
-               'Interlock Duration (AVG)', 'Interlock Duration (STD)', 'Interlock Duration (Min)', 'Interlock Duration (Max)']
-    
-    sessions = list(set(session_num))
-    tot_sessions = len(sessions)
-    idx = 0 
-    analysis_df = pd.DataFrame(columns=columns)
+    # Count
+    df_count = pd.DataFrame({'Session': filtered_out['Session'], 'Interlock Number': filtered_out['Interlock Number']})
 
-    for session in sessions:
-        df = filtered_out.loc[filtered_out['Session'] == session]
-        # Count 
-        df['Count'] = 1
-        df_count = df.groupby('Interlock Number').count()
-        df_count = df_count[[columns[2], columns[3], columns[4]]]
-        df_count = df_count.astype(float)
-        
-        # Average 
-        df_avg = df.groupby('Interlock Number').mean()
-        df_avg = df_avg[['Time from Node Start', 'Interlock Duration']]
-        df_avg.columns = ['Time from Node Start (AVG)', 'Interlock Duration (AVG)']
-        
-        # Standard Deviation
-        df_std = df.groupby('Interlock Number').std()
-        df_std = df_std[['Time from Node Start', 'Interlock Duration']]
-        df_std.columns = ['Time from Node Start (STD)', 'Interlock Duration (STD)']
-        
-        # Min
-        df_min = df.groupby('Interlock Number').min()
-        df_min = df_min[['Time from Node Start', 'Interlock Duration']]
-        df_min.columns = ['Time from Node Start (Min)', 'Interlock Duration (Min)']
-        
-        # Max
-        df_max = df.groupby('Interlock Number').max()
-        df_max = df_max[['Time from Node Start', 'Interlock Duration']]
-        df_max.columns = ['Time from Node Start (Max)', 'Interlock Duration (Max)']
-        
-        # Combine
-        df = pd.concat([df_count, df_avg, df_std, df_min, df_max], axis = 1)
-        
-        # Construct columns
-        rows = len(df)
-        df['Session'] = rows*[session]
-        df['Interlock Number'] = df.index.tolist()
-        
-        # Append to analysis_df
-        analysis_df = analysis_df.append(df, ignore_index=True)
-        analysis_df = analysis_df[~analysis_df['Interlock Number'].isin(['------ NODE RESTART ------'])]
-        analysis_df = analysis_df.reindex(columns= columns)
-        analysis_df.sort_values(by=['Session'], inplace=True)
-    return(tot_sessions, analysis_df)
+    # Create dummies table
+    dummies = pd.get_dummies(df_count['Session'])
+    df = pd.concat([df_count['Interlock Number'], dummies], axis=1)
+    df = df.groupby('Interlock Number').sum()
+    df.reset_index(inplace=True)
+    df.insert(1, 'Total in ' + str(total_sessions) + ' Sessions', df.sum(axis=1))
+
+    return(total_sessions, df)
