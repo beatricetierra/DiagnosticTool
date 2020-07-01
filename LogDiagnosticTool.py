@@ -106,7 +106,7 @@ def addFiles():
 
     
 def findEntries():
-    global kvct_df, pet_df, kvct_filtered, kvct_filtered_out 
+    global kvct_df, pet_df, kvct_filtered, kvct_filtered_out, system, dates
 
     # Find all interlocks
     try:
@@ -124,7 +124,8 @@ def findEntries():
         # Show dates analyzed
         start_date = kvct_df['Date'][0]
         end_date = kvct_df['Date'][len(kvct_df)-1]
-        labelInfo7.config(text= str(start_date)+' - '+str(end_date), font=12)
+        dates = str(start_date)+' - '+str(end_date)
+        labelInfo7.config(text=dates, font=12)
         
         # Show number of interlocks for kvct and pet_recon nodes
         labelInfo9.config(text=len(kvct_df), font=12) 
@@ -144,7 +145,7 @@ def findEntries():
         pass
 
 def analyze():
-    global filtered_analysis, unfiltered_analysis, unfilter_analysis_export, pet_analysis
+    global filtered_analysis, unfiltered_analysis, unfilter_analysis_export, pet_analysis, sessions
 
     try: 
         filtered_analysis, sessions, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
@@ -152,7 +153,6 @@ def analyze():
         table5 = Table(app.tab1_right, dataframe=filtered_analysis, fontsize=5, rowheight=20) #display unexpected interlock analysis
         table5.show()
         
-        unfilter_analysis_export = unfiltered_analysis.set_index(['Session','Interlock Number'])
         table6 = Table(app.tab2_right, dataframe=unfiltered_analysis, fontsize=5, rowheight=20) #display expected interlock analysis
         table6.show()
         
@@ -172,21 +172,26 @@ def graphs():
 def exportExcel():  
     export_filepath = filedialog.askdirectory()
     
-    # Add datafames to excel sheets
-    kvct_excel_writer = pd.ExcelWriter(export_filepath + '\KVCT Interlocks.xlsx', engine='xlsxwriter')
-    kvct_df.to_excel(kvct_excel_writer, sheet_name='All Interlocks')
-    kvct_filtered.to_excel(kvct_excel_writer, sheet_name='Unexpected Interlocks')
-    kvct_filtered_out.to_excel(kvct_excel_writer, sheet_name='Expected Interlocks')
-    filtered_analysis.to_excel(kvct_excel_writer, sheet_name='Unexpected Interlock Analysis')
-    unfilter_analysis_export.to_excel(kvct_excel_writer, sheet_name='Expected Interlock Analysis')
-    kvct_excel_writer.save()
+    # Summary Table
+    info = ['System', 'Dates', 'Total Sessions', 'KVCT Total Interlocks', 'KVCT Unexpected Interlocks', 'KVCT Expected Interlocks', 'PET Interlocks']
+    values = [system, dates, sessions, len(kvct_df), len(kvct_filtered), len(kvct_filtered_out), len(pet_df)]
+    summary_df = pd.DataFrame([info, values]).transpose()
     
-    pet_excel_writer = pd.ExcelWriter(export_filepath + '\PET Interlocks.xlsx', engine='xlsxwriter')
-    pet_df.to_excel(pet_excel_writer, sheet_name='Interlocks')
-    pet_analysis.to_excel(pet_excel_writer, sheet_name='Analysis')
-    pet_excel_writer.save()
+    # Interlocks Excel File
+    interlocks_writer = pd.ExcelWriter(export_filepath + '\InterlocksList.xlsx', engine='xlsxwriter')
+    kvct_df.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (All)')
+    kvct_filtered.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Unexpect)')
+    kvct_filtered_out.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Expected)')
+    pet_df.to_excel(interlocks_writer, sheet_name='PET Interlocks')
+    interlocks_writer.save()
     
-    # Add plots to excel sheets
+    # Analysis Excel File
+    analysis_writer = pd.ExcelWriter(export_filepath + '\InterlocksAnalysis.xlsx', engine='xlsxwriter')
+    summary_df.to_excel(analysis_writer, sheet_name='Summary')
+    filtered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Unexpect)')
+    unfiltered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Expect)')
+    pet_analysis.to_excel(analysis_writer, sheet_name='PET Analysis')
+    analysis_writer.save()
     
 root = tk.Tk()
 app = LogDiagnosticToolTempalte(root)
