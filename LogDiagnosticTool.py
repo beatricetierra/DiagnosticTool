@@ -101,9 +101,11 @@ def addFiles():
     global files
     
     root.update()
-    files = filedialog.askopenfilenames(parent=app.topFrame,title='Choose files', defaultextension='.log')
+    folderpath = filedialog.askdirectory()
+    files = DiagnosticTool.GetFiles(folderpath)
+    
+    #files = filedialog.askopenfilenames(parent=app.topFrame,title='Choose files', defaultextension='.log')
     [listbox.insert(tk.END, item) for item in files]
-
     
 def findEntries():
     global kvct_df, pet_df, kvct_filtered, kvct_filtered_out, system, dates

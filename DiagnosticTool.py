@@ -13,21 +13,17 @@ import DiagnosticTool_Analysis as dta
 import DiagnosticTool_Graphs as dtg
 
 def GetFiles(folderpath):
-    filenames = []    
+    acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
+    filenames = []  
+
     for root, dirs, files in os.walk(folderpath):
-        for file in files:
-            filenames.append(os.path.join(root, file))
+        for word in acceptable_files:
+            for file in files:
+                if word in file:   
+                    filenames.append(os.path.join(root, file))
     return(filenames)
 
-def GetEntries(filenames):
-    # Keep only necessary files
-    files = []
-    acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
-    for word in acceptable_files:
-        for file in filenames:
-            if word in file:
-                files.append(file)
-    
+def GetEntries(filenames):    
     # Find entries of interest
     find_keys = ['is active', 'is inactive', 'Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock', 'Received command']
     
@@ -35,7 +31,7 @@ def GetEntries(filenames):
     start_entries = []
     system = []
     
-    for file in files:
+    for file in filenames:
         if '-log-' in file: # read compiled log file from gateway
             with open(file, encoding="cp437") as log:
                 first_line = log.readline()     #read first line and find system (A1,A2,A4, or B1)
