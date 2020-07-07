@@ -40,7 +40,7 @@ def GetEntries(filenames):
                 files.append(file)
     
     # extract entries of interest based on system
-    for file in filenames:
+    for file in files:
         if '-log-' in file: # read compiled log file from gateway
             with open(file, encoding="cp437") as log:
                 first_line = log.readline()     #read first line and find system (A1,A2,A4, or B1)
