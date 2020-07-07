@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Mon Jul  6 15:24:57 2020
+
+@author: btierra
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Fri May  8 10:43:42 2020
 
 @author: btierra
@@ -96,20 +103,20 @@ class LogDiagnosticToolTempalte():
         self.tabControl2.add(self.tab3_right, text = 'PET Analysis')
         
         self.tabControl2.pack(expan=1, fill='both')
-
-def addFiles():
-    global files
     
-    root.update()
-    folderpath = filedialog.askdirectory()
-    files = DiagnosticTool.GetFiles(folderpath)
-    
-    #files = filedialog.askopenfilenames(parent=app.topFrame,title='Choose files', defaultextension='.log')
-    [listbox.insert(tk.END, item) for item in files]
+def clicked():
+    content = filedialog.askopenfilenames(title='Choose files', defaultextension='.log')
+    [listbox.insert(tk.END, item) for item in content]
+ 
+def delete():
+	listbox.delete(0, tk.END)
+ 
+def delete_selected():
+	listbox.delete(tk.ANCHOR)
     
 def findEntries():
-    global kvct_df, pet_df, kvct_filtered, kvct_filtered_out, system, dates
-
+    global files, kvct_df, pet_df, kvct_filtered, kvct_filtered_out, system, dates
+    files = list(listbox.get(0,tk.END))
     # Find all interlocks
     try:
         system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
@@ -204,7 +211,6 @@ menubar = tk.Menu(app.topFrame)
 
 file = tk.Menu(menubar, tearoff=0)
 menubar.add_cascade(label='File', menu = file)
-file.add_command(label='Choose Files', command=addFiles)
 file.add_command(label='Save Results', command = exportExcel)
 
 root.config(menu=menubar)
@@ -215,6 +221,15 @@ scrollbar_x.pack(side='bottom', fill='x')
 
 scrollbar_y = tk.Scrollbar(app.scrollFrame)
 scrollbar_y.pack(side='right', fill='y')
+
+button_add = tk.Button(app.topFrame, text='Add Files', command=clicked)
+button_add.place(relx=0.09, rely=0.15, relwidth=0.04, relheight=0.1)
+
+button_delete = tk.Button(app.topFrame, text='Delete All', command=delete)
+button_delete.place(relx=0.09, rely=0.3, relwidth=0.04, relheight=0.1)
+
+button_delete_select = tk.Button(app.topFrame, text='Delete Selected', command=delete_selected)
+button_delete_select.place(relx=0.09, rely=0.45, relwidth=0.04, relheight=0.1)
 
 listbox= tk.Listbox(app.scrollFrame, height = 500, width = 350, xscrollcommand=scrollbar_x.set, yscrollcommand=scrollbar_y.set)
 listbox.pack(expand=0, fill='both')
