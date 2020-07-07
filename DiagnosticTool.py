@@ -25,12 +25,21 @@ def GetFiles(folderpath):
 
 def GetEntries(filenames):    
     # Find entries of interest
+    acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
     find_keys = ['is active', 'is inactive', 'Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock', 'Received command']
     
+    files = []
     entries = [] 
     start_entries = []
     system = []
     
+    # filter out log files
+    for word in acceptable_files:
+        for file in filenames:
+            if word in file:
+                files.append(file)
+    
+    # extract entries of interest based on system
     for file in filenames:
         if '-log-' in file: # read compiled log file from gateway
             with open(file, encoding="cp437") as log:
