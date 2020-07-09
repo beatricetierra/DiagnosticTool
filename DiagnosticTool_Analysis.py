@@ -8,53 +8,67 @@ import numpy as np
 import pandas as pd
 import datetime
 
-def filter_expected(interlocks_df, column, time_threshold):
-    indices = []
+def filter_expected(interlocks_df):
+    
+    # find entries to be filtered out and insert into new dataframe
     filtered_out = pd.DataFrame(columns=interlocks_df.columns)
     interlock_type = []
-
-    # filter expected interlocks
-    for idx in range(0, len(interlocks_df)):
-        # Add restart nodes entries
-        if '------ NODE RESTART ------' in interlocks_df['Interlock Number'][idx]:
-            filtered_out = filtered_out.append(interlocks_df.iloc[idx], ignore_index=True)
-            interlock_type.append('')
-        # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
-        if 'ViewAvgTooHigh' in interlocks_df['Interlock Number'][idx] and '' in interlocks_df['Sysnode Relevant Interlock (before)'][idx]:
-            indices.append(idx)
-            filtered_out = filtered_out.append(interlocks_df.iloc[idx], ignore_index=True)
-            interlock_type.append('ViewAvgTooHigh Interlock')
-        # Filter Interlock 161216:(DMS.Status.RCB.ExternalTriggerInvalid)  when in MV_READY state
-        if 'ExternalTriggerInvalid' in interlocks_df['Interlock Number'][idx] and '' in interlocks_df['Sysnode Relevant Interlock (before)'][idx]: 
-            indices.append(idx)
-            filtered_out = filtered_out.append(interlocks_df.iloc[idx], ignore_index=True)
-            interlock_type.append('ExternalTriggerInvalid Interlock')
-        # Filter all interlocks right after shutdown 
-        if interlocks_df['Sysnode State'][idx] == 'NODE_STATE_SHUTDOWN':
-            indices.append(idx)
-            filtered_out = filtered_out.append(interlocks_df.iloc[idx], ignore_index=True)
-            interlock_type.append('Shutdown Interlock')
-
-    # filter startup interlocks
-    for idx, start_delt in enumerate(column):
-        threshold = datetime.datetime.strptime(time_threshold, '%H:%M:%S.%f')
-        try:
-            start_delt_time = datetime.datetime.strptime(start_delt, '%H:%M:%S.%f')
-            if start_delt_time < threshold:
-                indices.append(idx)
-                filtered_out = filtered_out.append(interlocks_df.iloc[idx], ignore_index=True)
+    
+    # convert date and time to datetime column for time difference operations
+    datetimes = []
+    for date, time in zip(interlocks_df['Date'], interlocks_df['Active Time']):
+        datetimes.append(datetime.datetime.combine(date, time))
+    
+    # save restart entries
+    df = interlocks_df.copy()
+    df.insert(0, 'Datetime', datetimes)
+    restart_times = df.loc[df['Interlock Number'] == '------ NODE RESTART ------']['Datetime']
+    restart_times_idx = restart_times.index.values
+    df.drop(restart_times_idx, inplace=True)
+    
+    # filter all startup (5 min after node start) and shutdown (1 min before node start) interlocks 
+    for restart in restart_times:
+        lowerlimit = restart - datetime.timedelta(minutes=1)
+        upperlimit = restart + datetime.timedelta(minutes=5)
+        for idx, time in enumerate(df['Datetime']):
+            if restart < time < upperlimit:
+                filtered_out = filtered_out.append(df.iloc[idx])
                 interlock_type.append('Startup Interlock')
-        except:
-            pass
-        
+            if lowerlimit < time < restart:
+                filtered_out = filtered_out.append(df.iloc[idx])
+                interlock_type.append('Shutdown Interlock')
+                
+    # filter expected interlocks
+    filtered = df.drop(filtered_out.index.values)
+    
+    for idx, (interlock, sys_before, sys_during) in enumerate(zip(filtered['Interlock Number'], filtered['Sysnode Relevant Interlock (before)'], filtered['Sysnode Relevant Interlock (during)'])):
+        # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
+        if 'ViewAvgTooHigh' in interlock and '' in sys_before and '' in sys_during:
+            filtered_out = filtered_out.append(filtered.iloc[idx])
+            interlock_type.append('ViewAvgTooHigh')
+        # Filter Interlock 161216:(DMS.Status.RCB.ExternalTriggerInvalid)  when in MV_READY state
+        if 'ExternalTriggerInvalid' in interlock and '' in sys_before and '' in sys_during: 
+            filtered_out = filtered_out.append(filtered.iloc[idx])
+            interlock_type.append('ExternalTriggerInvalid')
+            
+    # finalize filtered and filtered out dataframes
     filtered_out['Type'] = interlock_type
+    filtered = df.drop(filtered_out.index.values)
+    
+    # insert restart times and sort by date and active time
+    restart_entries = interlocks_df.iloc[restart_times_idx] 
+    filtered_out = pd.concat([filtered_out, restart_entries], axis=0, sort=False)
+    filtered = pd.concat([filtered, restart_entries], axis=0, sort=False)
+    
     filtered_out.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True)
     filtered_out.reset_index(drop=True, inplace=True)
-
-    filtered_df = interlocks_df.drop(indices)        
-    filtered_df.reset_index(drop=True, inplace=True)
-                             
-    return(filtered_df, filtered_out)
+    filtered.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True) 
+    filtered.reset_index(drop=True, inplace=True)
+    
+    filtered_out.drop('Datetime', axis=1, inplace=True)
+    filtered.drop('Datetime', axis=1, inplace=True)
+    
+    return(filtered, filtered_out)
 
 # Converts strings -> timedelta -> total seconds(int)
 def total_seconds(filtered_out, column):

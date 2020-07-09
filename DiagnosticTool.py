@@ -36,7 +36,7 @@ def GetEntries(filenames):
     # filter out log files
     for word in acceptable_files:
         for file in filenames:
-            if word in file:
+            if word in file and '000' in file:
                 files.append(file)
     
     # extract entries of interest based on system
@@ -137,7 +137,7 @@ def GetEntries(filenames):
     
 def FilterEntries(kvct_interlocks):    
     # Remove Expected, Startup, and Shutdown Interlocks
-    kvct_filtered, kvct_filtered_out = dta.filter_expected(kvct_interlocks, kvct_interlocks['Time from Node Start'], '0:5:0.0')
+    kvct_filtered, kvct_filtered_out = dta.filter_expected(kvct_interlocks)
     
     return(kvct_filtered, kvct_filtered_out)
     

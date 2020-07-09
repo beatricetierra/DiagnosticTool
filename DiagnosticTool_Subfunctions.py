@@ -186,19 +186,3 @@ def sys_interlocks_during(interlock_df, entries_df):
                 except:
                     pass
     return(interlock_df)
-
-def filter_time_columns(interlocks_df, column, time_threshold):
-    indices = []
-    
-    for idx, time in enumerate(column):
-        threshold = datetime.datetime.strptime(time_threshold, '%H:%M:%S.%f')
-        try:
-            time = datetime.datetime.strptime(time, '%H:%M:%S.%f')
-            if time < threshold:
-                indices.append(idx)
-        except:
-            pass
-    
-    filtered_df = interlocks_df.drop(indices)
-    filtered_df.reset_index(drop=True, inplace=True)
-    return(filtered_df)
