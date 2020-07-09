@@ -13,7 +13,6 @@ Created on Fri May  8 10:43:42 2020
 """
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
-import matplotlib.pyplot as plt
 import pandas as pd
 from pandastable import Table
 import DiagnosticTool
