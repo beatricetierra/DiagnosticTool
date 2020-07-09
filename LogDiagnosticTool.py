@@ -34,9 +34,6 @@ class LogDiagnosticToolTempalte():
         self.button2 = tk.Button(self.topFrame, text='Analyze', font=25, bg='#D3D3D3', command=analyze)
         self.button2.place(rely=0.25, relwidth=0.08, relheight=0.2)
         
-        self.button3 = tk.Button(self.topFrame, text='Graphs', font=25, bg='#D3D3D3', command=graphs)
-        self.button3.place(rely=0.50, relwidth=0.08, relheight=0.2)
-        
         self.labelFiles = tk.Label(self.topFrame, text='Files:', font=5, anchor='w')
         self.labelFiles.place(relx=0.09, rely=0.02, relwidth=0.04, relheight=0.1)
 
@@ -173,10 +170,6 @@ def analyze():
     except:
         messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
         pass
-    
-def graphs():
-    DiagnosticTool.Graph(unfiltered_analysis, filtered_analysis)
-    plt.show()
     
 def exportExcel():  
     export_filepath = filedialog.askdirectory()

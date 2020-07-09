@@ -150,8 +150,3 @@ def Analysis(kvct_filtered, kvct_filtered_out, pet_interlocks):
     except:
         pet_analysis = pd.DataFrame()
     return(kvct_analysis, sessions, kvct_unfiltered_analysis, pet_analysis)
-    
-def Graph(kvct_unfiltered_analysis, kvct_filtered):
-    dtg.filtered_graphing(kvct_filtered)
-    dtg.unfilt_graphing(kvct_unfiltered_analysis)
-    return()
