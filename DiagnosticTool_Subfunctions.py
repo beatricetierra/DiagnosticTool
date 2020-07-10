@@ -61,18 +61,18 @@ def find_interlocks(node_interlocks):
                 instances.append(inactive_df['Inactive Time'][j])
         try: 
             nearest_time = nearest(instances, active_time)
-            interlocks_df['Inactive Time'][i] = instances[nearest_time]
+            interlocks_df.loc[i,'Inactive Time'] = instances[nearest_time]
         except:
-            interlocks_df['Inactive Time'][i] = "Still Active"
+            interlocks_df.loc[i,'Inactive Time'] = "Still Active"
     
     #format date and time columns
     interlocks_df.insert(0, 'Date', ""*len(interlocks_df))
     
     for idx, (active, inactive) in enumerate(zip(interlocks_df['Active Time'], interlocks_df['Inactive Time'])):
-        interlocks_df['Date'][idx] = active.to_pydatetime().date()
+        interlocks_df.loc[idx,'Date'] = active.to_pydatetime().date()
         try:
-            interlocks_df['Active Time'][idx] = active.to_pydatetime().time()
-            interlocks_df['Inactive Time'][idx] = inactive.to_pydatetime().time()
+            interlocks_df.loc[idx,'Active Time'] = active.to_pydatetime().time()
+            interlocks_df.loc[idx,'Inactive Time'] = inactive.to_pydatetime().time()
         except:
             pass
  
@@ -87,7 +87,7 @@ def find_node_start(interlocks_df, interlock_start_times):
     
     for idx, (date, time) in enumerate(zip(result['Date'], result['Active Time'])):
         try:
-            result['Datetime'][idx] = datetime.datetime.combine(date,time)
+            result.loc[idx,'Datetime'] = datetime.datetime.combine(date,time)
         except:
             pass
         
@@ -110,7 +110,7 @@ def node_start_delta(interlocks_df):
                 if start_time < active_time:
                     restart.append(start_time)
             try:
-                interlocks_df['Time from Node Start'][idx] = timedelta_format(active_time - restart[-1])
+                interlocks_df.loc[idx, 'Time from Node Start'] = timedelta_format(active_time - restart[-1])
             except:
                 pass
     return(interlocks_df)
@@ -165,7 +165,7 @@ def sys_interlocks_before(interlock_df, entries_df):
             sys_interlock_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
             nearest_times_idx = nearest(interlock_times, sys_interlock_time)
             previous = interlock_df['Sysnode Relevant Interlock (before)'][nearest_times_idx]
-            interlock_df['Sysnode Relevant Interlock (before)'][nearest_times_idx] = previous + str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
+            interlock_df.loc[nearest_times_idx,'Sysnode Relevant Interlock (before)'] = previous + str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
         except:
             pass
     return(interlock_df)
@@ -182,7 +182,7 @@ def sys_interlocks_during(interlock_df, entries_df):
                     inactive_time = datetime.datetime.combine(active_time.date(), inactive_time)
                     if active_time < sys_interlock_time < inactive_time:
                         previous = interlock_df['Sysnode Relevant Interlock (during)'][row]
-                        interlock_df['Sysnode Relevant Interlock (during)'][row] = previous + str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
+                        interlock_df.loc[row,'Sysnode Relevant Interlock (during)'] = previous + str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
                 except:
                     pass
     return(interlock_df)

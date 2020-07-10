@@ -24,7 +24,7 @@ def GetFiles(folderpath):
 
 def GetEntries(filenames):    
     # Find entries of interest
-    acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
+    acceptable_files = ['-kvct-','-pet_recon-','-sysnode-']
     find_keys = ['is active', 'is inactive', 'Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock', 'Received command']
     
     files = []
@@ -95,7 +95,7 @@ def GetEntries(filenames):
     entries_df['Date'] = pd.to_datetime(entries_df['Date']).dt.date #convert to datetime format
     entries_df['Time'] = pd.to_datetime(entries_df['Time']).dt.time
     
-    nodes = ['KV', 'PR', 'SY']  #only keep kvct, pet_recon, sysnode and gantry entries
+    nodes = ['KV', 'PR', 'SY']  #only keep kvct, pet_recon, and sysnode entries
     entries_df = entries_df.loc[entries_df['Node'].isin(nodes)]
     entries_df.reset_index(inplace=True, drop=True)
     
