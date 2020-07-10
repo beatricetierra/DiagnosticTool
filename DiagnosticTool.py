@@ -10,7 +10,6 @@ import pandas as pd
 import datetime
 import InterlockDateFrame as idf
 import DiagnosticTool_Analysis as dta
-import DiagnosticTool_Graphs as dtg
 
 def GetFiles(folderpath):
     acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
@@ -34,11 +33,13 @@ def GetEntries(filenames):
     system = []
     
     # filter out log files
-    for word in acceptable_files:
-        for file in filenames:
+    for file in filenames:
+        if '-log-' in file:
+            files.append(file)
+        for word in acceptable_files:
             if word in file and '000' in file:
                 files.append(file)
-    
+
     # extract entries of interest based on system
     for file in files:
         if '-log-' in file: # read compiled log file from gateway
@@ -80,7 +81,7 @@ def GetEntries(filenames):
                             if word in line:
                                 entry = line.split(" ", 7)
                                 entries.append([entry[i] for i in [0,1,4,7]])
-    
+
     # Find system model (check if all log files are from same system)
     if all(i == system[0] for i in system):
         system_model = system[0]
