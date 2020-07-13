@@ -70,6 +70,43 @@ class Page1(Page):
    def delete_selected(self):
        self.listbox.delete(tk.ANCHOR)
        
+   def df_tree(self, df, tab):
+       # Scrollbars
+       treeScroll_y = ttk.Scrollbar(tab)
+       treeScroll_y.pack(side='right', fill='y')
+       treeScroll_x = ttk.Scrollbar(tab, orient='horizontal')
+       treeScroll_x.pack(side='bottom', fill='x')
+       
+       columns = list(df.columns)
+       tree = ttk.Treeview(tab)
+       tree.pack(expand=1, fill='both')
+       tree["columns"] = columns
+       
+       for i in columns:
+           tree.column(i, anchor="w")
+           tree.heading(i, text=i, anchor='w')
+            
+       for index, row in df.iterrows():
+           tree.insert("",tk.END,text=index,values=list(row))
+       
+       treeScroll_y.configure(command=tree.yview)
+       tree.configure(yscrollcommand=treeScroll_y.set)
+       treeScroll_x.configure(command=tree.xview)
+       tree.configure(xscrollcommand=treeScroll_x.set)
+       
+       tree.column("#0", width=50, stretch='no') 
+       tree.column("Interlock Number", width=300, stretch='no')
+       if 'page2' in str(tab):
+           tree.column("Date", width=100, stretch='no')
+           tree.column("Active Time", width=100, stretch='no')
+           tree.column("Inactive Time", width=100, stretch='no')
+           tree.column("Time from Node Start", width=100, stretch='no')
+           tree.column("Interlock Duration", width=100, stretch='no')
+           
+       if 'page3' in str(tab):
+           for i in range(1,len(columns)):
+               tree.column(i, width=50, stretch='no')
+       
    def findEntries(self):
        global files, kvct_df, pet_df, kvct_filtered, kvct_filtered_out, system, dates
        global filtered_analysis, sessions, unfiltered_analysis, pet_analysis
@@ -79,11 +116,9 @@ class Page1(Page):
        # Find all interlocks
        try:
            system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
-           table1 = Table(Page2.tab1, dataframe=kvct_df, rowheight=20) #displays all interlocks
-           table1.show()
-           table4 = Table(Page2.tab4, dataframe=pet_df, rowheight=20)
-           table4.show()
-           
+           self.df_tree(kvct_df, Page2.tab1)
+           self.df_tree(pet_df, Page2.tab4)
+       
            # Get dates
            start_date = kvct_df['Date'][0]
            end_date = kvct_df['Date'][len(kvct_df)-1]
@@ -95,10 +130,8 @@ class Page1(Page):
        # Filter interlocks
        try:
            kvct_filtered, kvct_filtered_out = DiagnosticTool.FilterEntries(kvct_df)
-           table2 = Table(Page2.tab2, dataframe=kvct_filtered, rowheight=20) #displays filtered interlocks
-           table2.show()
-           table3 = Table(Page2.tab3, dataframe=kvct_filtered_out, rowheight=20) # displays expected interlock (interlocks that were filtered out)
-           table3.show()
+           self.df_tree(kvct_filtered, Page2.tab2)
+           self.df_tree(kvct_filtered_out, Page2.tab3)
        except:
            messagebox.showerror("Error", "Cannot filter interlocks.")
            pass
@@ -106,14 +139,10 @@ class Page1(Page):
        # Analyze interlocks 
        try:
            filtered_analysis, sessions, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
-           table5 = Table(Page3.tab1, dataframe=filtered_analysis, fontsize=5, rowheight=20) #display unexpected interlock analysis
-           table5.show()
-        
-           table6 = Table(Page3.tab2, dataframe=unfiltered_analysis, fontsize=5, rowheight=20) #display expected interlock analysis
-           table6.show()
-        
-           table7 = Table(Page3.tab3, dataframe=pet_analysis, fontsize=5, rowheight=20)
-           table7.show()
+           self.df_tree(filtered_analysis, Page3.tab1)
+           self.df_tree(unfiltered_analysis, Page3.tab2)
+           self.df_tree(pet_analysis, Page3.tab3)
+
        except: 
            messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
            pass
@@ -149,7 +178,7 @@ class Page2(Page):
        Page.__init__(self, *args, **kwargs)
        Page2.tabControl = ttk.Notebook(self)        
         
-       Page2.tab1 = ttk.Frame(Page2.tabControl)
+       Page2.tab1 = ttk.Frame(Page2.tabControl, relief='solid')
        Page2.tabControl.add(Page2.tab1, text = 'KVCT Interlocks')           
         
        Page2.tab2 = ttk.Frame(Page2.tabControl)
