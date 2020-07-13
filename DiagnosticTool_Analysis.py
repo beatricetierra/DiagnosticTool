@@ -52,7 +52,7 @@ def filter_expected(interlocks_df):
             interlock_type.append('ExternalTriggerInvalid')
             
     # finalize filtered and filtered out dataframes
-    filtered_out['Type'] = interlock_type
+    filtered_out.insert(4, 'Type', interlock_type)
     filtered = df.drop(filtered_out.index.values)
     
     # insert restart times and sort by date and active time

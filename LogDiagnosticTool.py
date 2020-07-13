@@ -4,13 +4,6 @@ Created on Mon Jul  6 15:24:57 2020
 
 @author: btierra
 """
-
-# -*- coding: utf-8 -*-
-"""
-Created on Fri May  8 10:43:42 2020
-
-@author: btierra
-"""
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
