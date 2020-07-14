@@ -117,8 +117,11 @@ def analysis_expected(filtered_out):
     filtered_out = filtered_out.reindex(columns= columns)
     
     # Find indices which 
-    restart_indices = filtered_out.loc[filtered_out['Interlock Number'] == '------ NODE RESTART ------'].index.values
-    
+    restart_indices = filtered_out.loc[filtered_out['Interlock Number'] == '------ NODE RESTART ------'].index.values.tolist()
+    restart_indices.insert(0, 0)
+    restart_indices.insert(-1, len(filtered_out)-1)
+    restart_indices = sorted(list(set(restart_indices)))
+
     # Divide into different sessions 
     session_num = [None] * len(filtered_out)
     
