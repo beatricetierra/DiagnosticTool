@@ -88,11 +88,12 @@ def analysis(filtered_df):
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE RESTART ------']
 
     #counter column
-    filtered_df['Count'] = 1
+    filtered_df['Count'] = [1]*len(filtered_df)
     count = pd.DataFrame(filtered_df.groupby('Interlock Number').count()['Count'])
     
     #average, std, min, and max duration
-    filtered_df['Interlock Duration(sec)'] = total_seconds(filtered_df, filtered_df['Interlock Duration'])
+    durations = total_seconds(filtered_df, filtered_df['Interlock Duration'])
+    filtered_df['Interlock Duration(sec)'] = durations
 
     avg_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').mean()['Interlock Duration(sec)'])
     std_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').std()['Interlock Duration(sec)'])

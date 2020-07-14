@@ -7,7 +7,6 @@ Created on Mon Jul  6 15:24:57 2020
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
-from pandastable import Table
 import DiagnosticTool
 
 class Page(tk.Frame):
@@ -70,6 +69,14 @@ class Page1(Page):
    def delete_selected(self):
        self.listbox.delete(tk.ANCHOR)
        
+   def menubar_filter(self, df, menubar):
+       menubar.menu = tk.Menu(menubar, tearoff=0)
+       menubar["menu"] = menubar.menu
+
+       Page2.items = list(set(df['Interlock Number']))
+       for item in Page2.items:
+           menubar.menu.add_checkbutton(label=item, variable=item)
+       
    def df_tree(self, df, tab):
        # Scrollbars
        treeScroll_y = ttk.Scrollbar(tab)
@@ -118,7 +125,9 @@ class Page1(Page):
            system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
            self.df_tree(kvct_df, Page2.tab1)
            self.df_tree(pet_df, Page2.tab4)
-       
+           self.menubar_filter(kvct_df, Page2.menubar1)
+           self.menubar_filter(pet_df, Page2.menubar2)
+           
            # Get dates
            start_date = kvct_df['Date'][0]
            end_date = kvct_df['Date'][len(kvct_df)-1]
@@ -178,8 +187,8 @@ class Page2(Page):
        Page.__init__(self, *args, **kwargs)
        Page2.tabControl = ttk.Notebook(self)        
         
-       Page2.tab1 = ttk.Frame(Page2.tabControl, relief='solid')
-       Page2.tabControl.add(Page2.tab1, text = 'KVCT Interlocks')           
+       Page2.tab1 = ttk.Frame(Page2.tabControl)
+       Page2.tabControl.add(Page2.tab1, text = 'KVCT Interlocks')
         
        Page2.tab2 = ttk.Frame(Page2.tabControl)
        Page2.tabControl.add(Page2.tab2, text = 'KVCT Interlocks (Unexpected)')
@@ -191,7 +200,24 @@ class Page2(Page):
        Page2.tabControl.add(Page2.tab4, text = 'PET Interlocks')
 
        Page2.tabControl.pack(expan=1, fill='both')
-
+       
+       # Add filtering menubars
+       # kvct dataframes
+       Page2.menubar1 = tk.Menubutton(self, text='Filter KVCT Interlocks \u25BE', font=20, relief='raised')
+       Page2.menubar1.place(relx=0.6, relheight=0.025)
+       # pet dataframes
+       Page2.menubar2 = tk.Menubutton(self, text='Filter PET Interlocks \u25BE', font=20, relief='raised')
+       Page2.menubar2.place(relx=0.8, relheight=0.025)
+       
+       button_filter = tk.Button(self, text="Filter", command = self.filter_by_interlock)
+       button_filter.place(relx=0.4, relheight=0.025)
+       
+    def filter_by_interlock(self):
+        return()
+#        for item in Page2.items:
+#            if item.get() == True:
+#                print(item, 'True')
+        
 class Page3(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)        
