@@ -69,14 +69,6 @@ class Page1(Page):
    def delete_selected(self):
        self.listbox.delete(tk.ANCHOR)
        
-   def menubar_filter(self, df, menubar):
-       menubar.menu = tk.Menu(menubar, tearoff=0)
-       menubar["menu"] = menubar.menu
-
-       Page2.items = list(set(df['Interlock Number']))
-       for item in Page2.items:
-           menubar.menu.add_checkbutton(label=item, variable=item)
-       
    def df_tree(self, df, tab):
        # Scrollbars
        treeScroll_y = ttk.Scrollbar(tab)
@@ -125,8 +117,8 @@ class Page1(Page):
            system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
            self.df_tree(kvct_df, Page2.tab1)
            self.df_tree(pet_df, Page2.tab4)
-           self.menubar_filter(kvct_df, Page2.menubar1)
-           self.menubar_filter(pet_df, Page2.menubar2)
+           Page2.menubar_filter(kvct_df, Page2.menubar1)
+           Page2.menubar_filter(pet_df, Page2.menubar2)
            
            # Get dates
            start_date = kvct_df['Date'][0]
@@ -211,6 +203,14 @@ class Page2(Page):
        
        button_filter = tk.Button(self, text="Filter", command = self.filter_by_interlock)
        button_filter.place(relx=0.4, relheight=0.025)
+       
+    def menubar_filter(df, menubar):
+       menubar.menu = tk.Menu(menubar, tearoff=0)
+       menubar["menu"] = menubar.menu
+
+       Page2.items = sorted(list(set(df['Interlock Number'])))
+       for item in Page2.items:
+           menubar.menu.add_checkbutton(label=item, variable=item)
        
     def filter_by_interlock(self):
         return()
