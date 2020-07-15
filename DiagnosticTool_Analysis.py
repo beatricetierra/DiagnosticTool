@@ -119,7 +119,6 @@ def analysis_expected(filtered_out):
     # Find indices which 
     restart_indices = filtered_out.loc[filtered_out['Interlock Number'] == '------ NODE RESTART ------'].index.values.tolist()
     restart_indices.insert(0, 0)
-    restart_indices.insert(-1, len(filtered_out)-1)
     restart_indices = sorted(list(set(restart_indices)))
 
     # Divide into different sessions 
@@ -133,9 +132,14 @@ def analysis_expected(filtered_out):
         for idx in range(restart_idx, end):
             session_num[idx] = session+1
     
-    total_sessions = session+1
     filtered_out.insert(0, 'Session', session_num) 
     filtered_out.replace('', np.nan, inplace=True)
+    
+    # Count total sessions
+    if 'RESTART' in filtered_out['Interlock Number'][len(filtered_out)-1]:
+        total_sessions = filtered_out['Session'][len(filtered_out)-1] - 1 
+    else:
+        total_sessions = filtered_out['Session'][len(filtered_out)-1]
     
     # Convert time durations to total seconds
     filtered_out['Time from Node Start'] = total_seconds(filtered_out, filtered_out['Time from Node Start'])
