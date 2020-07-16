@@ -205,19 +205,19 @@ class Page2(Page):
        button_filter.place(relx=0.4, relheight=0.025)
        
     def menubar_filter(df, menubar):
-       items = sorted(list(set(df['Interlock Number'])))
-       Page2.d = {}
-       for x in range(0, len(items)):
-           Page2.d['Var{0}'.format(x)] = tk.BooleanVar()
-           
        menubar.menu = tk.Menu(menubar, tearoff=0)
        menubar["menu"] = menubar.menu
-       for idx, item in enumerate(items):
-           menubar.menu.add_checkbutton(label=item, variable=Page2.d['Var'+str(idx)])
+       
+       items = sorted(list(set(df['Interlock Number'])))
+       for item in items:
+           var = tk.BooleanVar()
+           menubar.menu.add_checkbutton(label=item, variable=var)
        
     def filter_by_interlock(self):
-        for key in Page2.d:
-            print(key.get())
+        last_item = Page2.menubar1.menu.index(tk.END)
+        for i in range(0,last_item+1):
+            variable = Page2.menubar1.menu.entrycget(i,"variable")
+            print(variable)
         
 class Page3(Page):
    def __init__(self, *args, **kwargs):
