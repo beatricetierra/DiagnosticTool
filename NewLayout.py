@@ -118,7 +118,7 @@ class Page1(Page):
            self.df_tree(kvct_df, Page2.tab1)
            self.df_tree(pet_df, Page2.tab4)
            Page2.menubar_filter(kvct_df, Page2.menubar1)
-           Page2.menubar_filter(pet_df, Page2.menubar2)
+#           Page2.menubar_filter(pet_df, Page2.menubar2)
            
            # Get dates
            start_date = kvct_df['Date'][0]
@@ -205,18 +205,19 @@ class Page2(Page):
        button_filter.place(relx=0.4, relheight=0.025)
        
     def menubar_filter(df, menubar):
+       items = sorted(list(set(df['Interlock Number'])))
+       Page2.d = {}
+       for x in range(0, len(items)):
+           Page2.d['Var{0}'.format(x)] = tk.BooleanVar()
+           
        menubar.menu = tk.Menu(menubar, tearoff=0)
        menubar["menu"] = menubar.menu
-
-       Page2.items = sorted(list(set(df['Interlock Number'])))
-       for item in Page2.items:
-           menubar.menu.add_checkbutton(label=item, variable=item)
+       for idx, item in enumerate(items):
+           menubar.menu.add_checkbutton(label=item, variable=Page2.d['Var'+str(idx)])
        
     def filter_by_interlock(self):
-        return()
-#        for item in Page2.items:
-#            if item.get() == True:
-#                print(item, 'True')
+        for key in Page2.d:
+            print(key.get())
         
 class Page3(Page):
    def __init__(self, *args, **kwargs):
