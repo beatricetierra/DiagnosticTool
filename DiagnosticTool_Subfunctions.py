@@ -75,7 +75,7 @@ def find_interlocks(node_interlocks):
             interlocks_df.loc[idx,'Inactive Time'] = inactive.to_pydatetime().time()
         except:
             pass
- 
+        
     return(interlocks_df)
     
 def find_node_start(interlocks_df, interlock_start_times):

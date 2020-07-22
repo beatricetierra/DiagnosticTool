@@ -88,6 +88,11 @@ def NodeInterlockDf(node_log, sys_log, node_start_times):
     node_df['Machine last state (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], machine_state)
     node_df['Machine last state (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], machine_state)
     
+    # Node (kvct/pet) state
+    node_state['Description'] = [descr.split(" ")[-1] for descr in node_state['Description']]
+    node_df['Node State (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], node_state)
+    node_df['Node State (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], node_state)
+    
     # last command received before active/ inactive interlock
     received_command['Description'] = [descr.split(":")[0] for descr in received_command['Description']]
     node_df['Last command received (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], received_command)
@@ -109,9 +114,9 @@ def NodeInterlockDf(node_log, sys_log, node_start_times):
     
     # Clean up final kvct_df
     columns = ['Date','Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'HV last status (before active)', 
-            'HV last status (before inactive)', 'Machine last state (before active)', 'Machine last state (before inactive)', 
-            'Last command received (before active)', 'Last command received (before inactive)', 'Last user input', 'Sysnode State',
-            'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
+            'HV last status (before inactive)', 'Machine last state (before active)', 'Machine last state (before inactive)', 'Node State (before active)',
+            'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 'Last user input', 
+            'Sysnode State', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
     
     node_df.sort_values('Date', ascending=True, inplace=True)
     node_df['Date'] = node_df['Date'].dt.date

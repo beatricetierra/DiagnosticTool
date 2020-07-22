@@ -41,7 +41,7 @@ def filter_expected(interlocks_df):
     # filter expected interlocks
     filtered = df.drop(filtered_out.index.values)
     
-    for idx, (interlock, sys_before, sys_during) in enumerate(zip(filtered['Interlock Number'], filtered['Sysnode Relevant Interlock (before)'], filtered['Sysnode Relevant Interlock (during)'])):
+    for idx, (interlock, sys_before, sys_during, node_state) in enumerate(zip(filtered['Interlock Number'], filtered['Sysnode Relevant Interlock (before)'], filtered['Sysnode Relevant Interlock (during)'], filtered['Node State (before active)'])):
         # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
         if 'ViewAvgTooHigh' in interlock and '' in sys_before and '' in sys_during:
             filtered_out = filtered_out.append(filtered.iloc[idx])
@@ -50,6 +50,9 @@ def filter_expected(interlocks_df):
         if 'ExternalTriggerInvalid' in interlock and '' in sys_before and '' in sys_during: 
             filtered_out = filtered_out.append(filtered.iloc[idx])
             interlock_type.append('ExternalTriggerInvalid')
+        if 'IDLE' in node_state and 'HVG' in interlock:
+            filtered_out = filtered_out.append(filtered.iloc[idx])
+            interlock_type.append('HVG while IDLE')
             
     # finalize filtered and filtered out dataframes
     filtered_out.insert(4, 'Type', interlock_type)
