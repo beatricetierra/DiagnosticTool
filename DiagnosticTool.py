@@ -11,6 +11,16 @@ import datetime
 import InterlockDateFrame as idf
 import DiagnosticTool_Analysis as dta
 
+def DeleteFiles(folderpath):
+
+    for root, dirs, files in os.walk(folderpath):
+        for file in files:
+                if 'kvct' not in file:
+                    if 'pet' not in file:
+                        if 'sysnode' not in file:
+                            os.remove(os.path.join(root, file))
+    return
+    
 def GetFiles(folderpath):
     acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
     filenames = []  
