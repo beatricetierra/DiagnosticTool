@@ -79,7 +79,7 @@ def NodeInterlockDf(node_log, sys_log, node_start_times):
     node_df['Interlock Duration'] = dts.interlock_duration(node_df)
     
     # HV status before active/ inactive interlock
-    kvct_HV_status['Description'] = [descr.split("\n")[0] for descr in kvct_HV_status['Description']]
+    kvct_HV_status['Description'] = [descr.split("\n")[0].split(" ", 1)[1] for descr in kvct_HV_status['Description']]
     node_df['HV last status (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], kvct_HV_status)
     node_df['HV last status (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], kvct_HV_status)
     
@@ -94,7 +94,7 @@ def NodeInterlockDf(node_log, sys_log, node_start_times):
     node_df['Node State (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], node_state)
     
     # last command received before active/ inactive interlock
-    received_command['Description'] = [descr.split(":")[0] for descr in received_command['Description']]
+    received_command['Description'] = [descr.split(":")[0].split(" ", 1)[1] for descr in received_command['Description']]
     node_df['Last command received (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], received_command)
     node_df['Last command received (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], received_command)
     

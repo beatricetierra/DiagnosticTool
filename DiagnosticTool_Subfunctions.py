@@ -31,7 +31,7 @@ def find_interlocks(node_interlocks):
     
     #find all unique interlocks 
     for interlock in node_interlocks['Description']:
-        interlock = interlock.split(" priority")[0]
+        interlock = interlock.split(" priority")[0].split(" ", 1)[1]
         interlocks_set.append(interlock)
         
     interlocks_set = list(set(interlocks_set))
