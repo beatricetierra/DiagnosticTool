@@ -79,10 +79,29 @@ def find_interlocks(node_interlocks):
     return(interlocks_df)
     
 def find_node_start(interlocks_df, interlock_start_times):
-    start_times = pd.DataFrame({'Interlock Number': '------ NODE RESTART ------', 'Datetime': interlock_start_times,
+    start_times = pd.DataFrame({'Interlock Number': '------ NODE START ------', 'Datetime': interlock_start_times,
                                'Active Time': '', 'Inactive Time': ''})
     start_times['Active Time'] = start_times['Datetime'].dt.time
     result = pd.concat([interlocks_df, start_times], sort=False)
+    result.reset_index(drop=True, inplace=True)
+    
+    for idx, (date, time) in enumerate(zip(result['Date'], result['Active Time'])):
+        try:
+            result.loc[idx,'Datetime'] = datetime.datetime.combine(date,time)
+        except:
+            pass
+        
+    result.sort_values(by=['Datetime'], inplace=True)
+    result['Date'] = result['Datetime']
+    result.drop(columns = 'Datetime', inplace=True)
+    result.reset_index(drop=True, inplace=True)
+    return(result)
+    
+def find_node_end(interlocks_df, interlock_end_times):
+    end_times = pd.DataFrame({'Interlock Number': '------ NODE END ------', 'Datetime': interlock_end_times,
+                               'Active Time': '', 'Inactive Time': ''})
+    end_times['Active Time'] = end_times['Datetime'].dt.time
+    result = pd.concat([interlocks_df, end_times], sort=False)
     result.reset_index(drop=True, inplace=True)
     
     for idx, (date, time) in enumerate(zip(result['Date'], result['Active Time'])):
@@ -100,7 +119,7 @@ def find_node_start(interlocks_df, interlock_start_times):
 # Time since start of node
 def node_start_delta(interlocks_df):
     interlocks_df['Time from Node Start'] = ''*len(interlocks_df)
-    restart_times = interlocks_df.loc[interlocks_df['Interlock Number'] == '------ NODE RESTART ------']['Date']
+    restart_times = interlocks_df.loc[interlocks_df['Interlock Number'] == '------ NODE START ------']['Date']
     restart_times_idx = restart_times.index.values
     
     for idx, active_time in enumerate(interlocks_df['Date']):

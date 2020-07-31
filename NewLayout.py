@@ -118,7 +118,7 @@ class Page1(Page):
            self.df_tree(kvct_df, Page2.tab1)
            self.df_tree(pet_df, Page2.tab4)
            Page2.menubar_filter(kvct_df, Page2.menubar1)
-#           Page2.menubar_filter(pet_df, Page2.menubar2)
+           #Page2.menubar_filter(pet_df, Page2.menubar2)
            
            # Get dates
            start_date = kvct_df['Date'][0]

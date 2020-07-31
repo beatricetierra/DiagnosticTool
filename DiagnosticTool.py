@@ -40,9 +40,11 @@ def GetEntries(filenames):
     files = []
     entries = [] 
     start_entries = []
+    end_entries = []
     system = []
     
     # filter out log files
+    # accepts all -log- files and only kvct, pet_recon, and sysnode files ending in '000'
     for file in filenames:
         if '-log-' in file:
             files.append(file)
@@ -78,10 +80,13 @@ def GetEntries(filenames):
                 first_line = log.readline()
                 sys = first_line.split(" ")
                 system.append(sys[3])
-                for i,line in enumerate(log):
-                    if i==0:
+                for line in log:
+                    if 'command: set to load_config' in line:
                         start = line.split(" ", 5)
                         start_entries.append([start[i] for i in [0,1,4]])    #only keep date, time, and node
+                    elif 'Signal 15' in line:
+                        end = line.split(" ",5)
+                        end_entries.append([end[i] for i in [0,1,4]])
                     elif '***' in line:
                         if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
                             entry = line.split(" ", 7)
@@ -109,22 +114,34 @@ def GetEntries(filenames):
     entries_df = entries_df.loc[entries_df['Node'].isin(nodes)]
     entries_df.reset_index(inplace=True, drop=True)
     
-    # Find kvct and pet start/ restart times
+    # Find kvct and pet start and end times
     start_times = pd.DataFrame(start_entries, columns = columns[0:3])
     start_times['Date'] = pd.to_datetime(start_times['Date']).dt.date #convert to datetime format
     start_times['Time'] = pd.to_datetime(start_times['Time']).dt.time
     
-    kvct_start_times = []
-    pet_start_times = []
+    end_times = pd.DataFrame(end_entries, columns = columns[0:3])
+    end_times['Date'] = pd.to_datetime(end_times['Date']).dt.date #convert to datetime format
+    end_times['Time'] = pd.to_datetime(end_times['Time']).dt.time
     
-    for idx, descr in enumerate(start_times['Node']):
-        if 'kvct' in descr or 'KV' in descr:
+    kvct_start_times = []
+    kvct_end_times = []
+    pet_start_times = []
+    pet_end_times = []
+    
+    for idx, (start, end) in enumerate(zip(start_times['Node'], end_times['Node'])):
+        if 'kvct' in start or 'KV' in start:
             time = datetime.datetime.combine(start_times['Date'][idx], start_times['Time'][idx])
             kvct_start_times.append(time)
-        if 'pet' in descr or 'PR' in descr:
+        if 'kvct' in end or 'KV' in end:
+            time = datetime.datetime.combine(end_times['Date'][idx], end_times['Time'][idx])
+            kvct_end_times.append(time)
+        if 'pet' in start or 'PR' in start:
             time = datetime.datetime.combine(start_times['Date'][idx], start_times['Time'][idx])
             pet_start_times.append(time)
-    
+        if 'pet' in start or 'PR' in start:
+            time = datetime.datetime.combine(end_times['Date'][idx], end_times['Time'][idx])
+            pet_end_times.append(time)
+
     # Seperate entries by nodes
     sys_log = entries_df.loc[entries_df['Node'] == 'SY']
     sys_log.drop(columns='Node', inplace = True)
@@ -133,14 +150,14 @@ def GetEntries(filenames):
     kvct_log.drop(columns='Node', inplace = True)
     kvct_log.name = 'kvct_log'
     
-    kvct_df = idf.NodeInterlockDf(kvct_log, sys_log, kvct_start_times)
-    
+    kvct_df = idf.NodeInterlockDf(kvct_log, sys_log, kvct_start_times, kvct_end_times)
+
     try:
         pet_log = entries_df.loc[entries_df['Node'] == 'PR']
         pet_log.drop(columns='Node', inplace = True)
         pet_log.name = 'pet_log'
         
-        pet_interlocks = idf.NodeInterlockDf(pet_log, sys_log, pet_start_times)
+        pet_interlocks = idf.NodeInterlockDf(pet_log, sys_log, pet_start_times, pet_end_times)
     except:
         pet_interlocks = pd.DataFrame()
     

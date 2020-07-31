@@ -9,7 +9,7 @@ import pandas as pd
 import DiagnosticTool_Subfunctions as dts 
 
 # Find interlocks and corresponding entry statuses 
-def NodeInterlockDf(node_log, sys_log, node_start_times):
+def NodeInterlockDf(node_log, sys_log, node_start_times, node_end_times):
     
      # Find node interlocks
     columns = ['Date', 'Time', 'Description']
@@ -69,13 +69,16 @@ def NodeInterlockDf(node_log, sys_log, node_start_times):
     # Get node interlocks active vs inactive
     node_df = dts.find_interlocks(node_interlocks)
     
-    # insert start/restart of kvct node entries
+    # insert start/restart of node node entries
     node_df = dts.find_node_start(node_df, node_start_times)
     
-    # Time since start/restart of kvct node
+    #insert end of node entires
+    node_df = dts.find_node_end(node_df, node_end_times)
+    
+    # Time since start/restart of node
     node_df = dts.node_start_delta(node_df)
      
-    # Duration of kvct interlocks
+    # Duration of node interlocks
     node_df['Interlock Duration'] = dts.interlock_duration(node_df)
     
     # HV status before active/ inactive interlock

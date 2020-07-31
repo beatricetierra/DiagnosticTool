@@ -19,16 +19,20 @@ def filter_expected(interlocks_df):
     for date, time in zip(interlocks_df['Date'], interlocks_df['Active Time']):
         datetimes.append(datetime.datetime.combine(date, time))
     
-    # save restart entries
+    # save start and end entries
     df = interlocks_df.copy()
     df.insert(0, 'Datetime', datetimes)
-    restart_times = df.loc[df['Interlock Number'] == '------ NODE RESTART ------']['Datetime']
+    restart_times = df.loc[df['Interlock Number'] == '------ NODE START ------']['Datetime']
     restart_times_idx = restart_times.index.values
+    end_times = df.loc[df['Interlock Number'] == '------ NODE END ------']['Datetime']
+    end_times_idx = end_times.index.values
     df.drop(restart_times_idx, inplace=True)
+    df.drop(end_times_idx, inplace=True)
     
-    # filter all startup (5 min after node start) and shutdown (1 min before node start) interlocks 
-    for restart in restart_times:
-        lowerlimit = restart - datetime.timedelta(minutes=1)
+    
+    # filter all startup (5 min after node start) and shutdown (1 min before node end) interlocks 
+    for restart, end in zip(restart_times, end_times):
+        lowerlimit = end - datetime.timedelta(minutes=1)
         upperlimit = restart + datetime.timedelta(minutes=5)
         for idx, time in enumerate(df['Datetime']):
             if restart < time < upperlimit:
@@ -41,7 +45,7 @@ def filter_expected(interlocks_df):
     # filter expected interlocks
     filtered = df.drop(filtered_out.index.values)
     
-    for idx, (interlock, sys_before, sys_during, node_state) in enumerate(zip(filtered['Interlock Number'], filtered['Sysnode Relevant Interlock (before)'], filtered['Sysnode Relevant Interlock (during)'], filtered['Node State (before active)'])):
+    for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip(filtered['Interlock Number'], filtered['Machine last state (before active)'], filtered['Sysnode Relevant Interlock (before)'], filtered['Sysnode Relevant Interlock (during)'], filtered['Node State (before active)'])):
         # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
         if 'ViewAvgTooHigh' in interlock and '' in sys_before and '' in sys_during:
             filtered_out = filtered_out.append(filtered.iloc[idx])
@@ -53,15 +57,22 @@ def filter_expected(interlocks_df):
         if 'IDLE' in node_state and 'HVG' in interlock:
             filtered_out = filtered_out.append(filtered.iloc[idx])
             interlock_type.append('HVG while IDLE')
+        if 'HVG.AnodeStatusMismatch' in interlock and 'AnodeRampDown' in machine:
+            filtered_out = filtered_out.append(filtered.iloc[idx])
+            interlock_type.append('AnodeRampDown')
             
     # finalize filtered and filtered out dataframes
     filtered_out.insert(4, 'Type', interlock_type)
     filtered = df.drop(filtered_out.index.values)
     
-    # insert restart times and sort by date and active time
+    # insert start and end times and sort by date and active time
     restart_entries = interlocks_df.iloc[restart_times_idx] 
+    end_entries = interlocks_df.iloc[end_times_idx] 
+    
     filtered_out = pd.concat([filtered_out, restart_entries], axis=0, sort=False)
     filtered = pd.concat([filtered, restart_entries], axis=0, sort=False)
+    filtered_out = pd.concat([filtered_out, end_entries], axis=0, sort=False)
+    filtered = pd.concat([filtered, end_entries], axis=0, sort=False)
     
     filtered_out.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True)
     filtered_out.reset_index(drop=True, inplace=True)
@@ -88,7 +99,7 @@ def total_seconds(filtered_out, column):
 # Analyze unexpected interlocks
 def analysis(filtered_df):
     # remove restart entries
-    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE RESTART ------']
+    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE START ------']
 
     #counter column
     filtered_df['Count'] = [1]*len(filtered_df)
@@ -120,7 +131,7 @@ def analysis_expected(filtered_out):
     filtered_out = filtered_out.reindex(columns= columns)
     
     # Find indices which 
-    restart_indices = filtered_out.loc[filtered_out['Interlock Number'] == '------ NODE RESTART ------'].index.values.tolist()
+    restart_indices = filtered_out.loc[filtered_out['Interlock Number'] == '------ NODE START ------'].index.values.tolist()
     restart_indices.insert(0, 0)
     restart_indices = sorted(list(set(restart_indices)))
 
@@ -139,7 +150,7 @@ def analysis_expected(filtered_out):
     filtered_out.replace('', np.nan, inplace=True)
     
     # Count total sessions
-    if 'RESTART' in filtered_out['Interlock Number'][len(filtered_out)-1]:
+    if 'START' in filtered_out['Interlock Number'][len(filtered_out)-1]:
         total_sessions = filtered_out['Session'][len(filtered_out)-1] - 1 
     else:
         total_sessions = filtered_out['Session'][len(filtered_out)-1]
@@ -147,7 +158,7 @@ def analysis_expected(filtered_out):
     # Convert time durations to total seconds
     filtered_out['Time from Node Start'] = total_seconds(filtered_out, filtered_out['Time from Node Start'])
     filtered_out['Interlock Duration'] = total_seconds(filtered_out, filtered_out['Interlock Duration'])
-    filtered_out = filtered_out[~filtered_out['Interlock Number'].str.contains('RESTART')]
+    filtered_out = filtered_out[~filtered_out['Interlock Number'].str.contains('START')]
     
     # Analyze per session
     # Count
@@ -159,5 +170,6 @@ def analysis_expected(filtered_out):
     df = df.groupby('Interlock Number').sum()
     df.reset_index(inplace=True)
     df.insert(1, 'Total in ' + str(total_sessions) + ' Sessions', df.sum(axis=1))
+    df.iloc[:,1:] = df.iloc[:,1:].astype(int)
 
     return(total_sessions, df)
