@@ -12,9 +12,9 @@ import InterlockDateFrame as idf
 import DiagnosticTool_Analysis as dta
 
 def DeleteFiles(folderpath):
-
     for root, dirs, files in os.walk(folderpath):
         for file in files:
+            if '-log-' not in file:
                 if 'kvct' not in file:
                     if 'pet' not in file:
                         if 'sysnode' not in file:
@@ -32,17 +32,65 @@ def GetFiles(folderpath):
                     filenames.append(os.path.join(root, file))
     return(filenames)
 
+def ReadLogs(file, find_keys):
+    system, start_entries, end_entries, entries  = ([] for i in range(4))
+    
+    with open(file, encoding="cp437") as log:
+        first_line = log.readline()     #read first line and find system (A1,A2,A4, or B1)
+        sys = first_line.split(" ")
+        system.append(sys[6])
+        parse_idx = [3,4,7,10]  #only keep date, time, node, and description
+        for line in log:
+            if 'kvct connected' in line or 'pet_recon connected' in line:   # entry for start of node
+                start = line.split(" ", 9)
+                start_entries.append([start[i] for i in [0,1,-1]]) #only keep date, time, and description
+            elif 'Signal 15' in line: # entry for end of node
+                end = line.split(" ", 9) 
+                end_entries.append([end[i] for i in [0,1,-1]]) #only keep date, time, and description
+            elif 'KV' in line or 'PR' in line or 'SY' in line:
+                if 'SysNode' in line and '***' in line:
+                    if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
+                        entry = line.split(" ", 10)
+                        entries.append([entry[i] for i in parse_idx]) 
+                else: 
+                    for word in find_keys:
+                        if word in line:
+                            entry = line.split(" ", 10)
+                            entries.append([entry[i] for i in parse_idx])
+    return(system, start_entries, end_entries, entries)
+
+def ReadNodeLogs(file, find_keys):
+    system, start_entries, end_entries, entries  = ([] for i in range(4))
+    
+    with open(file) as log:
+        first_line = log.readline()
+        sys = first_line.split(" ")
+        system.append(sys[3])
+        for line in log:
+            if 'command: set to load_config' in line: #entry for start of node
+                start = line.split(" ", 5)
+                start_entries.append([start[i] for i in [0,1,4]])    #only keep date, time, and node
+            elif 'Signal 15' in line: #entry for end of node
+                end = line.split(" ",5)
+                end_entries.append([end[i] for i in [0,1,4]]) #only keep date, time, and node
+            elif '***' in line:
+                if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
+                    entry = line.split(" ", 7)
+                    entries.append([entry[i] for i in [0,1,4,7]])
+            else:
+                for word in find_keys:
+                    if word in line:
+                        entry = line.split(" ", 7)
+                        entries.append([entry[i] for i in [0,1,4,7]])
+    return(system, start_entries, end_entries, entries)
+
 def GetEntries(filenames):    
     # Find entries of interest
-    acceptable_files = ['-kvct-','-pet_recon-','-sysnode-']
+    acceptable_files = ['kvct','pet','sysnode']
     find_keys = ['is active', 'is inactive', 'Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock', 'Received command']
     
     files = []
-    entries = [] 
-    start_entries = []
-    end_entries = []
-    system = []
-    
+
     # filter out log files
     # accepts all -log- files and only kvct, pet_recon, and sysnode files ending in '000'
     for file in filenames:
@@ -51,52 +99,20 @@ def GetEntries(filenames):
         for word in acceptable_files:
             if word in file and '000' in file:
                 files.append(file)
-
-    # extract entries of interest based on system
+    
+    # Read log files.
+    system, start_entries, end_entries, entries  = ([] for i in range(4))
+    
     for file in files:
         if '-log-' in file: # read compiled log file from gateway
-            with open(file, encoding="cp437") as log:
-                first_line = log.readline()     #read first line and find system (A1,A2,A4, or B1)
-                sys = first_line.split(" ")
-                system.append(sys[6])
-                parse_idx = [3,4,7,10]  #only keep date, time, node, and description
-                for line in log:
-                    if 'kvct connected' in line or 'pet_recon connected' in line:   # entry for start of node
-                        start = (line.split(" ", 9))
-                        start_entries.append([start[i] for i in [0,1,-1]]) #only keep date, time, and description
-                    if 'KV' in line or 'PR' in line or 'SY' in line:
-                        if 'SysNode' in line and '***' in line:
-                            if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
-                                entry = line.split(" ", 10)
-                                entries.append([entry[i] for i in parse_idx]) 
-                        else: 
-                            for word in find_keys:
-                                if word in line:
-                                    entry = line.split(" ", 10)
-                                    entries.append([entry[i] for i in parse_idx])
-                                    
-        else:   # read separate kvct, pet_recon, and sysnode log files 
-            with open(file) as log:
-                first_line = log.readline()
-                sys = first_line.split(" ")
-                system.append(sys[3])
-                for line in log:
-                    if 'command: set to load_config' in line:
-                        start = line.split(" ", 5)
-                        start_entries.append([start[i] for i in [0,1,4]])    #only keep date, time, and node
-                    elif 'Signal 15' in line:
-                        end = line.split(" ",5)
-                        end_entries.append([end[i] for i in [0,1,4]])
-                    elif '***' in line:
-                        if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
-                            entry = line.split(" ", 7)
-                            entries.append([entry[i] for i in [0,1,4,7]])
-                    else:
-                        for word in find_keys:
-                            if word in line:
-                                entry = line.split(" ", 7)
-                                entries.append([entry[i] for i in [0,1,4,7]])
-
+            system_tmp, start_entries_tmp, end_entries_tmp, entries_tmp = ReadLogs(file, find_keys)
+        else:
+            system_tmp, start_entries_tmp, end_entries_tmp, entries_tmp = ReadNodeLogs(file, find_keys)
+        [system.append(system_tmp[i]) for i in range(0, len(system_tmp))]
+        [start_entries.append(start_entries_tmp[i]) for i in range(0, len(start_entries_tmp))]
+        [end_entries.append(end_entries_tmp[i]) for i in range(0, len(end_entries_tmp))]
+        [entries.append(entries_tmp[i]) for i in range(0, len(entries_tmp))]
+            
     # Find system model (check if all log files are from same system)
     if all(i == system[0] for i in system):
         system_model = system[0]
