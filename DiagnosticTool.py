@@ -7,8 +7,7 @@ Created on Wed May 20 17:58:42 2020
 
 import os
 import pandas as pd
-import datetime
-import InterlockDateFrame as idf
+import InterlockDataFrame as idf
 import DiagnosticTool_Analysis as dta
 
 def DeleteFiles(folderpath):
@@ -60,29 +59,27 @@ def ReadLogs(file, find_keys):
     return(system, start_entries, end_entries, entries)
 
 def ReadNodeLogs(file, find_keys):
-    system, start_entries, end_entries, entries  = ([] for i in range(4))
+    system, endpoints, entries  = ([] for i in range(3))
+    parse_idx = [0,1,4,7] #only keep date, time, node, and desciption
     
     with open(file) as log:
         first_line = log.readline()
         sys = first_line.split(" ")
-        system.append(sys[3])
-        for line in log:
-            if 'command: set to load_config' in line: #entry for start of node
-                start = line.split(" ", 5)
-                start_entries.append([start[i] for i in [0,1,4]])    #only keep date, time, and node
-            elif 'Signal 15' in line: #entry for end of node
-                end = line.split(" ",5)
-                end_entries.append([end[i] for i in [0,1,4]]) #only keep date, time, and node
-            elif '***' in line:
+        system.append(sys[3])    
+        for i, line in enumerate(log):
+            if i == 0 or 'command: set to load_config' in line or 'Signal 15' in line:
+                entry = line.split(" ", 7)
+                endpoints.append([entry[i] for i in parse_idx]) 
+            if '***' in line:
                 if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
                     entry = line.split(" ", 7)
-                    entries.append([entry[i] for i in [0,1,4,7]])
+                    entries.append([entry[i] for i in parse_idx])
             else:
                 for word in find_keys:
                     if word in line:
                         entry = line.split(" ", 7)
-                        entries.append([entry[i] for i in [0,1,4,7]])
-    return(system, start_entries, end_entries, entries)
+                        entries.append([entry[i] for i in parse_idx])
+    return(system, endpoints, entries)
 
 def GetEntries(filenames):    
     # Find entries of interest
@@ -101,16 +98,14 @@ def GetEntries(filenames):
                 files.append(file)
     
     # Read log files.
-    system, start_entries, end_entries, entries  = ([] for i in range(4))
-    
+    system, endpoints, entries  = ([] for i in range(3))
     for file in files:
         if '-log-' in file: # read compiled log file from gateway
-            system_tmp, start_entries_tmp, end_entries_tmp, entries_tmp = ReadLogs(file, find_keys)
+            system_tmp, endpoints_tmp, entries_tmp = ReadLogs(file, find_keys)
         else:
-            system_tmp, start_entries_tmp, end_entries_tmp, entries_tmp = ReadNodeLogs(file, find_keys)
+            system_tmp, endpoints_tmp, entries_tmp = ReadNodeLogs(file, find_keys)
         [system.append(system_tmp[i]) for i in range(0, len(system_tmp))]
-        [start_entries.append(start_entries_tmp[i]) for i in range(0, len(start_entries_tmp))]
-        [end_entries.append(end_entries_tmp[i]) for i in range(0, len(end_entries_tmp))]
+        [endpoints.append(endpoints_tmp[i]) for i in range(0, len(endpoints_tmp))]
         [entries.append(entries_tmp[i]) for i in range(0, len(entries_tmp))]
             
     # Find system model (check if all log files are from same system)
@@ -119,44 +114,29 @@ def GetEntries(filenames):
     else:
         system_model = 'Unknown'
         
-    # Create dataframe of all entries
+    # Create dataframe of all entries and endpoints
     columns = ['Date', 'Time', 'Node', 'Description']
     
     entries_df = pd.DataFrame(entries, columns=columns)
     entries_df['Date'] = pd.to_datetime(entries_df['Date']).dt.date #convert to datetime format
     entries_df['Time'] = pd.to_datetime(entries_df['Time']).dt.time
     
-    nodes = ['KV', 'PR', 'SY']  #only keep kvct, pet_recon, and sysnode entries
-    entries_df = entries_df.loc[entries_df['Node'].isin(nodes)]
-    entries_df.reset_index(inplace=True, drop=True)
+    endpoints_df = pd.DataFrame(endpoints, columns=columns)
+    endpoints_df['Date'] = pd.to_datetime(endpoints_df['Date']).dt.date #convert to datetime format
+    endpoints_df['Time'] = pd.to_datetime(endpoints_df['Time']).dt.time
     
-    # Find kvct and pet start and end times
-    start_times = pd.DataFrame(start_entries, columns = columns[0:3])
-    start_times['Date'] = pd.to_datetime(start_times['Date']).dt.date #convert to datetime format
-    start_times['Time'] = pd.to_datetime(start_times['Time']).dt.time
-    
-    end_times = pd.DataFrame(end_entries, columns = columns[0:3])
-    end_times['Date'] = pd.to_datetime(end_times['Date']).dt.date #convert to datetime format
-    end_times['Time'] = pd.to_datetime(end_times['Time']).dt.time
-    
-    kvct_start_times = []
-    kvct_end_times = []
-    pet_start_times = []
-    pet_end_times = []
-    
-    for idx, (start, end) in enumerate(zip(start_times['Node'], end_times['Node'])):
-        if 'kvct' in start or 'KV' in start:
-            time = datetime.datetime.combine(start_times['Date'][idx], start_times['Time'][idx])
-            kvct_start_times.append(time)
-        if 'kvct' in end or 'KV' in end:
-            time = datetime.datetime.combine(end_times['Date'][idx], end_times['Time'][idx])
-            kvct_end_times.append(time)
-        if 'pet' in start or 'PR' in start:
-            time = datetime.datetime.combine(start_times['Date'][idx], start_times['Time'][idx])
-            pet_start_times.append(time)
-        if 'pet' in start or 'PR' in start:
-            time = datetime.datetime.combine(end_times['Date'][idx], end_times['Time'][idx])
-            pet_end_times.append(time)
+    # Change endpoint_df descriptions and combine with entries_df
+    for i, row in enumerate(endpoints_df['Description']):
+        if 'command' in row:
+            endpoints_df.loc[i,'Description'] = '------ NODE START ------'
+        elif 'Signal' in row:
+            endpoints_df.loc[i,'Description'] = '------ NODE END ------'
+        else:
+            endpoints_df.loc[i,'Description'] = '------ LOG START ------'
+            
+#    nodes = ['KV', 'PR', 'SY']  #only keep kvct, pet_recon, and sysnode entries
+#    entries_df = entries_df.loc[entries_df['Node'].isin(nodes)]
+#    entries_df.reset_index(inplace=True, drop=True)    
 
     # Seperate entries by nodes
     sys_log = entries_df.loc[entries_df['Node'] == 'SY']
@@ -166,14 +146,20 @@ def GetEntries(filenames):
     kvct_log.drop(columns='Node', inplace = True)
     kvct_log.name = 'kvct_log'
     
-    kvct_df = idf.NodeInterlockDf(kvct_log, sys_log, kvct_start_times, kvct_end_times)
+    kvct_endpoints = endpoints_df.loc[endpoints_df['Node'] == 'KV']
+    kvct_endpoints.drop(columns='Node', inplace = True)
+
+    kvct_df = idf.NodeInterlockDf(kvct_log, sys_log, kvct_endpoints)
 
     try:
         pet_log = entries_df.loc[entries_df['Node'] == 'PR']
         pet_log.drop(columns='Node', inplace = True)
         pet_log.name = 'pet_log'
         
-        pet_interlocks = idf.NodeInterlockDf(pet_log, sys_log, pet_start_times, pet_end_times)
+        pet_endpoints = endpoints_df.loc[endpoints_df['Node'] == 'PR']
+        pet_endpoints.drop(columns='Node', inplace = True)
+    
+        pet_interlocks = idf.NodeInterlockDf(pet_log, sys_log, pet_endpoints)
     except:
         pet_interlocks = pd.DataFrame()
     

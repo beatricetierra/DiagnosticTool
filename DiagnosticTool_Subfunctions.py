@@ -78,30 +78,10 @@ def find_interlocks(node_interlocks):
         
     return(interlocks_df)
     
-def find_node_start(interlocks_df, interlock_start_times):
-    start_times = pd.DataFrame({'Interlock Number': '------ NODE START ------', 'Datetime': interlock_start_times,
-                               'Active Time': '', 'Inactive Time': ''})
-    start_times['Active Time'] = start_times['Datetime'].dt.time
-    result = pd.concat([interlocks_df, start_times], sort=False)
-    result.reset_index(drop=True, inplace=True)
-    
-    for idx, (date, time) in enumerate(zip(result['Date'], result['Active Time'])):
-        try:
-            result.loc[idx,'Datetime'] = datetime.datetime.combine(date,time)
-        except:
-            pass
-        
-    result.sort_values(by=['Datetime'], inplace=True)
-    result['Date'] = result['Datetime']
-    result.drop(columns = 'Datetime', inplace=True)
-    result.reset_index(drop=True, inplace=True)
-    return(result)
-    
-def find_node_end(interlocks_df, interlock_end_times):
-    end_times = pd.DataFrame({'Interlock Number': '------ NODE END ------', 'Datetime': interlock_end_times,
-                               'Active Time': '', 'Inactive Time': ''})
-    end_times['Active Time'] = end_times['Datetime'].dt.time
-    result = pd.concat([interlocks_df, end_times], sort=False)
+def find_endpoints(interlocks_df, node_endpoints):
+    endpoints_df = pd.DataFrame({'Date': node_endpoints['Date'], 'Interlock Number': node_endpoints['Description'],
+                               'Active Time': node_endpoints['Time'], 'Inactive Time': ''})
+    result = pd.concat([interlocks_df, endpoints_df], sort=False)
     result.reset_index(drop=True, inplace=True)
     
     for idx, (date, time) in enumerate(zip(result['Date'], result['Active Time'])):
@@ -138,7 +118,7 @@ def node_start_delta(interlocks_df):
 def interlock_duration(interlock_df):
     time_delta = []
     for idx, (active, inactive) in enumerate(zip(interlock_df['Active Time'], interlock_df['Inactive Time'])):
-        date = interlock_df['Date'][idx].to_pydatetime()
+        date = interlock_df.loc[idx,'Date'].to_pydatetime()
         try:
             inactive_time = datetime.datetime.combine(date.date(), inactive)
             active_time = datetime.datetime.combine(date.date(), active)
