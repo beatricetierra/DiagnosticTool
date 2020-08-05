@@ -31,6 +31,29 @@ def GetFiles(folderpath):
                     filenames.append(os.path.join(root, file))
     return(filenames)
 
+def ListSWVersion(filenames):
+    dates = []
+    files = []
+    sw_version = []
+    key = '* current branch: '
+    
+    for file in filenames:
+        if '-kvct-' in file:
+            with open(file) as log:
+                for line in log:
+                    if key in line:
+                        entry = line.split(key)
+                        sw_version.append(entry[-1])
+                        dates.append(file.split('\\')[6])
+                        files.append(file.split('\\')[-1])
+                    
+    sw_list = pd.DataFrame({'Date': dates, 'File': files,  'SW Version': sw_version})
+    dummies = pd.get_dummies(sw_list['SW Version'])
+    sw_list = pd.concat([sw_list.iloc[:,0], dummies], axis=1)    
+    sw_list = sw_list.groupby('Date').sum()
+    sw_list.reset_index(inplace=True)
+    return(sw_list)
+    
 def ReadLogs(file, find_keys):
     system, start_entries, end_entries, entries  = ([] for i in range(4))
     
