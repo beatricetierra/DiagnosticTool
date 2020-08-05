@@ -52,7 +52,7 @@ def ListSWVersion(filenames):
     sw_list = pd.concat([sw_list.iloc[:,0], dummies], axis=1)    
     sw_list = sw_list.groupby('Date').sum()
     sw_list.reset_index(inplace=True)
-    return(sw_list)
+    return(sw_list) 
     
 def ReadLogs(file, find_keys):
     system, start_entries, end_entries, entries  = ([] for i in range(4))
