@@ -36,16 +36,18 @@ def filter_expected(interlocks_df):
     df.drop(node_start_idx, inplace=True)
     df.drop(node_end_idx, inplace=True)
     
-    # filter all startup (5 min after node start), shutdown (1 min before node end) interlocks, and interlocks that occur between shutdown and startup
+    # Remove startup and shutdown interlocks
     # keep separate because node start != node end everytime (ex. wait_config error, unexpected shutdown)
+    #filter interlocks that occur 5 minutes after node starts
     for start in node_start:
-        limit = start + datetime.timedelta(minutes=5)   #filter startup interlocks
+        limit = start + datetime.timedelta(minutes=5)   
         for idx, time in enumerate(df['Datetime']):
             if start < time < limit:
                 filtered_out = filtered_out.append(df.iloc[idx])
                 interlock_type.append('Startup Interlock')
     
-    for end in node_end:                
+    #filter interlocks that occur one minute before node shutsdown 
+    for end in node_end:     
         limit = end - datetime.timedelta(minutes=1) #filter shutdown interlocks
         for idx, time in enumerate(df['Datetime']):
             if limit < time < end:
@@ -63,6 +65,12 @@ def filter_expected(interlocks_df):
                     interlock_type.append('Shutdown Interlock')
         except:
             pass
+
+    #filter all interlocks after the last node_end if new session does not start
+    if node_end_idx[-1] > log_start_idx[-1] and node_end_idx[-1] > node_start_idx[-1]:
+        for idx in range(node_end_idx[-1]+1, df.index[-1]+1):
+            filtered_out = filtered_out.append(df.loc[idx])
+            interlock_type.append('Shutdown Interlock')
 
     filtered = df.drop(filtered_out.index.values)
   
