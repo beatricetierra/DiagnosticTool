@@ -49,10 +49,10 @@ def ListSWVersion(filenames):
                     
     sw_list = pd.DataFrame({'Date': dates, 'File': files,  'SW Version': sw_version})
     dummies = pd.get_dummies(sw_list['SW Version'])
-    sw_list = pd.concat([sw_list.iloc[:,0], dummies], axis=1)    
-    sw_list = sw_list.groupby('Date').sum()
-    sw_list.reset_index(inplace=True)
-    return(sw_list) 
+    sw_list_summary = pd.concat([sw_list.iloc[:,0], dummies], axis=1)    
+    sw_list_summary = sw_list.groupby('Date').sum()
+    sw_list_summary.reset_index(inplace=True)
+    return(sw_list, sw_list_summary) 
     
 def ReadLogs(file, find_keys):
     system, start_entries, end_entries, entries  = ([] for i in range(4))
@@ -114,11 +114,12 @@ def GetEntries(filenames):
     # filter out log files
     # accepts all -log- files and only kvct, pet_recon, and sysnode files ending in '000'
     for file in filenames:
-        if '-log-' in file:
-            files.append(file)
-        for word in acceptable_files:
-            if word in file and '000' in file:
+        if '.log' in file:
+            if '-log-' in file:
                 files.append(file)
+            for word in acceptable_files:
+                if word in file and '000' in file:
+                    files.append(file)
     
     # Read log files.
     system, endpoints, entries  = ([] for i in range(3))

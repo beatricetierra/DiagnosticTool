@@ -22,29 +22,51 @@ def filter_expected(interlocks_df):
     # save start and end entries
     df = interlocks_df.copy()
     df.insert(0, 'Datetime', datetimes)
-    restart_times = df.loc[df['Interlock Number'] == '------ NODE START ------']['Datetime']
-    restart_times_idx = restart_times.index.values
-    end_times = df.loc[df['Interlock Number'] == '------ NODE END ------']['Datetime']
-    end_times_idx = end_times.index.values
-    df.drop(restart_times_idx, inplace=True)
-    df.drop(end_times_idx, inplace=True)
     
+    log_start = df.loc[df['Interlock Number'] == '------ LOG START ------']['Datetime']
+    log_start_idx = log_start.index.values
     
-    # filter all startup (5 min after node start) and shutdown (1 min before node end) interlocks 
-    for restart, end in zip(restart_times, end_times):
-        lowerlimit = end - datetime.timedelta(minutes=1)
-        upperlimit = restart + datetime.timedelta(minutes=5)
+    node_start = df.loc[df['Interlock Number'] == '------ NODE START ------']['Datetime']
+    node_start_idx = node_start.index.values
+    
+    node_end = df.loc[df['Interlock Number'] == '------ NODE END ------']['Datetime']
+    node_end_idx = node_end.index.values
+    
+    df.drop(log_start_idx, inplace = True)
+    df.drop(node_start_idx, inplace=True)
+    df.drop(node_end_idx, inplace=True)
+    
+    # filter all startup (5 min after node start), shutdown (1 min before node end) interlocks, and interlocks that occur between shutdown and startup
+    # keep separate because node start != node end everytime (ex. wait_config error, unexpected shutdown)
+    for start in node_start:
+        limit = start + datetime.timedelta(minutes=5)   #filter startup interlocks
         for idx, time in enumerate(df['Datetime']):
-            if restart < time < upperlimit:
+            if start < time < limit:
                 filtered_out = filtered_out.append(df.iloc[idx])
                 interlock_type.append('Startup Interlock')
-            if lowerlimit < time < restart:
+    
+    for end in node_end:                
+        limit = end - datetime.timedelta(minutes=1) #filter shutdown interlocks
+        for idx, time in enumerate(df['Datetime']):
+            if limit < time < end:
                 filtered_out = filtered_out.append(df.iloc[idx])
                 interlock_type.append('Shutdown Interlock')
-                
-    # filter expected interlocks
+        try: 
+            start_entries = [] 
+            for start in node_start:
+                if start > end:
+                    start_entries.append(start)
+            next_start = start_entries[0]
+            for idx, time in enumerate(df['Datetime']):
+                if end < time < next_start:     #filter interlocks that occur after a shutdown and before next node startup
+                    filtered_out = filtered_out.append(df.iloc[idx])
+                    interlock_type.append('Shutdown Interlock')
+        except:
+            pass
+
     filtered = df.drop(filtered_out.index.values)
-    
+  
+    # filter expected interlocks        
     for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip(filtered['Interlock Number'], filtered['Machine last state (before active)'], filtered['Sysnode Relevant Interlock (before)'], filtered['Sysnode Relevant Interlock (during)'], filtered['Node State (before active)'])):
         # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
         if 'ViewAvgTooHigh' in interlock and '' in sys_before and '' in sys_during:
@@ -61,16 +83,20 @@ def filter_expected(interlocks_df):
             filtered_out = filtered_out.append(filtered.iloc[idx])
             interlock_type.append('AnodeRampDown')
             
+            
     # finalize filtered and filtered out dataframes
     filtered_out.insert(4, 'Type', interlock_type)
     filtered = df.drop(filtered_out.index.values)
     
     # insert start and end times and sort by date and active time
-    restart_entries = interlocks_df.iloc[restart_times_idx] 
-    end_entries = interlocks_df.iloc[end_times_idx] 
+    log_start_entries = interlocks_df.iloc[log_start_idx]
+    start_entries = interlocks_df.iloc[node_start_idx] 
+    end_entries = interlocks_df.iloc[node_end_idx] 
     
-    filtered_out = pd.concat([filtered_out, restart_entries], axis=0, sort=False)
-    filtered = pd.concat([filtered, restart_entries], axis=0, sort=False)
+    filtered_out = pd.concat([filtered_out, log_start_entries], axis=0, sort=False)
+    filtered = pd.concat([filtered, log_start_entries], axis=0, sort=False)
+    filtered_out = pd.concat([filtered_out, start_entries], axis=0, sort=False)
+    filtered = pd.concat([filtered, start_entries], axis=0, sort=False)
     filtered_out = pd.concat([filtered_out, end_entries], axis=0, sort=False)
     filtered = pd.concat([filtered, end_entries], axis=0, sort=False)
     
@@ -99,7 +125,9 @@ def total_seconds(filtered_out, column):
 # Analyze unexpected interlocks
 def analysis(filtered_df):
     # remove restart entries
+    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ LOG START ------']
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE START ------']
+    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ END START ------']
 
     #counter column
     filtered_df['Count'] = [1]*len(filtered_df)
