@@ -11,7 +11,7 @@ import datetime
 def filter_expected(interlocks_df):
     
     # find entries to be filtered out and insert into new dataframe
-    filtered_out = pd.DataFrame(columns=interlocks_df.columns)
+    filter_out_idx= [] 
     interlock_type = []
     
     # convert date and time to datetime column for time difference operations
@@ -32,18 +32,21 @@ def filter_expected(interlocks_df):
     node_end = df.loc[df['Interlock Number'] == '------ NODE END ------']['Datetime']
     node_end_idx = node_end.index.values
     
-    df.drop(log_start_idx, inplace = True)
-    df.drop(node_start_idx, inplace=True)
-    df.drop(node_end_idx, inplace=True)
+    # skip all endpoint entries
+    df = df.drop(log_start_idx)
+    df = df.drop(node_start_idx)
+    df = df.drop(node_end_idx)
+    df.reset_index(drop=True, inplace=True)
     
     # Remove startup and shutdown interlocks
     # keep separate because node start != node end everytime (ex. wait_config error, unexpected shutdown)
     #filter interlocks that occur 5 minutes after node starts
+    
     for start in node_start:
         limit = start + datetime.timedelta(minutes=5)   
         for idx, time in enumerate(df['Datetime']):
             if start < time < limit:
-                filtered_out = filtered_out.append(df.iloc[idx])
+                filter_out_idx.append(idx)
                 interlock_type.append('Startup Interlock')
     
     #filter interlocks that occur one minute before node shutsdown 
@@ -51,7 +54,7 @@ def filter_expected(interlocks_df):
         limit = end - datetime.timedelta(minutes=1) #filter shutdown interlocks
         for idx, time in enumerate(df['Datetime']):
             if limit < time < end:
-                filtered_out = filtered_out.append(df.iloc[idx])
+                filter_out_idx.append(idx)
                 interlock_type.append('Shutdown Interlock')
         try: 
             start_entries = [] 
@@ -61,7 +64,7 @@ def filter_expected(interlocks_df):
             next_start = start_entries[0]
             for idx, time in enumerate(df['Datetime']):
                 if end < time < next_start:     #filter interlocks that occur after a shutdown and before next node startup
-                    filtered_out = filtered_out.append(df.iloc[idx])
+                    filter_out_idx.append(idx)
                     interlock_type.append('Shutdown Interlock')
         except:
             pass
@@ -69,33 +72,36 @@ def filter_expected(interlocks_df):
     #filter all interlocks after the last node_end if new session does not start
     if node_end_idx[-1] > log_start_idx[-1] and node_end_idx[-1] > node_start_idx[-1]:
         for idx in range(node_end_idx[-1]+1, df.index[-1]+1):
-            filtered_out = filtered_out.append(df.loc[idx])
+            filter_out_idx.append(idx)
             interlock_type.append('Shutdown Interlock')
-
-    filtered = df.drop(filtered_out.index.values)
   
     # filter expected interlocks        
-    for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip(filtered['Interlock Number'], filtered['Machine last state (before active)'], filtered['Sysnode Relevant Interlock (before)'], filtered['Sysnode Relevant Interlock (during)'], filtered['Node State (before active)'])):
+    for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip(df['Interlock Number'], df['Machine last state (before active)'], df['Sysnode Relevant Interlock (before)'], df['Sysnode Relevant Interlock (during)'], df['Node State (before active)'])):
         # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
         if 'ViewAvgTooHigh' in interlock and '' in sys_before and '' in sys_during:
-            filtered_out = filtered_out.append(filtered.iloc[idx])
+            filter_out_idx.append(idx)
             interlock_type.append('ViewAvgTooHigh')
         # Filter Interlock 161216:(DMS.Status.RCB.ExternalTriggerInvalid)  when in MV_READY state
         if 'ExternalTriggerInvalid' in interlock and '' in sys_before and '' in sys_during: 
-            filtered_out = filtered_out.append(filtered.iloc[idx])
+            filter_out_idx.append(idx)
             interlock_type.append('ExternalTriggerInvalid')
         if 'IDLE' in node_state and 'HVG' in interlock:
-            filtered_out = filtered_out.append(filtered.iloc[idx])
+            filter_out_idx.append(idx)
             interlock_type.append('HVG while IDLE')
         if 'HVG.AnodeStatusMismatch' in interlock and 'AnodeRampDown' in machine:
-            filtered_out = filtered_out.append(filtered.iloc[idx])
+            filter_out_idx.append(idx)
             interlock_type.append('AnodeRampDown')
             
             
-    # finalize filtered and filtered out dataframes
-    filtered_out.insert(4, 'Type', interlock_type)
-    filtered = df.drop(filtered_out.index.values)
+    # separate interlocks_df into filtered and filtered_out 
+    df2 = pd.DataFrame({'Index': filter_out_idx, 'Type':interlock_type})
+    df2 = df2.drop_duplicates(subset=['Index']).sort_values(['Index'])    #remove duplicates (incase interlock meets multiple filtering criteria)
     
+    filtered = df.drop(list(df2['Index']))
+    filtered_out = df.iloc[list(df2['Index'])]
+    filtered_out.insert(5, 'Type', df2['Type'])
+    
+    # finalize filtered and filtered out dataframes
     # insert start and end times and sort by date and active time
     log_start_entries = interlocks_df.iloc[log_start_idx]
     start_entries = interlocks_df.iloc[node_start_idx] 
@@ -106,7 +112,7 @@ def filter_expected(interlocks_df):
     filtered_out = pd.concat([filtered_out, start_entries], axis=0, sort=False)
     filtered = pd.concat([filtered, start_entries], axis=0, sort=False)
     filtered_out = pd.concat([filtered_out, end_entries], axis=0, sort=False)
-    filtered = pd.concat([filtered, end_entries], axis=0, sort=False)
+    filtered = pd.concat([filtered, end_entries ], axis=0, sort=False)
     
     filtered_out.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True)
     filtered_out.reset_index(drop=True, inplace=True)
@@ -115,6 +121,7 @@ def filter_expected(interlocks_df):
     
     filtered_out.drop('Datetime', axis=1, inplace=True)
     filtered.drop('Datetime', axis=1, inplace=True)
+
     
     return(filtered, filtered_out)
 

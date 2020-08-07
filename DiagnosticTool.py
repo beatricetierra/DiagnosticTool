@@ -47,7 +47,7 @@ def GetSWVersion(folderpath):
                     if key in line:
                         entry = line.split(key)
                         sw_version.append(entry[-1].strip('\n'))
-                        dates.append(file.split('\\')[7])
+                        dates.append(file.split('\\')[-2])
                         files.append(file.split('\\')[-1])
                     
     sw_list = pd.DataFrame({'Date': dates, 'File': files,  'SW Version': sw_version})
