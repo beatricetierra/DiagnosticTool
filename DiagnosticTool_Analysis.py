@@ -71,9 +71,10 @@ def filter_expected(interlocks_df):
 
     #filter all interlocks after the last node_end if new session does not start
     if node_end_idx[-1] > log_start_idx[-1] and node_end_idx[-1] > node_start_idx[-1]:
-        for idx in range(node_end_idx[-1]+1, df.index[-1]+1):
-            filter_out_idx.append(idx)
-            interlock_type.append('Shutdown Interlock')
+        for idx, time in enumerate(df['Datetime']):
+            if time > node_end.iloc[-1]:
+                filter_out_idx.append(idx)
+                interlock_type.append('Shutdown Interlock')
   
     # filter expected interlocks        
     for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip(df['Interlock Number'], df['Machine last state (before active)'], df['Sysnode Relevant Interlock (before)'], df['Sysnode Relevant Interlock (during)'], df['Node State (before active)'])):
@@ -99,8 +100,8 @@ def filter_expected(interlocks_df):
     
     filtered = df.drop(list(df2['Index']))
     filtered_out = df.iloc[list(df2['Index'])]
-    filtered_out.insert(5, 'Type', df2['Type'])
-    
+    filtered_out.insert(5, 'Type', list(df2['Type']))
+
     # finalize filtered and filtered out dataframes
     # insert start and end times and sort by date and active time
     log_start_entries = interlocks_df.iloc[log_start_idx]
