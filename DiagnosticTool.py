@@ -6,6 +6,7 @@ Created on Wed May 20 17:58:42 2020
 """
 
 import os
+import csv
 import pandas as pd
 import InterlockDataFrame as idf
 import DiagnosticTool_Analysis as dta
@@ -25,13 +26,15 @@ def GetFiles(folderpath):
     filenames = []  
 
     for root, dirs, files in os.walk(folderpath):
-        for word in acceptable_files:
-            for file in files:
-                if word in file:   
-                    filenames.append(os.path.join(root, file))
+        for file in files:
+            if '.log' in file:
+                for word in acceptable_files:
+                    if word in file:   
+                        filenames.append(os.path.join(root, file))
     return(filenames)
 
-def ListSWVersion(filenames):
+def GetSWVersion(folderpath):
+    filenames = GetFiles(folderpath)
     dates = []
     files = []
     sw_version = []
@@ -43,16 +46,18 @@ def ListSWVersion(filenames):
                 for line in log:
                     if key in line:
                         entry = line.split(key)
-                        sw_version.append(entry[-1])
-                        dates.append(file.split('\\')[6])
+                        sw_version.append(entry[-1].strip('\n'))
+                        dates.append(file.split('\\')[7])
                         files.append(file.split('\\')[-1])
                     
     sw_list = pd.DataFrame({'Date': dates, 'File': files,  'SW Version': sw_version})
-    dummies = pd.get_dummies(sw_list['SW Version'])
-    sw_list_summary = pd.concat([sw_list.iloc[:,0], dummies], axis=1)    
-    sw_list_summary = sw_list.groupby('Date').sum()
-    sw_list_summary.reset_index(inplace=True)
-    return(sw_list, sw_list_summary) 
+    summary = sw_list.groupby('Date')['SW Version'].apply(lambda x: ','.join(x)).reset_index()
+    summary['SW Version'] = [','.join(list(set(summary['SW Version'][i].split(',')))) for i in range(0,len(summary))]
+    
+    #To Save
+    sw_list.to_csv(folderpath+'\sw_list.csv', index=False, sep='\t', quoting=csv.QUOTE_NONE)
+    summary.to_csv(folderpath+'\summary.csv', index=False, sep='\t', quoting=csv.QUOTE_NONE)
+    return(sw_list, summary) 
     
 def ReadLogs(file, find_keys):
     system, start_entries, end_entries, entries  = ([] for i in range(4))
