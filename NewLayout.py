@@ -157,7 +157,10 @@ class Page1(Page):
        summary_df = pd.DataFrame([info, values]).transpose()
        
        # Interlocks Excel File
-       interlocks_writer = pd.ExcelWriter(directory + '\InterlocksList.xlsx', engine='xlsxwriter')
+       start_date = ('').join(dates.split('-')[1:3])
+       end_date = ('').join(dates.split('-')[4:])
+       filedate = ('-').join([start_date, end_date]).replace(' ','')
+       interlocks_writer = pd.ExcelWriter(directory + '\InterlocksList_' + filedate + '.xlsx', engine='xlsxwriter')
        kvct_df.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (All)')
        kvct_filtered.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Unexpect)')
        kvct_filtered_out.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Expected)')
@@ -165,7 +168,7 @@ class Page1(Page):
        interlocks_writer.save()
        
        # Analysis Excel File
-       analysis_writer = pd.ExcelWriter(directory + '\InterlocksAnalysis.xlsx', engine='xlsxwriter')
+       analysis_writer = pd.ExcelWriter(directory + '\InterlocksAnalysis_' + filedate + '.xlsx', engine='xlsxwriter')
        summary_df.to_excel(analysis_writer, sheet_name='Summary')
        filtered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Unexpect)')
        unfiltered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Expect)')
