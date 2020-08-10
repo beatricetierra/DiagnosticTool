@@ -143,7 +143,7 @@ def analysis(filtered_df):
     # remove restart entries
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ LOG START ------']
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE START ------']
-    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ END START ------']
+    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE END ------']
 
     #counter column
     filtered_df['Count'] = [1]*len(filtered_df)
@@ -174,20 +174,23 @@ def analysis_expected(filtered_out):
     columns = ['Date', 'Active Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration']
     filtered_out = filtered_out.reindex(columns= columns)
     
-    # Find indices which 
+    # Find indices where node restarts
     restart_indices = filtered_out.loc[filtered_out['Interlock Number'] == '------ NODE START ------'].index.values.tolist()
-    restart_indices.insert(0, 0)
     restart_indices = sorted(list(set(restart_indices)))
 
     # Divide into different sessions 
     session_num = [None] * len(filtered_out)
     
     for session, restart_idx in enumerate(restart_indices):
+        if session == 0 and restart_idx!= 0:
+            start = 0
+        else:
+            start = restart_idx
         try:
             end = restart_indices[session + 1]
         except:
             end = len(filtered_out)
-        for idx in range(restart_idx, end):
+        for idx in range(start, end):
             session_num[idx] = session+1
     
     filtered_out.insert(0, 'Session', session_num) 
@@ -203,6 +206,7 @@ def analysis_expected(filtered_out):
     filtered_out['Time from Node Start'] = total_seconds(filtered_out, filtered_out['Time from Node Start'])
     filtered_out['Interlock Duration'] = total_seconds(filtered_out, filtered_out['Interlock Duration'])
     filtered_out = filtered_out[~filtered_out['Interlock Number'].str.contains('START')]
+    filtered_out = filtered_out[~filtered_out['Interlock Number'].str.contains('END')]
     
     # Analyze per session
     # Count
