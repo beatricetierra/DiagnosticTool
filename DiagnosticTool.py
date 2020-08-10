@@ -60,31 +60,53 @@ def GetSWVersion(folderpath):
     return(sw_list, summary) 
     
 def ReadLogs(file, find_keys):
-    system, start_entries, end_entries, entries  = ([] for i in range(4))
+    system, endpoints, entries  = ([] for i in range(3))
+    parse_idx = [3,4,7,10] #only keep date, time, node, and desciption
     
     with open(file, encoding="cp437") as log:
-        first_line = log.readline()     #read first line and find system (A1,A2,A4, or B1)
+        first_line = log.readline()
         sys = first_line.split(" ")
         system.append(sys[6])
-        parse_idx = [3,4,7,10]  #only keep date, time, node, and description
         for line in log:
-            if 'kvct connected' in line or 'pet_recon connected' in line:   # entry for start of node
-                start = line.split(" ", 9)
-                start_entries.append([start[i] for i in [0,1,-1]]) #only keep date, time, and description
-            elif 'Signal 15' in line: # entry for end of node
-                end = line.split(" ", 9) 
-                end_entries.append([end[i] for i in [0,1,-1]]) #only keep date, time, and description
-            elif 'KV' in line or 'PR' in line or 'SY' in line:
-                if 'SysNode' in line and '***' in line:
-                    if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
+            try: 
+                node = line.split(' ', 8)[7]
+                if node == 'KV' or node == 'PR' or node == 'SY':
+                    if 'Configuring log file:' in line or 'command: set to load_config' in line or 'Signal 15' in line:
                         entry = line.split(" ", 10)
-                        entries.append([entry[i] for i in parse_idx]) 
-                else: 
-                    for word in find_keys:
-                        if word in line:
+                        endpoints.append([entry[i] for i in parse_idx]) 
+                    if '***' in line:
+                        if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
                             entry = line.split(" ", 10)
                             entries.append([entry[i] for i in parse_idx])
-    return(system, start_entries, end_entries, entries)
+                    else:
+                        for word in find_keys:
+                            if word in line:
+                                entry = line.split(" ", 10)
+                                entries.append([entry[i] for i in parse_idx])
+            except:
+                pass                
+#        first_line = log.readline()     #read first line and find system (A1,A2,A4, or B1)
+#        sys = first_line.split(" ")
+#        system.append(sys[6])
+#        parse_idx = [3,4,7,10]  #only keep date, time, node, and description
+#        for line in log:
+#            if 'kvct connected' in line or 'pet_recon connected' in line:   # entry for start of node
+#                start = line.split(" ", 9)
+#                start_entries.append([start[i] for i in [0,1,-1]]) #only keep date, time, and description
+#            elif 'Signal 15' in line: # entry for end of node
+#                end = line.split(" ", 9) 
+#                end_entries.append([end[i] for i in [0,1,-1]]) #only keep date, time, and description
+#            elif 'KV' in line or 'PR' in line or 'SY' in line:
+#                if 'SysNode' in line and '***' in line:
+#                    if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
+#                        entry = line.split(" ", 10)
+#                        entries.append([entry[i] for i in parse_idx]) 
+#                else: 
+#                    for word in find_keys:
+#                        if word in line:
+#                            entry = line.split(" ", 10)
+#                            entries.append([entry[i] for i in parse_idx])
+    return(system, endpoints, entries)
 
 def ReadNodeLogs(file, find_keys):
     system, endpoints, entries  = ([] for i in range(3))
@@ -136,7 +158,7 @@ def GetEntries(filenames):
         [system.append(system_tmp[i]) for i in range(0, len(system_tmp))]
         [endpoints.append(endpoints_tmp[i]) for i in range(0, len(endpoints_tmp))]
         [entries.append(entries_tmp[i]) for i in range(0, len(entries_tmp))]
-            
+    
     # Find system model (check if all log files are from same system)
     if all(i == system[0] for i in system):
         system_model = system[0]
@@ -162,10 +184,6 @@ def GetEntries(filenames):
             endpoints_df.loc[i,'Description'] = '------ NODE END ------'
         else:
             endpoints_df.loc[i,'Description'] = '------ LOG START ------'
-            
-#    nodes = ['KV', 'PR', 'SY']  #only keep kvct, pet_recon, and sysnode entries
-#    entries_df = entries_df.loc[entries_df['Node'].isin(nodes)]
-#    entries_df.reset_index(inplace=True, drop=True)    
 
     # Seperate entries by nodes
     sys_log = entries_df.loc[entries_df['Node'] == 'SY']
