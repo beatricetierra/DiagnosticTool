@@ -17,166 +17,100 @@ class Page(tk.Frame):
 
 class Page1(Page):
    def __init__(self, *args, **kwargs):
-       Page.__init__(self, *args, **kwargs)       
-       
-       # Saving Directory
-       savingFrame = tk.Frame(self)
-       savingFrame.place(relx=0.25, rely=0.15, relwidth=0.5, relheight=0.03)
-       
-       label1 = tk.Label(savingFrame, text='Directory:', font=20)
-       label1.pack(side='left')
-       button_save = tk.Button(savingFrame, text='Save Results', font=20, command=self.exportExcel)
-       button_save.pack(side='right')
-       
-       self.entry_directory = tk.Entry(savingFrame)
-       self.entry_directory.pack(fill='x')
-       
-       # List of Files
-       scrollFrame = tk.Frame(self, bd=1, relief='solid')
-       scrollFrame.place(relx=0.25, rely=0.2, relwidth=0.5, relheight=0.7)
-       
-       scrollbar_x = tk.Scrollbar(scrollFrame, orient='horizontal')
-       scrollbar_x.pack(side='bottom', fill='x')
-       
-       scrollbar_y = tk.Scrollbar(scrollFrame)
-       scrollbar_y.pack(side='right', fill='y')
-       
-       # Buttons
-       button_find = tk.Button(self, text='Find Interlocks', font=20, command=self.findEntries)
-       button_find.place(relx=0.1, rely=0.3, relwidth=0.1, relheight=0.1)
-       
-       button_add = tk.Button(self, text='Add Files', font=20, command=self.clicked)
-       button_add.place(relx=0.8, rely=0.5, relwidth=0.1, relheight=0.1)
-        
-       button_delete = tk.Button(self, text='Delete All', font=20, command=self.delete)
-       button_delete.place(relx=0.8, rely=0.6, relwidth=0.1, relheight=0.1)
-        
-       button_delete_select = tk.Button(self, text='Delete Selected', font=20, command=self.delete_selected)
-       button_delete_select.place(relx=0.8, rely=0.7, relwidth=0.1, relheight=0.1)
-       
-       self.listbox= tk.Listbox(scrollFrame, height = 500, width = 350, xscrollcommand=scrollbar_x.set, yscrollcommand=scrollbar_y.set)
-       self.listbox.pack(expand=0, fill='both')
-       scrollbar_x.config(command=self.listbox.xview)
-       scrollbar_y.config(command=self.listbox.yview)
-       
-   def clicked(self):
-       content = filedialog.askopenfilenames(title='Choose files', defaultextension='.log')
-       [self.listbox.insert(tk.END, item) for item in content]
-       
-   def delete(self):
-       self.listbox.delete(0, tk.END)
-     
-   def delete_selected(self):
-       self.listbox.delete(tk.ANCHOR)
-       
-   def df_tree(self, df, tab):
-       # Scrollbars
-       treeScroll_y = ttk.Scrollbar(tab)
-       treeScroll_y.pack(side='right', fill='y')
-       treeScroll_x = ttk.Scrollbar(tab, orient='horizontal')
-       treeScroll_x.pack(side='bottom', fill='x')
-       
-       columns = list(df.columns)
-       tree = ttk.Treeview(tab)
-       tree.pack(expand=1, fill='both')
-       tree["columns"] = columns
-       
-       for i in columns:
-           tree.column(i, anchor="w")
-           tree.heading(i, text=i, anchor='w')
-            
-       for index, row in df.iterrows():
-           tree.insert("",tk.END,text=index,values=list(row))
-       
-       treeScroll_y.configure(command=tree.yview)
-       tree.configure(yscrollcommand=treeScroll_y.set)
-       treeScroll_x.configure(command=tree.xview)
-       tree.configure(xscrollcommand=treeScroll_x.set)
-       
-       tree.column("#0", width=50, stretch='no') 
-       tree.column("Interlock Number", width=300, stretch='no')
-       if 'page2' in str(tab):
-           tree.column("Date", width=100, stretch='no')
-           tree.column("Active Time", width=100, stretch='no')
-           tree.column("Inactive Time", width=100, stretch='no')
-           tree.column("Time from Node Start", width=100, stretch='no')
-           tree.column("Interlock Duration", width=100, stretch='no')
-           
-       if 'page3' in str(tab):
-           for i in range(1,len(columns)):
-               tree.column(i, width=50, stretch='no')
-       
-   def findEntries(self):
-       global files, kvct_df, pet_df, kvct_filtered, kvct_filtered_out, system, dates
-       global filtered_analysis, sessions, unfiltered_analysis, pet_analysis
-       
-       files = list(self.listbox.get(0,tk.END))
-       
-       # Find all interlocks
-       try:
-           system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
-           self.df_tree(kvct_df, Page2.tab1)
-           self.df_tree(pet_df, Page2.tab4)
-           Page2.menubar_filter(kvct_df, Page2.menubar1)
-           #Page2.menubar_filter(pet_df, Page2.menubar2)
-           
-           # Get dates
-           start_date = kvct_df['Date'][0]
-           end_date = kvct_df['Date'][len(kvct_df)-1]
-           dates = str(start_date)+' - '+str(end_date)
-       except:
-           messagebox.showerror("Error", "Cannot find entries for listed files.")
-           pass
-       
-       # Filter interlocks
-       try:
-           kvct_filtered, kvct_filtered_out = DiagnosticTool.FilterEntries(kvct_df)
-           self.df_tree(kvct_filtered, Page2.tab2)
-           self.df_tree(kvct_filtered_out, Page2.tab3)
-       except:
-           messagebox.showerror("Error", "Cannot filter interlocks.")
-           pass
-       
-       # Analyze interlocks 
-       try:
-           filtered_analysis, sessions, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
-           self.df_tree(filtered_analysis, Page3.tab1)
-           self.df_tree(unfiltered_analysis, Page3.tab2)
-           self.df_tree(pet_analysis, Page3.tab3)
+       Page.__init__(self, *args, **kwargs)
 
-       except: 
-           messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
-           pass
+       # Left side
+       leftFrame = tk.Frame(self)
+       leftFrame.place(rely=0.3, relwidth=0.4, relheight=0.55)
        
-   def exportExcel(self):  
-       directory = self.entry_directory.get()
-           
-        # Summary Table
-       info = ['System', 'Dates', 'Total Sessions', 'KVCT Total Interlocks', 'KVCT Unexpected Interlocks', 'KVCT Expected Interlocks', 'PET Interlocks']
-       values = [system, dates, sessions, len(kvct_df), len(kvct_filtered), len(kvct_filtered_out), len(pet_df)]
-       summary_df = pd.DataFrame([info, values]).transpose()
+       scrollFrame1 = tk.Frame(leftFrame, bd=1, relief='solid')
+       scrollFrame1.place(relx=0.1, relwidth=0.7, relheight=1)
        
-       # Interlocks Excel File
-       start_date = ('').join(dates.split('-')[1:3])
-       end_date = ('').join(dates.split('-')[4:])
-       filedate = ('-').join([start_date, end_date]).replace(' ','')
-       interlocks_writer = pd.ExcelWriter(directory + '\InterlocksList_' + filedate + '.xlsx', engine='xlsxwriter')
-       kvct_df.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (All)')
-       kvct_filtered.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Unexpect)')
-       kvct_filtered_out.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Expected)')
-       pet_df.to_excel(interlocks_writer, sheet_name='PET Interlocks')
-       interlocks_writer.save()
+       scrollbar_x1 = tk.Scrollbar(scrollFrame1, orient='horizontal')
+       scrollbar_x1.pack(side='bottom', fill='x')
+          
+       scrollbar_y1 = tk.Scrollbar(scrollFrame1)
+       scrollbar_y1.pack(side='right', fill='y')
+          
+       self.listbox1= tk.Listbox(scrollFrame1, height = 500, width = 350, xscrollcommand=scrollbar_x1.set, yscrollcommand=scrollbar_y1.set)
+       self.listbox1.pack(expand=0, fill='both')
+       scrollbar_x1.config(command=self.listbox1.xview)
+       scrollbar_y1.config(command=self.listbox1.yview)
+          
+       # Buttons for List of Folders
+       button_find1 = tk.Button(leftFrame, text='Find Files', font=30, command=self.findFiles)
+       button_find1.place(relx=0.82, rely=0.5, relwidth=0.15, relheight=0.06)
+          
+       button_add1 = tk.Button(leftFrame, text='Add', font=20, command=self.addFolder)
+       button_add1.place(relx=0.82, rely=0.85, relwidth=0.1, relheight=0.05)
+          
+       button_delete_select1 = tk.Button(leftFrame, text='Delete', font=20, command=self.deleteFolder_selected)
+       button_delete_select1.place(relx=0.82, rely=0.9, relwidth=0.1, relheight=0.05)
        
-       # Analysis Excel File
-       analysis_writer = pd.ExcelWriter(directory + '\InterlocksAnalysis_' + filedate + '.xlsx', engine='xlsxwriter')
-       summary_df.to_excel(analysis_writer, sheet_name='Summary')
-       filtered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Unexpect)')
-       unfiltered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Expect)')
-       pet_analysis.to_excel(analysis_writer, sheet_name='PET Analysis')
-       analysis_writer.save()
+       # Right side
+       rightFrame = tk.Frame(self)
+       rightFrame.place(relx=0.40, rely=0.15, relwidth=0.6, relheight=0.7)
        
-       tk.messagebox.showinfo(title='Info', message='Excel files exported')
+       scrollFrame2 = tk.Frame(rightFrame, bd=1, relief='solid')
+       scrollFrame2.place(relx=0.1, relwidth=0.7, relheight=1)
        
+       scrollbar_x2 = tk.Scrollbar(scrollFrame2, orient='horizontal')
+       scrollbar_x2.pack(side='bottom', fill='x')
+          
+       scrollbar_y2 = tk.Scrollbar(scrollFrame2)
+       scrollbar_y2.pack(side='right', fill='y')
+          
+       self.listbox2= tk.Listbox(scrollFrame2, height = 500, width = 350, xscrollcommand=scrollbar_x2.set, yscrollcommand=scrollbar_y2.set)
+       self.listbox2.pack(expand=0, fill='both')
+       scrollbar_x2.config(command=self.listbox2.xview)
+       scrollbar_y2.config(command=self.listbox2.yview)
+       
+       # Buttons for List of Files
+       button_find2 = tk.Button(rightFrame, text='Find Interlocks', font=15, command=self.findInterlocks)
+       button_find2.place(relx=0.82, rely=0.3, relwidth=0.15, relheight=0.06)
+          
+       button_add2 = tk.Button(rightFrame, text='Add', font=15, command=self.addFile)
+       button_add2.place(relx=0.82, rely=0.80, relwidth=0.1, relheight=0.05)
+       
+       button_delete_select2 = tk.Button(rightFrame, text='Delete', font=15, command=self.deleteFile_selected)
+       button_delete_select2.place(relx=0.82, rely=0.85, relwidth=0.1, relheight=0.05)
+          
+       button_delete2 = tk.Button(rightFrame, text='Delete All', font=15, command=self.deleteFile)
+       button_delete2.place(relx=0.82, rely=0.9, relwidth=0.1, relheight=0.05)
+
+   def addFolder(self):
+       folderlist = []
+       folder = filedialog.askdirectory()
+       folderlist.append(folder)
+       [self.listbox1.insert(tk.END, item) for item in folderlist]
+     
+   def deleteFolder_selected(self):
+       self.listbox1.delete(tk.ANCHOR)
+       
+   def findFiles(self):
+       global all_files 
+       folders = list(self.listbox1.get(0,tk.END))
+       all_files = []
+       for folder in folders:
+           files = DiagnosticTool.GetFiles(folder)
+           for file in files:
+               all_files.append(file)
+       [self.listbox2.insert(tk.END, file) for file in all_files]
+      
+   def addFile(self):
+       content = filedialog.askopenfilenames(title='Choose files', defaultextension='.log')
+       [self.listbox2.insert(tk.END, item) for item in content]
+       
+   def deleteFile(self):
+       self.listbox2.delete(0, tk.END)
+     
+   def deleteFile_selected(self):
+       self.listbox2.delete(tk.ANCHOR)
+       
+   def findInterlocks(self):
+       files = list(self.listbox2.get(0,tk.END))
+       SubFunctions.findEntries(files)
+
 class Page2(Page):
     def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
@@ -241,6 +175,15 @@ class Page3(Page):
 class MainView(tk.Frame):
     def __init__(self, *args, **kwargs):
         tk.Frame.__init__(self, *args, **kwargs)
+        
+        # Menu Bar
+        menubar = tk.Menu(self)
+        file = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='File', menu = file)
+        file.add_command(label='Save Results', command = SubFunctions.exportExcel)
+        root.config(menu=menubar)
+        
+        # Navigate between pages
         p1 = Page1(self)
         p2 = Page2(self)
         p3 = Page3(self)
@@ -254,7 +197,7 @@ class MainView(tk.Frame):
         p2.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         p3.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
 
-        b1 = tk.Button(buttonframe, text="Files", command=p1.lift)
+        b1 = tk.Button(buttonframe, text="Choose Files", command=p1.lift)
         b2 = tk.Button(buttonframe, text="Interlocks List", command=p2.lift)
         b3 = tk.Button(buttonframe, text="Analysis", command=p3.lift)
 
@@ -264,6 +207,118 @@ class MainView(tk.Frame):
 
         p1.show()
 
+class SubFunctions():
+    def findEntries(files):
+       global kvct_df, pet_df, kvct_filtered, kvct_filtered_out, system, dates
+       global filtered_analysis, sessions, unfiltered_analysis, pet_analysis
+       
+       # Find all interlocks
+       try:
+           system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
+           SubFunctions.df_tree(kvct_df, Page2.tab1)
+           SubFunctions.df_tree(pet_df, Page2.tab4)
+           Page2.menubar_filter(kvct_df, Page2.menubar1)
+           #Page2.menubar_filter(pet_df, Page2.menubar2)
+           
+           # Get dates
+           start_date = kvct_df['Date'][0]
+           end_date = kvct_df['Date'][len(kvct_df)-1]
+           dates = str(start_date)+' - '+str(end_date)
+       except:
+           messagebox.showerror("Error", "Cannot find entries for listed files.")
+           pass
+       
+       # Filter interlocks
+       try:
+           kvct_filtered, kvct_filtered_out = DiagnosticTool.FilterEntries(kvct_df)
+           SubFunctions.df_tree(kvct_filtered, Page2.tab2)
+           SubFunctions.df_tree(kvct_filtered_out, Page2.tab3)
+       except:
+           messagebox.showerror("Error", "Cannot filter interlocks.")
+           pass
+       
+       # Analyze interlocks 
+       try:
+           filtered_analysis, sessions, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
+           SubFunctions.df_tree(filtered_analysis, Page3.tab1)
+           SubFunctions.df_tree(unfiltered_analysis, Page3.tab2)
+           SubFunctions.df_tree(pet_analysis, Page3.tab3)
+
+       except: 
+           messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
+           pass
+       
+    def df_tree(df, tab):
+       # Scrollbars
+       treeScroll_y = ttk.Scrollbar(tab)
+       treeScroll_y.pack(side='right', fill='y')
+       treeScroll_x = ttk.Scrollbar(tab, orient='horizontal')
+       treeScroll_x.pack(side='bottom', fill='x')
+       
+       columns = list(df.columns)
+       tree = ttk.Treeview(tab)
+       tree.pack(expand=1, fill='both')
+       tree["columns"] = columns
+       
+       for i in columns:
+           tree.column(i, anchor="w")
+           tree.heading(i, text=i, anchor='w')
+            
+       for index, row in df.iterrows():
+           tree.insert("",tk.END,text=index,values=list(row))
+       
+       treeScroll_y.configure(command=tree.yview)
+       tree.configure(yscrollcommand=treeScroll_y.set)
+       treeScroll_x.configure(command=tree.xview)
+       tree.configure(xscrollcommand=treeScroll_x.set)
+       
+       tree.column("#0", width=50, stretch='no') 
+       tree.column("Interlock Number", width=300, stretch='no')
+       if 'page2' in str(tab):
+           tree.column("Date", width=100, stretch='no')
+           tree.column("Active Time", width=100, stretch='no')
+           tree.column("Inactive Time", width=100, stretch='no')
+           tree.column("Time from Node Start", width=100, stretch='no')
+           tree.column("Interlock Duration", width=100, stretch='no')
+           
+       if 'page3' in str(tab):
+           for i in range(1,len(columns)):
+               tree.column(i, width=50, stretch='no')
+               
+    def exportExcel():  
+       directory = filedialog.askdirectory()
+       
+       try:
+           # Dates to save file under new name each time
+           start_date = ('').join(dates.split('-')[1:3])
+           end_date = ('').join(dates.split('-')[4:])
+           filedate = ('-').join([start_date, end_date]).replace(' ','')
+                
+            # Summary Table
+           info = ['System', 'Dates', 'Total Sessions', 'KVCT Total Interlocks', 'KVCT Unexpected Interlocks', 'KVCT Expected Interlocks', 'PET Interlocks']
+           values = [system, dates, sessions, len(kvct_df), len(kvct_filtered), len(kvct_filtered_out), len(pet_df)]
+           summary_df = pd.DataFrame([info, values]).transpose()
+           
+           # Interlocks Excel File
+           interlocks_writer = pd.ExcelWriter(directory + '\InterlocksList_' + filedate + '.xlsx', engine='xlsxwriter')
+           kvct_df.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (All)')
+           kvct_filtered.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Unexpect)')
+           kvct_filtered_out.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Expected)')
+           pet_df.to_excel(interlocks_writer, sheet_name='PET Interlocks')
+           interlocks_writer.save()
+           
+           # Analysis Excel File
+           analysis_writer = pd.ExcelWriter(directory + '\InterlocksAnalysis_' + filedate + '.xlsx', engine='xlsxwriter')
+           summary_df.to_excel(analysis_writer, sheet_name='Summary')
+           filtered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Unexpect)')
+           unfiltered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Expect)')
+           pet_analysis.to_excel(analysis_writer, sheet_name='PET Analysis')
+           analysis_writer.save()
+           
+           tk.messagebox.showinfo(title='Info', message='Excel files exported')
+       except:
+            tk.messagebox.showerror(title='Error', message='Cannot export files')
+            
 if __name__ == "__main__":
     root = tk.Tk()
     root.state('zoomed')
