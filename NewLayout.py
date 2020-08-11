@@ -19,12 +19,15 @@ class Page1(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
 
-       # Left side
+       # Top Frame
        leftFrame = tk.Frame(self)
-       leftFrame.place(rely=0.3, relwidth=0.4, relheight=0.55)
+       leftFrame.place(relx=0.5, relwidth=0.9, relheight=0.30, anchor='n')
+       
+       folderLabel = tk.Label(leftFrame, text="Choose Folder (optional: finds all log files of subdirectories under given folders)", font=20)
+       folderLabel.place(relx=0.08,relheight=0.1)
        
        scrollFrame1 = tk.Frame(leftFrame, bd=1, relief='solid')
-       scrollFrame1.place(relx=0.1, relwidth=0.7, relheight=1)
+       scrollFrame1.place(relx=0.08,rely=0.08, relwidth=0.7, relheight=0.9)
        
        scrollbar_x1 = tk.Scrollbar(scrollFrame1, orient='horizontal')
        scrollbar_x1.pack(side='bottom', fill='x')
@@ -39,20 +42,23 @@ class Page1(Page):
           
        # Buttons for List of Folders
        button_find1 = tk.Button(leftFrame, text='Find Files', font=30, command=self.findFiles)
-       button_find1.place(relx=0.82, rely=0.5, relwidth=0.15, relheight=0.06)
+       button_find1.place(relx=0.8, rely=0.85, relwidth=0.1, relheight=0.08)
           
        button_add1 = tk.Button(leftFrame, text='Add', font=20, command=self.addFolder)
-       button_add1.place(relx=0.82, rely=0.85, relwidth=0.1, relheight=0.05)
+       button_add1.place(relx=0.8, rely=0.1, relwidth=0.1, relheight=0.08)
           
        button_delete_select1 = tk.Button(leftFrame, text='Delete', font=20, command=self.deleteFolder_selected)
-       button_delete_select1.place(relx=0.82, rely=0.9, relwidth=0.1, relheight=0.05)
+       button_delete_select1.place(relx=0.8, rely=0.18, relwidth=0.1, relheight=0.08)
        
-       # Right side
+       # Bottom Frame
        rightFrame = tk.Frame(self)
-       rightFrame.place(relx=0.40, rely=0.15, relwidth=0.6, relheight=0.7)
+       rightFrame.place(relx=0.5, rely=0.3, relwidth=0.9, relheight=0.65, anchor='n')
+       
+       folderLabel = tk.Label(rightFrame, text="Choose Files", font=20)
+       folderLabel.place(relx=0.08,relheight=0.1)
        
        scrollFrame2 = tk.Frame(rightFrame, bd=1, relief='solid')
-       scrollFrame2.place(relx=0.1, relwidth=0.7, relheight=1)
+       scrollFrame2.place(relx=0.08, rely=0.08, relwidth=0.7, relheight=0.92)
        
        scrollbar_x2 = tk.Scrollbar(scrollFrame2, orient='horizontal')
        scrollbar_x2.pack(side='bottom', fill='x')
@@ -67,16 +73,16 @@ class Page1(Page):
        
        # Buttons for List of Files
        button_find2 = tk.Button(rightFrame, text='Find Interlocks', font=15, command=self.findInterlocks)
-       button_find2.place(relx=0.82, rely=0.3, relwidth=0.15, relheight=0.06)
+       button_find2.place(relx=0.8, rely=0.9, relwidth=0.1, relheight=0.06)
           
        button_add2 = tk.Button(rightFrame, text='Add', font=15, command=self.addFile)
-       button_add2.place(relx=0.82, rely=0.80, relwidth=0.1, relheight=0.05)
+       button_add2.place(relx=0.8, rely=0.1, relwidth=0.1, relheight=0.05)
        
        button_delete_select2 = tk.Button(rightFrame, text='Delete', font=15, command=self.deleteFile_selected)
-       button_delete_select2.place(relx=0.82, rely=0.85, relwidth=0.1, relheight=0.05)
+       button_delete_select2.place(relx=0.8, rely=0.15, relwidth=0.1, relheight=0.05)
           
        button_delete2 = tk.Button(rightFrame, text='Delete All', font=15, command=self.deleteFile)
-       button_delete2.place(relx=0.82, rely=0.9, relwidth=0.1, relheight=0.05)
+       button_delete2.place(relx=0.8, rely=0.2, relwidth=0.1, relheight=0.05)
 
    def addFolder(self):
        folderlist = []
@@ -98,7 +104,7 @@ class Page1(Page):
        [self.listbox2.insert(tk.END, file) for file in all_files]
       
    def addFile(self):
-       content = filedialog.askopenfilenames(title='Choose files', defaultextension='.log')
+       content = filedialog.askopenfilenames(title='Choose files', filetypes=[('Text Document', '*.log')])
        [self.listbox2.insert(tk.END, item) for item in content]
        
    def deleteFile(self):
