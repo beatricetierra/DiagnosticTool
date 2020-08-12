@@ -9,7 +9,7 @@ import pandas as pd
 import DiagnosticTool_Subfunctions as dts 
 
 # Find interlocks and corresponding entry statuses 
-def NodeInterlockDf(node_log, sys_log, endpoints):
+def NodeInterlocks(node_log, sys_log, endpoints):
     
      # Find node interlocks
     columns = ['Date', 'Time', 'Description']

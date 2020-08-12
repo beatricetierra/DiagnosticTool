@@ -144,23 +144,33 @@ class Page2(Page):
        Page2.menubar2 = tk.Menubutton(self, text='Filter PET Interlocks \u25BE', font=20, relief='raised')
        Page2.menubar2.place(relx=0.8, relheight=0.025)
        
-       button_filter = tk.Button(self, text="Filter", command = self.filter_by_interlock)
+       button_filter = tk.Button(self, text="Filter", command = Page2.filter_by_interlock)
        button_filter.place(relx=0.4, relheight=0.025)
        
     def menubar_filter(df, menubar):
-       menubar.menu = tk.Menu(menubar, tearoff=0)
-       menubar["menu"] = menubar.menu
+        global d 
+        items = sorted(list(set(df['Interlock Number'])))
+        
+        menubar.menu = tk.Menu(menubar, tearoff=0)
+        menubar["menu"] = menubar.menu
+        
+        d = {}
+        for idx, item in enumerate(items):
+            var = tk.BooleanVar()
+            menubar.menu.add_checkbutton(label=item, variable=var)
+            d[str(item)] = var
        
-       items = sorted(list(set(df['Interlock Number'])))
-       for item in items:
-           var = tk.BooleanVar()
-           menubar.menu.add_checkbutton(label=item, variable=var)
-       
-    def filter_by_interlock(self):
-        last_item = Page2.menubar1.menu.index(tk.END)
-        for i in range(0,last_item+1):
-            variable = Page2.menubar1.menu.entrycget(i,"variable")
-            print(variable)
+    def filter_by_interlock():
+        interlock_list = []
+        for interlock, var in d.items():
+            if var.get() == True:
+                interlock_list.append(interlock)
+                
+        df = kvct_df[kvct_df['Interlock Number'].isin(interlock_list)]
+        for widget in Page2.tab1.winfo_children():
+            widget.destroy()
+        SubFunctions.df_tree(df, Page2.tab1)
+            
         
 class Page3(Page):
    def __init__(self, *args, **kwargs):
@@ -219,20 +229,20 @@ class SubFunctions():
        global filtered_analysis, sessions, unfiltered_analysis, pet_analysis
        
        # Find all interlocks
-       try:
-           system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
-           SubFunctions.df_tree(kvct_df, Page2.tab1)
-           SubFunctions.df_tree(pet_df, Page2.tab4)
-           Page2.menubar_filter(kvct_df, Page2.menubar1)
-           #Page2.menubar_filter(pet_df, Page2.menubar2)
-           
-           # Get dates
-           start_date = kvct_df['Date'][0]
-           end_date = kvct_df['Date'][len(kvct_df)-1]
-           dates = str(start_date)+' - '+str(end_date)
-       except:
-           messagebox.showerror("Error", "Cannot find entries for listed files.")
-           pass
+#       try:
+       system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
+       SubFunctions.df_tree(kvct_df, Page2.tab1)
+       SubFunctions.df_tree(pet_df, Page2.tab4)
+       Page2.menubar_filter(kvct_df, Page2.menubar1)
+       #Page2.menubar_filter(pet_df, Page2.menubar2)
+       
+       # Get dates
+       start_date = kvct_df['Date'][0]
+       end_date = kvct_df['Date'][len(kvct_df)-1]
+       dates = str(start_date)+' - '+str(end_date)
+#       except:
+#           messagebox.showerror("Error", "Cannot find entries for listed files.")
+#           pass
        
        # Filter interlocks
        try:
@@ -290,7 +300,7 @@ class SubFunctions():
        if 'page3' in str(tab):
            for i in range(1,len(columns)):
                tree.column(columns[i], width=60, stretch='no')
-               
+
     def exportExcel():  
        directory = filedialog.askdirectory()
        
