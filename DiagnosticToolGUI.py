@@ -23,7 +23,7 @@ class Page1(Page):
        topFrame = tk.Frame(self)
        topFrame.place(relx=0.5, relwidth=0.9, relheight=0.30, anchor='n')
        
-       folderLabel = tk.Label(topFrame, text="Choose Folder (optional: finds all log files of subdirectories under given folders)", font=20)
+       folderLabel = tk.Label(topFrame, text="Choose Folder (optional: finds all log files under all subdirectories of given folders)", font=20)
        folderLabel.place(relx=0.08,relheight=0.1)
        
        scrollFrame1 = tk.Frame(topFrame, bd=1, relief='solid')

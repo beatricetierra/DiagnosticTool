@@ -19,7 +19,7 @@ def NodeInterlockDf(node_log, sys_log, endpoints):
         if 'Interlock' in entry:
             node_interlocks = node_interlocks.append(node_log.iloc[idx], ignore_index=True)
 
-    # Group node (KV/PR) entries
+    # Group node (KV/PR) entries and endpoints
     find_keys = ['Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock']
     
     machine_state = pd.DataFrame(columns=columns)
@@ -40,6 +40,10 @@ def NodeInterlockDf(node_log, sys_log, endpoints):
                 node_state = node_state.append(node_log.iloc[idx], ignore_index=True)
             if find_keys[3] in entry:
                 received_command = received_command.append(node_log.iloc[idx], ignore_index=True)
+                
+        node_endpoints = endpoints[endpoints['Node'] == 'KV']
+        node_endpoints.drop(columns='Node', inplace = True)
+        
     if node_log.name == 'pet_log':
         for idx, entry in enumerate(node_log['Description']):
             if find_keys[1] in entry:
@@ -48,8 +52,11 @@ def NodeInterlockDf(node_log, sys_log, endpoints):
                node_state = node_state.append(node_log.iloc[idx], ignore_index=True)
             if find_keys[3] in entry:
                 received_command = received_command.append(node_log.iloc[idx], ignore_index=True)
+                
+        node_endpoints = endpoints[endpoints['Node'] == 'PR']
+        node_endpoints.drop(columns='Node', inplace = True)
             
-    #Group sysnode entries
+    #Group sysnode entries and endpoints
     sys_user_action = pd.DataFrame(columns=columns)
     sys_received_command = pd.DataFrame(columns=columns)
     sys_state_transition = pd.DataFrame(columns=columns)
@@ -64,13 +71,17 @@ def NodeInterlockDf(node_log, sys_log, endpoints):
             sys_state_transition = sys_state_transition.append(sys_log.iloc[idx], ignore_index=True)
         if find_keys[5] in entry:
             sys_relevant_interlock = sys_relevant_interlock.append(sys_log.iloc[idx], ignore_index=True)
+            
+    sys_endpoints = endpoints[(endpoints['Node'] == 'SY') & (endpoints['Description'] == '------ NODE START ------')]
+    sys_endpoints.drop(columns='Node', inplace = True)
+    sys_endpoints.reset_index(drop=True, inplace=True)
 
     # Construct node_df 
     # Get node interlocks active vs inactive
     node_df = dts.find_interlocks(node_interlocks)
     
     # Insert node endpoints (start of log, start of node, end of node)
-    node_df = dts.find_endpoints(node_df, endpoints)
+    node_df = dts.find_endpoints(node_df, node_endpoints)
     
     # Time since start/restart of node
     node_df = dts.node_start_delta(node_df)
@@ -102,6 +113,10 @@ def NodeInterlockDf(node_log, sys_log, endpoints):
     sys_user_action['Description'] = ["***" + description.split(" = ")[1].split(" ")[0] for description in sys_user_action['Description']]
     node_df['Last user input'] = dts.find_last_entry(node_df, node_df['Active Time'], sys_user_action)
     
+    # Sysnode start time before active interlock
+    sys_endpoints['Description'] = [str(date)+ ' ' + str(time) for date,time in zip(sys_endpoints['Date'], sys_endpoints['Time'])]
+    node_df['Sysnode Restart'] = dts.find_last_entry(node_df, node_df['Active Time'], sys_endpoints)
+    
     # sysnode state (transition state)
     sys_state_transition['Description'] = [descr.split(" to ")[1].split(" ")[0] for descr in sys_state_transition['Description']]
     node_df['Sysnode State'] = dts.find_last_entry(node_df, node_df['Active Time'], sys_state_transition)
@@ -116,7 +131,7 @@ def NodeInterlockDf(node_log, sys_log, endpoints):
     columns = ['Date','Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'HV last status (before active)', 
             'HV last status (before inactive)', 'Machine last state (before active)', 'Machine last state (before inactive)', 'Node State (before active)',
             'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 'Last user input', 
-            'Sysnode State', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
+            'Sysnode State', 'Sysnode Restart', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
     
     node_df.sort_values('Date', ascending=True, inplace=True)
     node_df['Date'] = node_df['Date'].dt.date
