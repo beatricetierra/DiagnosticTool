@@ -139,39 +139,44 @@ class Page2(Page):
        # Add filtering menubars
        # kvct dataframes
        Page2.menubar1 = tk.Menubutton(self, text='Filter KVCT Interlocks \u25BE', font=20, relief='raised')
-       Page2.menubar1.place(relx=0.6, relheight=0.025)
+       Page2.menubar1.place(relx=0.5, relheight=0.025)
        # pet dataframes
        Page2.menubar2 = tk.Menubutton(self, text='Filter PET Interlocks \u25BE', font=20, relief='raised')
-       Page2.menubar2.place(relx=0.8, relheight=0.025)
+       Page2.menubar2.place(relx=0.63, relheight=0.025)
        
-       button_filter = tk.Button(self, text="Filter", command = Page2.filter_by_interlock)
-       button_filter.place(relx=0.4, relheight=0.025)
+       button_filter = tk.Button(self, text="Filter", font=20, command = Page2.filter_by_interlock)
+       button_filter.place(relx=0.89, relheight=0.025)
+       
+       button_showall = tk.Button(self, text="Select All", font=20)
+       button_showall.place(relx=0.76, relheight=0.025)
+       
+       button_shownone = tk.Button(self, text="Show None", font=20)
+       button_shownone.place(relx=0.82, relheight=0.025)
        
     def menubar_filter(df, menubar):
-        global d 
+        global interlock_set 
         items = sorted(list(set(df['Interlock Number'])))
         
         menubar.menu = tk.Menu(menubar, tearoff=0)
         menubar["menu"] = menubar.menu
         
-        d = {}
+        interlock_set = {}
         for idx, item in enumerate(items):
             var = tk.BooleanVar()
+            var.set(True)
             menubar.menu.add_checkbutton(label=item, variable=var)
-            d[str(item)] = var
+            interlock_set[str(item)] = var
        
     def filter_by_interlock():
         interlock_list = []
-        for interlock, var in d.items():
+        for interlock, var in interlock_set .items():
             if var.get() == True:
                 interlock_list.append(interlock)
                 
         df = kvct_df[kvct_df['Interlock Number'].isin(interlock_list)]
-        for widget in Page2.tab1.winfo_children():
-            widget.destroy()
+        [widget.destroy() for widget in Page2.tab1.winfo_children()]
         SubFunctions.df_tree(df, Page2.tab1)
             
-        
 class Page3(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)        
