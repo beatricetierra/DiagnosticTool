@@ -171,21 +171,15 @@ def GetEntries(filenames):
     kvct_log = entries_df.loc[entries_df['Node'] == 'KV']
     kvct_log.drop(columns='Node', inplace = True)
     kvct_log.name = 'kvct_log'
-    
-    kvct_endpoints = endpoints_df.loc[endpoints_df['Node'] == 'KV']
-    kvct_endpoints.drop(columns='Node', inplace = True)
 
-    kvct_df = idf.NodeInterlockDf(kvct_log, sys_log, kvct_endpoints)
+    kvct_df = idf.NodeInterlockDf(kvct_log, sys_log, endpoints_df)
 
     try:
         pet_log = entries_df.loc[entries_df['Node'] == 'PR']
         pet_log.drop(columns='Node', inplace = True)
         pet_log.name = 'pet_log'
-        
-        pet_endpoints = endpoints_df.loc[endpoints_df['Node'] == 'PR']
-        pet_endpoints.drop(columns='Node', inplace = True)
     
-        pet_interlocks = idf.NodeInterlockDf(pet_log, sys_log, pet_endpoints)
+        pet_interlocks = idf.NodeInterlockDf(pet_log, sys_log, endpoints_df)
     except:
         pet_interlocks = pd.DataFrame()
     

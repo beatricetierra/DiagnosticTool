@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Created on Mon Jul  6 15:24:57 2020
 
@@ -20,13 +20,13 @@ class Page1(Page):
        Page.__init__(self, *args, **kwargs)
 
        # Top Frame
-       leftFrame = tk.Frame(self)
-       leftFrame.place(relx=0.5, relwidth=0.9, relheight=0.30, anchor='n')
+       topFrame = tk.Frame(self)
+       topFrame.place(relx=0.5, relwidth=0.9, relheight=0.30, anchor='n')
        
-       folderLabel = tk.Label(leftFrame, text="Choose Folder (optional: finds all log files of subdirectories under given folders)", font=20)
+       folderLabel = tk.Label(topFrame, text="Choose Folder (optional: finds all log files of subdirectories under given folders)", font=20)
        folderLabel.place(relx=0.08,relheight=0.1)
        
-       scrollFrame1 = tk.Frame(leftFrame, bd=1, relief='solid')
+       scrollFrame1 = tk.Frame(topFrame, bd=1, relief='solid')
        scrollFrame1.place(relx=0.08,rely=0.08, relwidth=0.7, relheight=0.9)
        
        scrollbar_x1 = tk.Scrollbar(scrollFrame1, orient='horizontal')
@@ -41,23 +41,23 @@ class Page1(Page):
        scrollbar_y1.config(command=self.listbox1.yview)
           
        # Buttons for List of Folders
-       button_find1 = tk.Button(leftFrame, text='Find Files', font=30, command=self.findFiles)
+       button_find1 = tk.Button(topFrame, text='Find Files', font=30, command=self.findFiles)
        button_find1.place(relx=0.8, rely=0.85, relwidth=0.1, relheight=0.08)
           
-       button_add1 = tk.Button(leftFrame, text='Add', font=20, command=self.addFolder)
+       button_add1 = tk.Button(topFrame, text='Add', font=20, command=self.addFolder)
        button_add1.place(relx=0.8, rely=0.1, relwidth=0.1, relheight=0.08)
           
-       button_delete_select1 = tk.Button(leftFrame, text='Delete', font=20, command=self.deleteFolder_selected)
+       button_delete_select1 = tk.Button(topFrame, text='Delete', font=20, command=self.deleteFolder_selected)
        button_delete_select1.place(relx=0.8, rely=0.18, relwidth=0.1, relheight=0.08)
        
        # Bottom Frame
-       rightFrame = tk.Frame(self)
-       rightFrame.place(relx=0.5, rely=0.3, relwidth=0.9, relheight=0.65, anchor='n')
+       bottomFrame = tk.Frame(self)
+       bottomFrame.place(relx=0.5, rely=0.3, relwidth=0.9, relheight=0.65, anchor='n')
        
-       folderLabel = tk.Label(rightFrame, text="Choose Files", font=20)
+       folderLabel = tk.Label(bottomFrame, text="Choose Files", font=20)
        folderLabel.place(relx=0.08,relheight=0.1)
        
-       scrollFrame2 = tk.Frame(rightFrame, bd=1, relief='solid')
+       scrollFrame2 = tk.Frame(bottomFrame, bd=1, relief='solid')
        scrollFrame2.place(relx=0.08, rely=0.08, relwidth=0.7, relheight=0.92)
        
        scrollbar_x2 = tk.Scrollbar(scrollFrame2, orient='horizontal')
@@ -72,16 +72,16 @@ class Page1(Page):
        scrollbar_y2.config(command=self.listbox2.yview)
        
        # Buttons for List of Files
-       button_find2 = tk.Button(rightFrame, text='Find Interlocks', font=15, command=self.findInterlocks)
+       button_find2 = tk.Button(bottomFrame, text='Find Interlocks', font=15, command=self.findInterlocks)
        button_find2.place(relx=0.8, rely=0.9, relwidth=0.1, relheight=0.06)
           
-       button_add2 = tk.Button(rightFrame, text='Add', font=15, command=self.addFile)
+       button_add2 = tk.Button(bottomFrame, text='Add', font=15, command=self.addFile)
        button_add2.place(relx=0.8, rely=0.1, relwidth=0.1, relheight=0.05)
        
-       button_delete_select2 = tk.Button(rightFrame, text='Delete', font=15, command=self.deleteFile_selected)
+       button_delete_select2 = tk.Button(bottomFrame, text='Delete', font=15, command=self.deleteFile_selected)
        button_delete_select2.place(relx=0.8, rely=0.15, relwidth=0.1, relheight=0.05)
           
-       button_delete2 = tk.Button(rightFrame, text='Delete All', font=15, command=self.deleteFile)
+       button_delete2 = tk.Button(bottomFrame, text='Delete All', font=15, command=self.deleteFile)
        button_delete2.place(relx=0.8, rely=0.2, relwidth=0.1, relheight=0.05)
 
    def addFolder(self):
@@ -94,7 +94,6 @@ class Page1(Page):
        self.listbox1.delete(tk.ANCHOR)
        
    def findFiles(self):
-       global all_files 
        folders = list(self.listbox1.get(0,tk.END))
        all_files = []
        for folder in folders:
@@ -114,6 +113,7 @@ class Page1(Page):
        self.listbox2.delete(tk.ANCHOR)
        
    def findInterlocks(self):
+       global files
        files = list(self.listbox2.get(0,tk.END))
        SubFunctions.findEntries(files)
 
@@ -289,7 +289,7 @@ class SubFunctions():
            
        if 'page3' in str(tab):
            for i in range(1,len(columns)):
-               tree.column(i, width=50, stretch='no')
+               tree.column(columns[i], width=60, stretch='no')
                
     def exportExcel():  
        directory = filedialog.askdirectory()
@@ -306,7 +306,7 @@ class SubFunctions():
            summary_df = pd.DataFrame([info, values]).transpose()
            
            # Interlocks Excel File
-           interlocks_writer = pd.ExcelWriter(directory + '\InterlocksList_' + filedate + '.xlsx', engine='xlsxwriter')
+           interlocks_writer = pd.ExcelWriter(directory + '\InterlocksList_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
            kvct_df.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (All)')
            kvct_filtered.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Unexpect)')
            kvct_filtered_out.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Expected)')
@@ -314,7 +314,7 @@ class SubFunctions():
            interlocks_writer.save()
            
            # Analysis Excel File
-           analysis_writer = pd.ExcelWriter(directory + '\InterlocksAnalysis_' + filedate + '.xlsx', engine='xlsxwriter')
+           analysis_writer = pd.ExcelWriter(directory + '\InterlocksAnalysis_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
            summary_df.to_excel(analysis_writer, sheet_name='Summary')
            filtered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Unexpect)')
            unfiltered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Expect)')
