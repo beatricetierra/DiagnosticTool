@@ -103,6 +103,7 @@ class Page1(Page):
        [self.listbox2.insert(tk.END, file) for file in all_files]
       
    def addFile(self):
+       global content
        content = filedialog.askopenfilenames(title='Choose files', filetypes=[('Text Document', '*.log')])
        [self.listbox2.insert(tk.END, item) for item in content]
        
@@ -139,10 +140,10 @@ class Page2(Page):
        # Add filtering menubars
        # kvct dataframes
        Page2.menubar1 = tk.Menubutton(self, text='Filter KVCT Interlocks \u25BE', font=20, relief='raised')
-       Page2.menubar1.place(relx=0.5, relheight=0.025)
+       Page2.menubar1.place(relx=0.62, relheight=0.025)
        # pet dataframes
-       Page2.menubar2 = tk.Menubutton(self, text='Filter PET Interlocks \u25BE', font=20, relief='raised')
-       Page2.menubar2.place(relx=0.63, relheight=0.025)
+#       Page2.menubar2 = tk.Menubutton(self, text='Filter PET Interlocks \u25BE', font=20, relief='raised')
+#       Page2.menubar2.place(relx=0.63, relheight=0.025)
        
        button_filter = tk.Button(self, text="Filter", font=20, command = Page2.filter_by_interlock)
        button_filter.place(relx=0.89, relheight=0.025)
@@ -150,7 +151,7 @@ class Page2(Page):
        button_selectall = tk.Button(self, text="Select All", font=20, command=Page2.selectall)
        button_selectall.place(relx=0.76, relheight=0.025)
        
-       button_selectnone = tk.Button(self, text="Show None", font=20, command=Page2.selectnone)
+       button_selectnone = tk.Button(self, text="Select None", font=20, command=Page2.selectnone)
        button_selectnone.place(relx=0.82, relheight=0.025)
        
     def menubar_filter(df, menubar):
@@ -173,9 +174,15 @@ class Page2(Page):
             if var.get() == True:
                 interlock_list.append(interlock)
                 
-        df = kvct_df[kvct_df['Interlock Number'].isin(interlock_list)]
+        df1 = kvct_df[kvct_df['Interlock Number'].isin(interlock_list)]
+        df2 = kvct_filtered[kvct_filtered['Interlock Number'].isin(interlock_list)]
+        df3 = kvct_filtered_out[kvct_filtered_out['Interlock Number'].isin(interlock_list)]
         [widget.destroy() for widget in Page2.tab1.winfo_children()]
-        SubFunctions.df_tree(df, Page2.tab1)
+        [widget.destroy() for widget in Page2.tab2.winfo_children()]
+        [widget.destroy() for widget in Page2.tab3.winfo_children()]
+        SubFunctions.df_tree(df1, Page2.tab1)
+        SubFunctions.df_tree(df2, Page2.tab2)
+        SubFunctions.df_tree(df3, Page2.tab3)
     
     def selectall():
         for interlock, var in interlock_set.items():
@@ -272,7 +279,7 @@ class SubFunctions():
            filtered_analysis, sessions, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
            SubFunctions.df_tree(filtered_analysis, Page3.tab1)
            SubFunctions.df_tree(unfiltered_analysis, Page3.tab2)
-           SubFunctions.df_tree(pet_analysis, Page3.tab3)
+#           SubFunctions.df_tree(pet_analysis, Page3.tab3)
 
        except: 
            messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
