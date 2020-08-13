@@ -14,7 +14,7 @@ import DiagnosticTool_Analysis as dta
 def DeleteFiles(folderpath):
     for root, dirs, files in os.walk(folderpath):
         for file in files:
-            if '-log-' not in file:
+            if '.log' not in file:
                 if 'kvct' not in file:
                     if 'pet' not in file:
                         if 'sysnode' not in file:

@@ -147,11 +147,11 @@ class Page2(Page):
        button_filter = tk.Button(self, text="Filter", font=20, command = Page2.filter_by_interlock)
        button_filter.place(relx=0.89, relheight=0.025)
        
-       button_showall = tk.Button(self, text="Select All", font=20)
-       button_showall.place(relx=0.76, relheight=0.025)
+       button_selectall = tk.Button(self, text="Select All", font=20, command=Page2.selectall)
+       button_selectall.place(relx=0.76, relheight=0.025)
        
-       button_shownone = tk.Button(self, text="Show None", font=20)
-       button_shownone.place(relx=0.82, relheight=0.025)
+       button_selectnone = tk.Button(self, text="Show None", font=20, command=Page2.selectnone)
+       button_selectnone.place(relx=0.82, relheight=0.025)
        
     def menubar_filter(df, menubar):
         global interlock_set 
@@ -169,13 +169,22 @@ class Page2(Page):
        
     def filter_by_interlock():
         interlock_list = []
-        for interlock, var in interlock_set .items():
+        for interlock, var in interlock_set.items():
             if var.get() == True:
                 interlock_list.append(interlock)
                 
         df = kvct_df[kvct_df['Interlock Number'].isin(interlock_list)]
         [widget.destroy() for widget in Page2.tab1.winfo_children()]
         SubFunctions.df_tree(df, Page2.tab1)
+    
+    def selectall():
+        for interlock, var in interlock_set.items():
+            var.set(True)
+        Page2.filter_by_interlock()
+    def selectnone():
+        for interlock, var in interlock_set.items():
+            var.set(False)
+        Page2.filter_by_interlock()
             
 class Page3(Page):
    def __init__(self, *args, **kwargs):
@@ -234,20 +243,20 @@ class SubFunctions():
        global filtered_analysis, sessions, unfiltered_analysis, pet_analysis
        
        # Find all interlocks
-#       try:
-       system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
-       SubFunctions.df_tree(kvct_df, Page2.tab1)
-       SubFunctions.df_tree(pet_df, Page2.tab4)
-       Page2.menubar_filter(kvct_df, Page2.menubar1)
-       #Page2.menubar_filter(pet_df, Page2.menubar2)
-       
-       # Get dates
-       start_date = kvct_df['Date'][0]
-       end_date = kvct_df['Date'][len(kvct_df)-1]
-       dates = str(start_date)+' - '+str(end_date)
-#       except:
-#           messagebox.showerror("Error", "Cannot find entries for listed files.")
-#           pass
+       try:
+           system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
+           SubFunctions.df_tree(kvct_df, Page2.tab1)
+           SubFunctions.df_tree(pet_df, Page2.tab4)
+           Page2.menubar_filter(kvct_df, Page2.menubar1)
+           #Page2.menubar_filter(pet_df, Page2.menubar2)
+           
+           # Get dates
+           start_date = kvct_df['Date'][0]
+           end_date = kvct_df['Date'][len(kvct_df)-1]
+           dates = str(start_date)+' - '+str(end_date)
+       except:
+           messagebox.showerror("Error", "Cannot find entries for listed files.")
+           pass
        
        # Filter interlocks
        try:
