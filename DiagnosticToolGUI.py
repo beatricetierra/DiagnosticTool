@@ -52,25 +52,34 @@ class Page1(Page):
        
        # Bottom Frame
        bottomFrame = tk.Frame(self)
-       bottomFrame.place(relx=0.5, rely=0.3, relwidth=0.9, relheight=0.65, anchor='n')
+       bottomFrame.place(relx=0.5, rely=0.3, relwidth=0.9, relheight=0.7, anchor='n')
        
-       folderLabel = tk.Label(bottomFrame, text="Choose Files", font=20)
-       folderLabel.place(relx=0.08,relheight=0.1)
+       fileLabel = tk.Label(bottomFrame, text="Choose Files", font=20)
+       fileLabel.place(relx=0.08,relheight=0.1)
        
        scrollFrame2 = tk.Frame(bottomFrame, bd=1, relief='solid')
-       scrollFrame2.place(relx=0.08, rely=0.08, relwidth=0.7, relheight=0.92)
+       scrollFrame2.place(relx=0.08,rely=0.08, relwidth=0.7, relheight=0.9)
        
-       scrollbar_x2 = tk.Scrollbar(scrollFrame2, orient='horizontal')
-       scrollbar_x2.pack(side='bottom', fill='x')
-          
-       scrollbar_y2 = tk.Scrollbar(scrollFrame2)
-       scrollbar_y2.pack(side='right', fill='y')
-          
-       self.listbox2= tk.Listbox(scrollFrame2, height = 500, width = 350, xscrollcommand=scrollbar_x2.set, yscrollcommand=scrollbar_y2.set)
-       self.listbox2.pack(expand=0, fill='both')
-       scrollbar_x2.config(command=self.listbox2.xview)
-       scrollbar_y2.config(command=self.listbox2.yview)
+       self.tree = ttk.Treeview(scrollFrame2)
+       self.tree['show'] = 'headings'
        
+       scrollbar_x2 = ttk.Scrollbar(scrollFrame2, orient="horizontal", command=self.tree.xview)
+       scrollbar_y2  = ttk.Scrollbar(scrollFrame2, orient="vertical", command=self.tree.yview)
+       
+       self.tree.configure(yscrollcommand=scrollbar_y2.set, xscrollcommand=scrollbar_x2.set)
+       self.tree.grid(column=0, row=0, sticky='nsew', in_=scrollFrame2)
+       scrollbar_y2.grid(column=1, row=0, sticky='ns', in_=scrollFrame2)
+       scrollbar_x2.grid(column=0, row=1, sticky='ew', in_=scrollFrame2)
+       scrollFrame2.grid_columnconfigure(0, weight=1)
+       scrollFrame2.grid_rowconfigure(0, weight=1)
+       
+       columns = ['File', 'Size', 'Path']
+       self.tree["columns"] = columns
+       [self.tree.heading(col, text=col, anchor='w') for col in columns]
+       self.tree.column('File', width=300, stretch='no')
+       self.tree.column('Size', width=100, stretch='no')
+       self.tree.column('Path', width=600, stretch='no')
+
        # Buttons for List of Files
        button_find2 = tk.Button(bottomFrame, text='Find Interlocks', font=15, command=self.findInterlocks)
        button_find2.place(relx=0.8, rely=0.9, relwidth=0.1, relheight=0.06)
@@ -81,7 +90,7 @@ class Page1(Page):
        button_delete_select2 = tk.Button(bottomFrame, text='Delete', font=15, command=self.deleteFile_selected)
        button_delete_select2.place(relx=0.8, rely=0.15, relwidth=0.1, relheight=0.05)
           
-       button_delete2 = tk.Button(bottomFrame, text='Delete All', font=15, command=self.deleteFile)
+       button_delete2 = tk.Button(bottomFrame, text='Delete All', font=15, command=self.deleteFile_all)
        button_delete2.place(relx=0.8, rely=0.2, relwidth=0.1, relheight=0.05)
 
    def addFolder(self):
@@ -105,17 +114,25 @@ class Page1(Page):
    def addFile(self):
        global content
        content = filedialog.askopenfilenames(title='Choose files', filetypes=[('Text Document', '*.log')])
-       [self.listbox2.insert(tk.END, item) for item in content]
+       for item in content:
+           parse = item.split('/')
+           file = parse[-1]
+           size = parse[0]
+           path = ('/').join(parse[:-1])
+           self.tree.insert('', 'end', values=[file,size,path])
        
-   def deleteFile(self):
-       self.listbox2.delete(0, tk.END)
-     
+   def deleteFile_all(self):
+       [self.tree.delete(i) for i in self.tree.get_children()]
+    
    def deleteFile_selected(self):
-       self.listbox2.delete(tk.ANCHOR)
+       selected_item = self.tree.selection()[0]
+       self.tree.delete(selected_item)
        
    def findInterlocks(self):
        global files
-       files = list(self.listbox2.get(0,tk.END))
+       files=[]
+       for child in self.tree.get_children():
+          files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
        SubFunctions.findEntries(files)
 
 class Page2(Page):
