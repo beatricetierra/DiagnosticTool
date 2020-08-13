@@ -19,7 +19,7 @@ class Page1(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
 
-       # Top Frame
+       # ****** Top Frame ******
        topFrame = tk.Frame(self)
        topFrame.place(relx=0.5, relwidth=0.9, relheight=0.30, anchor='n')
        
@@ -50,13 +50,14 @@ class Page1(Page):
        button_delete_select1 = tk.Button(topFrame, text='Delete', font=20, command=self.deleteFolder_selected)
        button_delete_select1.place(relx=0.8, rely=0.18, relwidth=0.1, relheight=0.08)
        
-       # Bottom Frame
+       # ****** Bottom Frame ******
        bottomFrame = tk.Frame(self)
        bottomFrame.place(relx=0.5, rely=0.3, relwidth=0.9, relheight=0.7, anchor='n')
        
        fileLabel = tk.Label(bottomFrame, text="Choose Files", font=20)
        fileLabel.place(relx=0.08,relheight=0.1)
        
+       # Scrollbox to list details of chosen log files
        scrollFrame2 = tk.Frame(bottomFrame, bd=1, relief='solid')
        scrollFrame2.place(relx=0.08,rely=0.08, relwidth=0.7, relheight=0.9)
        
@@ -78,7 +79,7 @@ class Page1(Page):
        [self.tree.heading(col, text=col, anchor='w') for col in columns]
        self.tree.column('File', width=300, stretch='no')
        self.tree.column('Size', width=100, stretch='no')
-       self.tree.column('Path', width=600, stretch='no')
+       self.tree.column('Path', width=500, stretch='no')
 
        # Buttons for List of Files
        button_find2 = tk.Button(bottomFrame, text='Find Interlocks', font=15, command=self.findInterlocks)
@@ -103,19 +104,25 @@ class Page1(Page):
        self.listbox1.delete(tk.ANCHOR)
        
    def findFiles(self):
+       global all_files
        folders = list(self.listbox1.get(0,tk.END))
        all_files = []
        for folder in folders:
            files = DiagnosticTool.GetFiles(folder)
            for file in files:
                all_files.append(file)
-       [self.listbox2.insert(tk.END, file) for file in all_files]
+               
+       for file in all_files:
+           parse = file.split('\\')
+           file = parse[-1]
+           size = parse[0]
+           path = ('/').join(parse[:-1])
+           self.tree.insert('', 'end', values=[file,size,path])
       
    def addFile(self):
-       global content
        content = filedialog.askopenfilenames(title='Choose files', filetypes=[('Text Document', '*.log')])
        for item in content:
-           parse = item.split('/')
+           parse = item.split('\\')
            file = parse[-1]
            size = parse[0]
            path = ('/').join(parse[:-1])
