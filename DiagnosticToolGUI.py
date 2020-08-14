@@ -77,7 +77,7 @@ class Page1(Page):
        
        columns = ['File', 'Size', 'Path']
        self.tree["columns"] = columns
-       [self.tree.heading(col, text=col, anchor='w') for col in columns]
+       [self.tree.heading(col, text=col, anchor='w', command=lambda c=col: SubFunctions.sortby(self.tree, c, 0, True)) for col in columns]
        self.tree.column('File', width=300, stretch='no')
        self.tree.column('Size', width=100, stretch='no')
        self.tree.column('Path', width=500, stretch='no')
@@ -121,6 +121,8 @@ class Page1(Page):
        
    def addFileDetails(tree, file_list):
        for file in file_list:
+           if '\\' in file:
+               file = file.replace('\\', '/')
            parse = file.split('/')
            filename = parse[-1]
            size = int((os.stat(file).st_size)/1000)
@@ -344,7 +346,24 @@ class SubFunctions():
        if 'page3' in str(tab):
            for i in range(1,len(columns)):
                tree.column(columns[i], width=60, stretch='no')
-
+               
+    def sortby(tree, col, descending, int_descending):
+        """sort tree contents when a column header is clicked on"""
+        
+        # grab values to sort
+        data = [(tree.set(child, col), child) \
+            for child in tree.get_children('')]
+        
+        if any(d[0].isnumeric() for d in data):
+            data = sorted(data, key=lambda x: int(x[0].replace(',', '')), reverse=int_descending)
+        else:
+            data.sort(reverse=descending)
+            
+        for ix, item in enumerate(data):
+            tree.move(item[1], '', ix)
+        # switch the heading so it will sort in the opposite direction
+        tree.heading(col, command=lambda col=col: SubFunctions.sortby(tree, col, int(not descending),int_descending=not int_descending))
+        
     def exportExcel():  
        directory = filedialog.askdirectory()
        
