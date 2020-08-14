@@ -4,6 +4,7 @@ Created on Mon Jul  6 15:24:57 2020
 
 @author: btierra
 """
+import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
@@ -111,22 +112,20 @@ class Page1(Page):
            files = DiagnosticTool.GetFiles(folder)
            for file in files:
                all_files.append(file)
-               
-       for file in all_files:
-           parse = file.split('\\')
-           file = parse[-1]
-           size = parse[0]
-           path = ('/').join(parse[:-1])
-           self.tree.insert('', 'end', values=[file,size,path])
+       Page1.addFileDetails(self.tree, all_files)
       
    def addFile(self):
+       global content
        content = filedialog.askopenfilenames(title='Choose files', filetypes=[('Text Document', '*.log')])
-       for item in content:
-           parse = item.split('\\')
-           file = parse[-1]
-           size = parse[0]
+       Page1.addFileDetails(self.tree, content)
+       
+   def addFileDetails(tree, file_list):
+       for file in file_list:
+           parse = file.split('/')
+           filename = parse[-1]
+           size = int((os.stat(file).st_size)/1000)
            path = ('/').join(parse[:-1])
-           self.tree.insert('', 'end', values=[file,size,path])
+           tree.insert('', 'end', values=[filename,size,path])
        
    def deleteFile_all(self):
        [self.tree.delete(i) for i in self.tree.get_children()]
