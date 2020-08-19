@@ -158,7 +158,7 @@ class Page2(Page):
        Page2.tabControl.add(Page2.tab3, text = 'KVCT Interlocks (Expected)')
         
        Page2.tab4 = ttk.Frame(Page2.tabControl)
-       Page2.tabControl.add(Page2.tab4, text = 'PET Interlocks')
+       Page2.tabControl.add(Page2.tab4, text = 'KVCT Recon Interlocks')
 
        Page2.tabControl.pack(expan=1, fill='both')
        
@@ -271,14 +271,14 @@ class MainView(tk.Frame):
 
 class SubFunctions():
     def findEntries(files):
-       global kvct_df, pet_df, kvct_filtered, kvct_filtered_out, system, dates
-       global filtered_analysis, sessions, unfiltered_analysis, pet_analysis
+       global kvct_df, recon_df, kvct_filtered, kvct_filtered_out, system, dates
+       global filtered_analysis, sessions, unfiltered_analysis, recon_analysis
        
        # Find all interlocks
        try:
-           system, kvct_df, pet_df = DiagnosticTool.GetEntries(files)
+           system, kvct_df, recon_df = DiagnosticTool.GetEntries(files)
            SubFunctions.df_tree(kvct_df, Page2.tab1)
-           SubFunctions.df_tree(pet_df, Page2.tab4)
+           SubFunctions.df_tree(recon_df, Page2.tab4)
            Page2.menubar_filter(kvct_df, Page2.menubar1)
            #Page2.menubar_filter(pet_df, Page2.menubar2)
            
@@ -301,10 +301,10 @@ class SubFunctions():
        
        # Analyze interlocks 
        try:
-           filtered_analysis, sessions, unfiltered_analysis, pet_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, pet_df)
+           filtered_analysis, sessions, unfiltered_analysis, recon_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, recon_df)
            SubFunctions.df_tree(filtered_analysis, Page3.tab1)
            SubFunctions.df_tree(unfiltered_analysis, Page3.tab2)
-#           SubFunctions.df_tree(pet_analysis, Page3.tab3)
+           SubFunctions.df_tree(recon_analysis, Page3.tab3)
 
        except: 
            messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
@@ -348,8 +348,6 @@ class SubFunctions():
                tree.column(columns[i], width=60, stretch='no')
                
     def sortby(tree, col, descending, int_descending):
-        """sort tree contents when a column header is clicked on"""
-        
         # grab values to sort
         data = [(tree.set(child, col), child) \
             for child in tree.get_children('')]
@@ -374,8 +372,8 @@ class SubFunctions():
            filedate = ('-').join([start_date, end_date]).replace(' ','')
                 
             # Summary Table
-           info = ['System', 'Dates', 'Total Sessions', 'KVCT Total Interlocks', 'KVCT Unexpected Interlocks', 'KVCT Expected Interlocks', 'PET Interlocks']
-           values = [system, dates, sessions, len(kvct_df), len(kvct_filtered), len(kvct_filtered_out), len(pet_df)]
+           info = ['System', 'Dates', 'Total Sessions', 'KVCT Total Interlocks', 'KVCT Unexpected Interlocks', 'KVCT Expected Interlocks', 'KVCT Recon Interlocks']
+           values = [system, dates, sessions, len(kvct_df), len(kvct_filtered), len(kvct_filtered_out), len(recon_df)]
            summary_df = pd.DataFrame([info, values]).transpose()
            
            # Interlocks Excel File
@@ -383,7 +381,7 @@ class SubFunctions():
            kvct_df.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (All)')
            kvct_filtered.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Unexpect)')
            kvct_filtered_out.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Expected)')
-           pet_df.to_excel(interlocks_writer, sheet_name='PET Interlocks')
+           recon_df.to_excel(interlocks_writer, sheet_name='KVCT Recon Interlocks')
            interlocks_writer.save()
            
            # Analysis Excel File
@@ -391,7 +389,7 @@ class SubFunctions():
            summary_df.to_excel(analysis_writer, sheet_name='Summary')
            filtered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Unexpect)')
            unfiltered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Expect)')
-           pet_analysis.to_excel(analysis_writer, sheet_name='PET Analysis')
+           recon_analysis.to_excel(analysis_writer, sheet_name='KVCT Recon Analysis')
            analysis_writer.save()
            
            tk.messagebox.showinfo(title='Info', message='Excel files exported')

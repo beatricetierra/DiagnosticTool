@@ -41,7 +41,7 @@ def GetSWVersion(folderpath):
     key = '* current branch: '
     
     for file in filenames:
-        if '-kvct-' in file:
+        if '-log-' in file:
             with open(file) as log:
                 for line in log:
                     if key in line:
@@ -113,7 +113,7 @@ def ReadNodeLogs(file, find_keys):
 def GetEntries(filenames):    
     # Find entries of interest
     acceptable_files = ['kvct','pet','sysnode']
-    find_keys = ['is active', 'is inactive', 'Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock', 'Received command']
+    find_keys = ['is active', 'is inactive', 'Set HV ', 'State machine', 'State set', 'received command', 'Received command', 'State transition', 'Top relevant interlock']
     
     files = []
 
@@ -175,15 +175,15 @@ def GetEntries(filenames):
     kvct_df = idf.NodeInterlocks(kvct_log, sys_log, endpoints_df)
 
     try:
-        pet_log = entries_df.loc[entries_df['Node'] == 'PR']
-        pet_log.drop(columns='Node', inplace = True)
-        pet_log.name = 'pet_log'
+        recon_log = entries_df.loc[entries_df['Node'] == 'PR']
+        recon_log.drop(columns='Node', inplace = True)
+        recon_log.name = 'recon_log'
     
-        pet_interlocks = idf.NodeInterlocks(pet_log, sys_log, endpoints_df)
+        recon_df = idf.NodeInterlocks(recon_log, sys_log, endpoints_df)
     except:
-        pet_interlocks = pd.DataFrame()
+        recon_df = pd.DataFrame()
     
-    return(system_model, kvct_df, pet_interlocks)
+    return(system_model, kvct_df, recon_df)
     
 def FilterEntries(kvct_interlocks):    
     # Remove Expected, Startup, and Shutdown Interlocks
