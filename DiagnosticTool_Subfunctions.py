@@ -76,6 +76,7 @@ def find_interlocks(node_interlocks):
         except:
             pass
         
+    interlocks_df.sort_values('Date', ascending=True, inplace=True)
     return(interlocks_df)
     
 def find_endpoints(interlocks_df, node_endpoints):
@@ -134,19 +135,34 @@ def interlock_duration(interlock_df):
 #given entry dataframe should already be (1) filtered based on entries of interest, (2) include entry times (active or inactive column), 
                                         #(3) include entry description 
 def find_last_entry(interlock_df, interlock_times, entries_df):
+    #combine date and time columns for entries_df
+    entries = entries_df.copy()
+    datetimes = []
+    for idx in range(0,len(entries)):
+        date = entries.loc[idx, 'Date']
+        time = entries.loc[idx, 'Time']
+        datetimes.append(datetime.datetime.combine(date,time))
+    entries.insert(0, 'Datetime', datetimes)
+    entries.drop('Date', axis=1, inplace=True)
+    entries.drop('Time', axis=1, inplace=True)
+    entries.sort_values('Datetime', ascending=True, inplace=True)
+    
+    # Find last entry before interlock active/ inactive
     last_entries = []
     for idx, time in enumerate(interlock_times):
         date = interlock_df['Date'][idx]
         date = date.date()
-        try:
+        try: 
             time = datetime.datetime.combine(date, time)
             possible_entries = []
-            for idx in range(0, len(entries_df)):
-                status_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
-                if time > status_time:
-                    possible_entries.append(entries_df['Description'][idx])
             try:
-                last_entries.append(possible_entries[-1])
+                for status_time, description in zip(entries['Datetime'], entries['Description']):
+                    if time > status_time:
+                        possible_entries.append(description)
+                try:
+                    last_entries.append(possible_entries[-1])
+                except:
+                    last_entries.append('')
             except:
                 last_entries.append('')
         except:
