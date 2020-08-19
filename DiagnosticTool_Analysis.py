@@ -77,7 +77,9 @@ def filter_expected(interlocks_df):
                 interlock_type.append('Shutdown Interlock')
   
     # filter expected interlocks        
-    for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip(df['Interlock Number'], df['Machine last state (before active)'], df['Sysnode Relevant Interlock (before)'], df['Sysnode Relevant Interlock (during)'], df['Node State (before active)'])):
+    for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip\
+    (df['Interlock Number'], df['Machine last state (before active)'], df['Sysnode Relevant Interlock (before)'], \
+    df['Sysnode Relevant Interlock (during)'], df['Node State (before active)'])):
         # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
         if 'ViewAvgTooHigh' in interlock and '' in sys_before and '' in sys_during:
             filter_out_idx.append(idx)
