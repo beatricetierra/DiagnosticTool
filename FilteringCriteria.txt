@@ -1,0 +1,11 @@
+********** Filtering Criteria **********
+. startup interlocks: any interlock that occurs within 5 minutes of node start
+. shutdown interlocks:  (1) any interlock that occurs within 1 minute of node end
+			(2) any interlock that occurs between node end and node start 
+			    (node end < interlock < node start) 
+. Interlock 161400: DMS.SW.Check.ViewAvgTooHigh, if does not trigger Sysnode relevant interlock
+. Interlock 161216: DMS.Status.RCB.ExternalTriggerInvalid, if does not trigger Sysnode relevant interlock
+. HVG Interlocks if node in NODE_STATE_IDLE
+. HVG.AnodeStatusMismatch if machine state in AnodeRampDown
+. HVG.Contactor contactor on state
+. SysHeartbeatTimeout 
