@@ -20,11 +20,12 @@ def NodeInterlocks(node_log, sys_log, endpoints):
             node_interlocks = node_interlocks.append(node_log.iloc[idx], ignore_index=True)
 
     # Group node (KV/PR) entries and endpoints
-    find_keys = ['Set HV', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock']
+    find_keys = ['Set HV ', 'State machine', 'State set', 'received command', 'Received command', 'State transition', 'Top relevant interlock']
     
     machine_state = pd.DataFrame(columns=columns)
     node_state = pd.DataFrame(columns=columns)
     received_command = pd.DataFrame(columns=columns) 
+    user_command = pd.DataFrame(columns=columns) 
     
     if node_log.name == 'kvct_log':
         global kvct_HV_status 
@@ -34,17 +35,19 @@ def NodeInterlocks(node_log, sys_log, endpoints):
         for idx, entry in enumerate(node_log['Description']):
             if find_keys[0] in entry:
                 kvct_HV_status = kvct_HV_status.append(node_log.iloc[idx], ignore_index=True)
-            if find_keys[1] in entry:
+            if find_keys[1] in entry and 'KVCTControl' in entry:
                 machine_state = machine_state.append(node_log.iloc[idx], ignore_index=True)
             if find_keys[2] in entry:
                 node_state = node_state.append(node_log.iloc[idx], ignore_index=True)
             if find_keys[3] in entry:
                 received_command = received_command.append(node_log.iloc[idx], ignore_index=True)
+            if find_keys[4] in entry:
+                user_command = user_command.append(node_log.iloc[idx], ignore_index=True)
                 
         node_endpoints = endpoints[endpoints['Node'] == 'KV']
         node_endpoints.drop(columns='Node', inplace = True)
         
-    if node_log.name == 'pet_log':
+    if node_log.name == 'recon_log':
         for idx, entry in enumerate(node_log['Description']):
             if find_keys[1] in entry:
                 machine_state = machine_state.append(node_log.iloc[idx], ignore_index=True)
@@ -67,9 +70,9 @@ def NodeInterlocks(node_log, sys_log, endpoints):
             sys_user_action = sys_user_action.append(sys_log.iloc[idx], ignore_index=True)
         if find_keys[3] in entry or find_keys[2] in entry:
             sys_received_command = sys_received_command.append(sys_log.iloc[idx], ignore_index=True)
-        if find_keys[4] in entry:
-            sys_state_transition = sys_state_transition.append(sys_log.iloc[idx], ignore_index=True)
         if find_keys[5] in entry:
+            sys_state_transition = sys_state_transition.append(sys_log.iloc[idx], ignore_index=True)
+        if find_keys[6] in entry:
             sys_relevant_interlock = sys_relevant_interlock.append(sys_log.iloc[idx], ignore_index=True)
             
     sys_endpoints = endpoints[(endpoints['Node'] == 'SY') & (endpoints['Description'] == '------ NODE START ------')]
@@ -90,7 +93,7 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     node_df['Interlock Duration'] = dts.interlock_duration(node_df)
     
     # HV status before active/ inactive interlock
-    kvct_HV_status['Description'] = [descr.split("\n")[0].split(" ", 1)[1] for descr in kvct_HV_status['Description']]
+    kvct_HV_status['Description'] = [descr.split('Set HV ')[-1] for descr in kvct_HV_status['Description']]
     node_df['HV last status (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], kvct_HV_status)
     node_df['HV last status (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], kvct_HV_status)
     
@@ -108,6 +111,10 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     received_command['Description'] = [descr.split(":")[0].split(" ", 1)[1] for descr in received_command['Description']]
     node_df['Last command received (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], received_command)
     node_df['Last command received (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], received_command)
+    
+    # Last user command recerived before activer interlock
+    user_command['Description'] = [descr.split("Received command ")[1] for descr in user_command['Description']]
+    node_df['Last user command received'] = dts.find_last_entry(node_df, node_df['Active Time'], user_command)
     
     # last user action 
     sys_user_action['Description'] = ["***" + description.split(" = ")[1].split(" ")[0] for description in sys_user_action['Description']]
@@ -130,8 +137,8 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     # Clean up final kvct_df
     columns = ['Date','Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'HV last status (before active)', 
             'HV last status (before inactive)', 'Machine last state (before active)', 'Machine last state (before inactive)', 'Node State (before active)',
-            'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 'Last user input', 
-            'Sysnode State', 'Sysnode Restart', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
+            'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 'Last user command received',
+            'Last user input', 'Sysnode State', 'Sysnode Restart', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
     
     node_df.sort_values('Date', ascending=True, inplace=True)
     node_df['Date'] = node_df['Date'].dt.date
