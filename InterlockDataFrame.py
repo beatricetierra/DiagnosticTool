@@ -108,13 +108,18 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     node_df['Node State (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], node_state)
     
     # last command received before active/ inactive interlock
-    received_command['Description'] = [descr.split(":")[0].split(" ", 1)[1] for descr in received_command['Description']]
+    for idx, descr in enumerate(received_command['Description']):
+        if '-' in descr:
+            received_command.loc[idx, 'Description'] = descr.split(':')[0].split(' ' )[1]
+        else:
+            received_command.loc[idx, 'Description'] = descr.split(':')[0]
     node_df['Last command received (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], received_command)
     node_df['Last command received (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], received_command)
     
     # Last user command recerived before activer interlock
     user_command['Description'] = [descr.split("Received command ")[1] for descr in user_command['Description']]
-    node_df['Last user command received'] = dts.find_last_entry(node_df, node_df['Active Time'], user_command)
+    node_df['Last user command received (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], user_command)
+    node_df['Last user command received (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], user_command)
     
     # last user action 
     sys_user_action['Description'] = ["***" + description.split(" = ")[1].split(" ")[0] for description in sys_user_action['Description']]
@@ -137,8 +142,9 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     # Clean up final kvct_df
     columns = ['Date','Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'HV last status (before active)', 
             'HV last status (before inactive)', 'Machine last state (before active)', 'Machine last state (before inactive)', 'Node State (before active)',
-            'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 'Last user command received',
-            'Last user input', 'Sysnode State', 'Sysnode Restart', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
+            'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 
+            'Last user command received (before active)', 'Last user command received (before inactive)', 'Last user input', 'Sysnode State', 'Sysnode Restart', 
+            'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
     
     node_df.sort_values('Date', ascending=True, inplace=True)
     node_df['Date'] = node_df['Date'].dt.date
