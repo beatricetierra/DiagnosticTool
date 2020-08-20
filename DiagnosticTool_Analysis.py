@@ -57,11 +57,15 @@ def filter_expected(interlocks_df):
                 filter_out_idx.append(idx)
                 interlock_type.append('Shutdown Interlock')
         try: 
-            start_entries = [] 
+            start_times = [] 
             for start in node_start:
                 if start > end:
-                    start_entries.append(start)
-            next_start = start_entries[0]
+                    start_times.append(start)
+            for start in log_start:
+                if start > end:
+                    start_times.append(start)
+            start_times = sorted(start_times)
+            next_start = start_times[0]
             for idx, time in enumerate(df['Datetime']):
                 if end < time < next_start:     #filter interlocks that occur after a shutdown and before next node startup
                     filter_out_idx.append(idx)
@@ -88,13 +92,18 @@ def filter_expected(interlocks_df):
         if 'ExternalTriggerInvalid' in interlock and '' in sys_before and '' in sys_during: 
             filter_out_idx.append(idx)
             interlock_type.append('ExternalTriggerInvalid')
+        if 'KV.Infra.SysHeartbeatTimeout' in interlock and '' in sys_before and '' in sys_during: 
+            filter_out_idx.append(idx)
+            interlock_type.append('SysNode Restart')
         if 'IDLE' in node_state and 'HVG' in interlock:
             filter_out_idx.append(idx)
             interlock_type.append('HVG while IDLE')
         if 'HVG.AnodeStatusMismatch' in interlock and 'AnodeRampDown' in machine:
             filter_out_idx.append(idx)
             interlock_type.append('AnodeRampDown')
-            
+        if 'HVG.ContactorStatusMismatch' in interlock and 'ContactorOn' in machine:
+            filter_out_idx.append(idx)
+            interlock_type.append('ContactorOn')
             
     # separate interlocks_df into filtered and filtered_out 
     df2 = pd.DataFrame({'Index': filter_out_idx, 'Type':interlock_type})
