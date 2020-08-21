@@ -41,12 +41,12 @@ def NodeInterlocks(node_log, sys_log, endpoints):
                 node_state = node_state.append(node_log.iloc[idx], ignore_index=True)
             if find_keys[3] in entry:
                 received_command = received_command.append(node_log.iloc[idx], ignore_index=True)
-            if find_keys[4] in entry:
+            if find_keys[4] in entry or 'Got command' in entry:
                 user_command = user_command.append(node_log.iloc[idx], ignore_index=True)
                 
         node_endpoints = endpoints[endpoints['Node'] == 'KV']
         node_endpoints.drop(columns='Node', inplace = True)
-        
+    
     if node_log.name == 'recon_log':
         for idx, entry in enumerate(node_log['Description']):
             if find_keys[1] in entry:
@@ -117,7 +117,7 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     node_df['Last command received (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], received_command)
     
     # Last user command recerived before activer interlock
-    user_command['Description'] = [descr.split("Received command ")[1] for descr in user_command['Description']]
+    user_command['Description'] = [descr.split("command")[-1] for descr in user_command['Description']]
     node_df['Last user command received (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], user_command)
     node_df['Last user command received (before inactive)'] = dts.find_last_entry(node_df, node_df['Inactive Time'], user_command)
     
