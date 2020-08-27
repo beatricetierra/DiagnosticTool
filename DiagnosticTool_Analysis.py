@@ -43,7 +43,7 @@ def filter_expected(interlocks_df):
     #filter interlocks that occur 5 minutes after node starts
     
     for start in node_start:
-        limit = start + datetime.timedelta(minutes=5)   
+        limit = start + datetime.timedelta(minutes=1)   
         for idx, time in enumerate(df['Datetime']):
             if start < time < limit:
                 filter_out_idx.append(idx)
@@ -80,7 +80,7 @@ def filter_expected(interlocks_df):
                 filter_out_idx.append(idx)
                 interlock_type.append('Shutdown Interlock')
   
-    # filter expected interlocks        
+    # filter expected interlocks based on status of other events    
     for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip\
     (df['Interlock Number'], df['Machine last state (before active)'], df['Sysnode Relevant Interlock (before)'], \
     df['Sysnode Relevant Interlock (during)'], df['Node State (before active)'])):
@@ -104,6 +104,13 @@ def filter_expected(interlocks_df):
         if 'HVG.ContactorStatusMismatch' in interlock and 'ContactorOn' in machine:
             filter_out_idx.append(idx)
             interlock_type.append('ContactorOn')
+            
+    # filter interlocks based on time of other events
+    for idx, (interlock, interlock_time, bel) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL'])):
+        if 'HvOnStatusMismatch' in interlock:
+            if interlock_time - bel < datetime.timedelta(seconds=.1):
+                filter_out_idx.append(idx)
+                interlock_type.append('BEL is open')
             
     # separate interlocks_df into filtered and filtered_out 
     df2 = pd.DataFrame({'Index': filter_out_idx, 'Type':interlock_type})

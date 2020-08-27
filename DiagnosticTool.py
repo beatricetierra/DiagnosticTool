@@ -151,7 +151,8 @@ def ReadNodeLogs(file, find_keys):
 def GetEntries(filenames):    
     # Find entries of interest
     acceptable_files = ['kvct','pet','sysnode']
-    find_keys = ['is active', 'is inactive', 'Set HV ', 'State machine', 'State set', 'received command', 'State transition', 'Top relevant interlock']
+    find_keys = ['is active', 'is inactive', 'Set HV ', 'State machine', 'State set', 'received command', 
+                 'State transition', 'Top relevant interlock', 'BEL is open']
     
     files = []
 
@@ -188,7 +189,7 @@ def GetEntries(filenames):
     entries_df = pd.DataFrame(entries, columns=columns)
     entries_df['Date'] = pd.to_datetime(entries_df['Date']).dt.date #convert to datetime format
     entries_df['Time'] = pd.to_datetime(entries_df['Time']).dt.time
-    
+
     endpoints_df = pd.DataFrame(endpoints, columns=columns)
     endpoints_df['Date'] = pd.to_datetime(endpoints_df['Date']).dt.date #convert to datetime format
     endpoints_df['Time'] = pd.to_datetime(endpoints_df['Time']).dt.time
@@ -216,7 +217,7 @@ def GetEntries(filenames):
         recon_log = entries_df.loc[entries_df['Node'] == 'PR']
         recon_log.drop(columns='Node', inplace = True)
         recon_log.name = 'recon_log'
-    
+        
         recon_df = idf.NodeInterlocks(recon_log, sys_log, endpoints_df)
     except:
         recon_df = pd.DataFrame()

@@ -42,10 +42,12 @@ def find_interlocks(node_interlocks):
             if interlock in interlock_desc:
                 if 'is active' in interlock_desc:
                     interlock_active_name.append(interlock)
-                    interlock_active_time.append(datetime.datetime.combine(node_interlocks['Date'][idx],node_interlocks['Time'][idx]))
+                    interlock_active_time.append(datetime.datetime.combine(node_interlocks['Date'][idx],\
+                                                                           node_interlocks['Time'][idx]))
                 elif 'is inactive' in interlock_desc:
                     interlock_inactive_name.append(interlock)
-                    interlock_inactive_time.append(datetime.datetime.combine(node_interlocks['Date'][idx],node_interlocks['Time'][idx]))
+                    interlock_inactive_time.append(datetime.datetime.combine(node_interlocks['Date'][idx],\
+                                                                             node_interlocks['Time'][idx]))
     
     interlocks_df = pd.DataFrame({'Interlock Number': interlock_active_name, 'Active Time': interlock_active_time})
     inactive_df = pd.DataFrame({'Interlock Number': interlock_inactive_name, 'Inactive Time': interlock_inactive_time})
@@ -180,7 +182,8 @@ def sys_interlocks_before(interlock_df, entries_df):
             sys_interlock_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
             nearest_times_idx = nearest(interlock_times, sys_interlock_time)
             previous = interlock_df['Sysnode Relevant Interlock (before)'][nearest_times_idx]
-            interlock_df.loc[nearest_times_idx,'Sysnode Relevant Interlock (before)'] = previous + str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
+            interlock_df.loc[nearest_times_idx,'Sysnode Relevant Interlock (before)'] = previous + \
+            str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
         except:
             pass
     return(interlock_df)
@@ -197,7 +200,8 @@ def sys_interlocks_during(interlock_df, entries_df):
                     inactive_time = datetime.datetime.combine(active_time.date(), inactive_time)
                     if active_time < sys_interlock_time < inactive_time:
                         previous = interlock_df['Sysnode Relevant Interlock (during)'][row]
-                        interlock_df.loc[row,'Sysnode Relevant Interlock (during)'] = previous + str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
+                        interlock_df.loc[row,'Sysnode Relevant Interlock (during)'] = previous + \
+                        str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
                 except:
                     pass
     return(interlock_df)
