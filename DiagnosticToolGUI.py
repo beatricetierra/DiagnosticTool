@@ -370,36 +370,54 @@ class SubFunctions():
            start_date = ('').join(dates.split('-')[1:3])
            end_date = ('').join(dates.split('-')[4:])
            filedate = ('-').join([start_date, end_date]).replace(' ','')
-                
-            # Summary Table
-           info = ['System', 'Dates', 'Total Sessions', 'KVCT Total Interlocks', 'KVCT Unexpected Interlocks', 'KVCT Expected Interlocks', 'KVCT Recon Interlocks']
-           values = [system, dates, sessions, len(kvct_df), len(kvct_filtered), len(kvct_filtered_out), len(recon_df)]
-           summary_df = pd.DataFrame([info, values]).transpose()
            
-           # Interlocks Excel File
-           interlocks_writer = pd.ExcelWriter(directory + '\InterlocksList_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
-           kvct_df.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (All)')
-           kvct_filtered.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Unexpect)')
-           kvct_filtered_out.to_excel(interlocks_writer, sheet_name='KVCT Interlocks (Expected)')
-           recon_df.to_excel(interlocks_writer, sheet_name='KVCT Recon Interlocks')
-           interlocks_writer.save()
+           # KVCT Interlocks
+           kvct_writer = pd.ExcelWriter(directory + '\KvctInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
+           sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Unexpect)', 'KVCT Interlocks (Expect)',
+                         'KVCT Analysis (Unexpect)', 'KVCT Analysis (Expect)']
+           dataframes = [kvct_df, kvct_filtered, kvct_filtered_out, filtered_analysis, unfiltered_analysis]
+           for df,sheetname in zip(dataframes,sheetnames):
+               df.to_excel(kvct_writer,sheetname, index=False)
+               
+           workbook  = kvct_writer.book
+           align = workbook.add_format()
+           for df, sheetname in zip(dataframes,sheetnames):
+               worksheet = kvct_writer.sheets[sheetname]
+               for idx, col in enumerate(df):  # loop through all columns
+                   series = df[col]
+                   max_len = max((series.astype(str).map(len).max(),len(str(series.name)))) + 1  # adding a little extra space
+                   worksheet.set_column(idx, idx, max_len)  # set column width
+                   align.set_align('center')
+           kvct_writer.save()
            
-           # Analysis Excel File
-           analysis_writer = pd.ExcelWriter(directory + '\InterlocksAnalysis_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
-           summary_df.to_excel(analysis_writer, sheet_name='Summary')
-           filtered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Unexpect)')
-           unfiltered_analysis.to_excel(analysis_writer, sheet_name='KVCT Analysis (Expect)')
-           recon_analysis.to_excel(analysis_writer, sheet_name='KVCT Recon Analysis')
-           analysis_writer.save()
-           
+           # Recon Interlocks
+           recon_writer = pd.ExcelWriter(directory + '\ReconInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
+           sheetnames = ['Recon Interlocks', 'Recon Analysis']
+           dataframes = [recon_df, recon_analysis]
+           for df,sheetname in zip(dataframes,sheetnames):
+               df.to_excel(recon_writer,sheetname, index=False)
+               
+           workbook  = recon_writer.book
+           align = workbook.add_format()
+           for df, sheetname in zip(dataframes,sheetnames):
+               worksheet = recon_writer.sheets[sheetname]
+               for idx, col in enumerate(df):  # loop through all columns
+                   series = df[col]
+                   max_len = max((series.astype(str).map(len).max(),len(str(series.name)))) + 1  # adding a little extra space
+                   worksheet.set_column(idx, idx, max_len)  # set column width
+                   align.set_align('center')
+           recon_writer.save()
+    
            tk.messagebox.showinfo(title='Info', message='Excel files exported')
        except:
             tk.messagebox.showerror(title='Error', message='Cannot export files')
-            
+                                    
 if __name__ == "__main__":
     root = tk.Tk()
     root.state('zoomed')
     main = MainView(root)
     main.pack(side="top", fill="both", expand=True)
     root.wm_geometry("1500x800")
-    root.mainloop()
+    root.mainloop()           
+           
+
