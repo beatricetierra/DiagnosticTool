@@ -8,6 +8,18 @@ import numpy as np
 import pandas as pd
 import datetime
 
+# Converts strings -> timedelta -> total seconds(int)
+def total_seconds(column):
+    timedelta = []
+    for duration in column:
+        try:
+            duration = datetime.datetime.strptime(duration, '%H:%M:%S.%f')
+            total = duration - datetime.datetime(1900, 1, 1)
+            timedelta.append(total.total_seconds())
+        except:
+            timedelta.append(np.nan)
+    return(timedelta)
+
 def filter_expected(interlocks_df):
     
     # find entries to be filtered out and insert into new dataframe
@@ -19,10 +31,10 @@ def filter_expected(interlocks_df):
     for date, time in zip(interlocks_df['Date'], interlocks_df['Active Time']):
         datetimes.append(datetime.datetime.combine(date, time))
     
-    # save start and end entries
     df = interlocks_df.copy()
     df.insert(0, 'Datetime', datetimes)
     
+    # save start and end entries
     log_start = df.loc[df['Interlock Number'] == '------ LOG START ------']['Datetime']
     log_start_idx = log_start.index.values
     
@@ -40,12 +52,14 @@ def filter_expected(interlocks_df):
     
     # Remove startup and shutdown interlocks
     # keep separate because node start != node end everytime (ex. wait_config error, unexpected shutdown)
-    #filter interlocks that occur 5 minutes after node starts
+    #filter interlocks that occur 30 seconds after node starts and duration is less than 2 minutes
     
     for start in node_start:
-        limit = start + datetime.timedelta(minutes=1)   
-        for idx, time in enumerate(df['Datetime']):
-            if start < time < limit:
+        limit = start + datetime.timedelta(seconds=30)   
+        for idx, (time, duration) in enumerate(zip(df['Datetime'], df['Interlock Duration'])):
+            if duration == 'Still Active':
+                pass
+            elif start < time < limit and duration < 2:
                 filter_out_idx.append(idx)
                 interlock_type.append('Startup Interlock')
     
@@ -141,20 +155,7 @@ def filter_expected(interlocks_df):
     filtered_out.drop('Datetime', axis=1, inplace=True)
     filtered.drop('Datetime', axis=1, inplace=True)
 
-    
     return(filtered, filtered_out)
-
-# Converts strings -> timedelta -> total seconds(int)
-def total_seconds(filtered_out, column):
-    timedelta = []
-    for duration in column:
-        try:
-            duration = datetime.datetime.strptime(duration, '%H:%M:%S.%f')
-            total = duration - datetime.datetime(1900, 1, 1)
-            timedelta.append(total.total_seconds())
-        except:
-            timedelta.append(np.nan)
-    return(timedelta)
 
 # Analyze unexpected interlocks
 def analysis(filtered_df):
@@ -162,28 +163,11 @@ def analysis(filtered_df):
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ LOG START ------']
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE START ------']
     filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE END ------']
-
-    #counter column
-    filtered_df['Count'] = [1]*len(filtered_df)
-    count = pd.DataFrame(filtered_df.groupby('Interlock Number').count()['Count'])
-    
-    #average, std, min, and max duration
-    durations = total_seconds(filtered_df, filtered_df['Interlock Duration'])
-    filtered_df['Interlock Duration(sec)'] = durations
-
-    avg_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').mean()['Interlock Duration(sec)'])
-    std_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').std()['Interlock Duration(sec)'])
-    min_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').agg('min')['Interlock Duration(sec)'])
-    max_duration = pd.DataFrame(filtered_df.groupby('Interlock Number').agg('max')['Interlock Duration(sec)'])
-    
-    #combine
-    analysis_df = count.merge(avg_duration, left_index=True, right_index=True)
-    analysis_df = analysis_df.merge(std_duration, left_index=True, right_index=True)
-    analysis_df = analysis_df.merge(min_duration, left_index=True, right_index=True)
-    analysis_df = analysis_df.merge(max_duration, left_index=True, right_index=True)
-    analysis_df.columns = ['Count', 'Avg Duration(sec)', 'Std Duration(sec)', 'Min Duration(sec)', 'Max Duration(sec)']
+        
+    dummies = pd.get_dummies(filtered_df['Date'])
+    filtered_df = pd.concat([filtered_df['Interlock Number'], dummies], axis=1)
+    analysis_df = filtered_df.groupby('Interlock Number').sum()
     analysis_df.reset_index(inplace=True)
-
     return(analysis_df)
     
 # Analyzes expected interlocks (startup/shutdown interlocks, ViewAvgTooHigh, TriggerInvalid)
@@ -219,10 +203,7 @@ def analysis_expected(filtered_out):
         total_sessions = filtered_out['Session'][len(filtered_out)-1] - 1 
     else:
         total_sessions = filtered_out['Session'][len(filtered_out)-1]
-    
-    # Convert time durations to total seconds
-    filtered_out['Time from Node Start'] = total_seconds(filtered_out, filtered_out['Time from Node Start'])
-    filtered_out['Interlock Duration'] = total_seconds(filtered_out, filtered_out['Interlock Duration'])
+
     filtered_out = filtered_out[~filtered_out['Interlock Number'].str.contains('START')]
     filtered_out = filtered_out[~filtered_out['Interlock Number'].str.contains('END')]
     
