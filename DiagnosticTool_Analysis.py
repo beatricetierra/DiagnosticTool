@@ -96,7 +96,7 @@ def filter_expected(interlocks_df):
   
     # filter expected interlocks based on status of other events    
     for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip\
-    (df['Interlock Number'], df['Machine last state (before active)'], df['Sysnode Relevant Interlock (before)'], \
+    (df['Interlock Number'], df['Machine State (before active)'], df['Sysnode Relevant Interlock (before)'], \
     df['Sysnode Relevant Interlock (during)'], df['Node State (before active)'])):
         # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
         if 'ViewAvgTooHigh' in interlock and '' in sys_before and '' in sys_during:
@@ -120,7 +120,7 @@ def filter_expected(interlocks_df):
             interlock_type.append('ContactorOn')
             
     # filter interlocks based on time of other events
-    for idx, (interlock, interlock_time, bel) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL'])):
+    for idx, (interlock, interlock_time, bel) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL Open'])):
         if 'HvOnStatusMismatch' in interlock:
             if interlock_time - bel < datetime.timedelta(seconds=.1):
                 filter_out_idx.append(idx)
