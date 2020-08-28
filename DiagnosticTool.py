@@ -15,10 +15,11 @@ def DeleteFiles(folderpath):
     for root, dirs, files in os.walk(folderpath):
         for file in files:
             if '.log' not in file:
-                if 'kvct' not in file:
-                    if 'pet' not in file:
-                        if 'sysnode' not in file:
-                            os.remove(os.path.join(root, file))
+                os.remove(os.path.join(root, file))
+            elif 'kvct' not in file:
+                if 'pet' not in file:
+                    if 'sysnode' not in file:
+                        os.remove(os.path.join(root, file))
     return
     
 def GetFiles(folderpath):
@@ -230,12 +231,11 @@ def FilterEntries(kvct_interlocks):
     
     return(kvct_filtered, kvct_filtered_out)
     
-def Analysis(kvct_filtered, kvct_filtered_out, pet_interlocks):    
+def Analysis(kvct_filtered, kvct_filtered_out, recon_df):    
     kvct_analysis = dta.analysis(kvct_filtered)
     sessions, kvct_unfiltered_analysis = dta.analysis_expected(kvct_filtered_out)
-    
     try:    
-        pet_analysis = dta.analysis(pet_interlocks)
+        recon_analysis = dta.analysis(recon_df)
     except:
-        pet_analysis = pd.DataFrame()
-    return(kvct_analysis, sessions, kvct_unfiltered_analysis, pet_analysis)
+        recon_analysis = pd.DataFrame()
+    return(kvct_analysis, sessions, kvct_unfiltered_analysis, recon_analysis)
