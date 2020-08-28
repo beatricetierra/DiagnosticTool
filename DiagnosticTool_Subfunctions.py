@@ -66,72 +66,54 @@ def find_interlocks(node_interlocks):
             interlocks_df.loc[i,'Inactive Time'] = instances[nearest_time]
         except:
             interlocks_df.loc[i,'Inactive Time'] = "Still Active"
-    
-    #format date and time columns
-    interlocks_df.insert(0, 'Date', ""*len(interlocks_df))
-    
-    for idx, (active, inactive) in enumerate(zip(interlocks_df['Active Time'], interlocks_df['Inactive Time'])):
-        interlocks_df.loc[idx,'Date'] = active.to_pydatetime().date()
-        try:
-            interlocks_df.loc[idx,'Active Time'] = active.to_pydatetime().time()
-            interlocks_df.loc[idx,'Inactive Time'] = inactive.to_pydatetime().time()
-        except:
-            pass
         
-    interlocks_df.sort_values('Date', ascending=True, inplace=True)
+    interlocks_df.sort_values('Active Time', ascending=True, inplace=True)
     return(interlocks_df)
     
 def find_endpoints(interlocks_df, node_endpoints):
-    endpoints_df = pd.DataFrame({'Date': node_endpoints['Date'], 'Interlock Number': node_endpoints['Description'],
-                               'Active Time': node_endpoints['Time'], 'Inactive Time': ''})
+    endpoints_time = [datetime.datetime.combine(date, time) for date,time in zip(node_endpoints['Date'], node_endpoints['Time'])]
+    endpoints_df = pd.DataFrame({'Interlock Number': node_endpoints['Description'], 'Active Time': endpoints_time, 
+                                 'Inactive Time': ''})
     result = pd.concat([interlocks_df, endpoints_df], sort=False)
     result.reset_index(drop=True, inplace=True)
-    
-    for idx, (date, time) in enumerate(zip(result['Date'], result['Active Time'])):
-        try:
-            result.loc[idx,'Datetime'] = datetime.datetime.combine(date,time)
-        except:
-            pass
         
-    result.sort_values(by=['Datetime'], inplace=True)
-    result['Date'] = result['Datetime']
-    result.drop(columns = 'Datetime', inplace=True)
+    result.sort_values(by=['Active Time'], inplace=True)
     result.reset_index(drop=True, inplace=True)
     return(result)
 
 # Time since start of node
 def node_start_delta(interlocks_df):
     interlocks_df['Time from Node Start'] = ''*len(interlocks_df)
-    restart_times = interlocks_df.loc[interlocks_df['Interlock Number'] == '------ NODE START ------']['Date']
+    restart_times = interlocks_df[interlocks_df['Interlock Number'].str.contains("------ NODE START ------")]['Active Time']
     restart_times_idx = restart_times.index.values
+    endpoint_times = interlocks_df[(interlocks_df['Interlock Number'].str.contains('LOG')) | (interlocks_df['Interlock Number']\
+                                   .str.contains('END'))]['Active Time']
+    endpoint_times_idx = endpoint_times.index.values
     
-    for idx, active_time in enumerate(interlocks_df['Date']):
-        if idx not in restart_times_idx:
+    for idx, active_time in enumerate(interlocks_df['Active Time']):
+        if idx not in restart_times_idx and idx not in endpoint_times_idx:
             restart = [] 
             for start_time in restart_times:
                 if start_time < active_time:
                     restart.append(start_time)
             try:
-                interlocks_df.loc[idx, 'Time from Node Start'] = timedelta_format(active_time - restart[-1])
+                interlocks_df.loc[idx, 'Time from Node Start'] = round(datetime.timedelta.total_seconds(active_time - restart[-1])/60,6)
             except:
                 pass
     return(interlocks_df)
     
 # Time duration of interlock
 def interlock_duration(interlock_df):
-    time_delta = []
+    interlock_df['Interlock Duration'] = ''*len(interlock_df)
     for idx, (active, inactive) in enumerate(zip(interlock_df['Active Time'], interlock_df['Inactive Time'])):
-        date = interlock_df.loc[idx,'Date'].to_pydatetime()
         try:
-            inactive_time = datetime.datetime.combine(date.date(), inactive)
-            active_time = datetime.datetime.combine(date.date(), active)
-            time_delta.append(timedelta_format(inactive_time - active_time))
+            interlock_df.loc[idx, 'Interlock Duration'] =  round(datetime.timedelta.total_seconds(inactive - active)/60, 6)
         except:
             if not active or not inactive:
-                time_delta.append('')
+                pass
             else:
-                time_delta.append('Still Active')
-    return(time_delta)
+                interlock_df.loc[idx, 'Interlock Duration'] = 'Still Active'
+    return(interlock_df)
 
 #find the the last entry of given entry dataframe prior to given interlock (active or inactive) time
 #given entry dataframe should already be (1) filtered based on entries of interest, (2) include entry times (active or inactive column), 
@@ -152,10 +134,7 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
     # Find last entry before interlock active/ inactive
     last_entries = []
     for idx, time in enumerate(interlock_times):
-        date = interlock_df['Date'][idx]
-        date = date.date()
         try: 
-            time = datetime.datetime.combine(date, time)
             possible_entries = []
             try:
                 for status_time, description in zip(entries['Datetime'], entries['Description']):
@@ -175,7 +154,7 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
 # Finds top relevant interlocks that occur before kvct interlock
 def sys_interlocks_before(interlock_df, entries_df):
     interlock_df['Sysnode Relevant Interlock (before)'] = ''*len(interlock_df)
-    interlock_times = interlock_df['Date'].tolist()
+    interlock_times = interlock_df['Active Time'].tolist()
         
     for idx in range(0,len(entries_df)):
         try:
@@ -195,9 +174,8 @@ def sys_interlocks_during(interlock_df, entries_df):
     
     for idx in range(0,len(entries_df)):
             sys_interlock_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
-            for row, (active_time, inactive_time) in enumerate(zip(interlock_df['Date'], interlock_df['Inactive Time'])):
+            for row, (active_time, inactive_time) in enumerate(zip(interlock_df['Active Time'], interlock_df['Inactive Time'])):
                 try:
-                    inactive_time = datetime.datetime.combine(active_time.date(), inactive_time)
                     if active_time < sys_interlock_time < inactive_time:
                         previous = interlock_df['Sysnode Relevant Interlock (during)'][row]
                         interlock_df.loc[row,'Sysnode Relevant Interlock (during)'] = previous + \

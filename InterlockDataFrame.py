@@ -94,7 +94,7 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     node_df = dts.node_start_delta(node_df)
      
     # Duration of node interlocks
-    node_df['Interlock Duration'] = dts.interlock_duration(node_df)
+    node_df = dts.interlock_duration(node_df)
     
     # HV status before active/ inactive interlock
     kvct_HV_status['Description'] = [descr.split('Set HV ')[-1] for descr in kvct_HV_status['Description']]
@@ -148,14 +148,22 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     node_df = dts.sys_interlocks_during(node_df, sys_relevant_interlock)
     
     # Clean up final kvct_df
-    columns = ['Date','Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'HV last status (before active)', 
+    node_df['Date'] = [activetime.date() for activetime in node_df['Active Time']]
+    
+    columns = ['Date', 'Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'HV last status (before active)', 
             'HV last status (before inactive)', 'BEL', 'Machine last state (before active)', 'Machine last state (before inactive)', 'Node State (before active)',
             'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 
             'Last user command received (before active)', 'Last user command received (before inactive)', 'Last user input', 'Sysnode State', 'Sysnode Restart', 
             'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
     
-    node_df.sort_values('Date', ascending=True, inplace=True)
-    node_df['Date'] = node_df['Date'].dt.date
+    node_df.sort_values('Active Time', ascending=True, inplace=True)
     node_df = node_df.reindex(columns= columns)
+
+    node_df['Active Time'] = [activetime.time() for activetime in node_df['Active Time']]
+    for idx, inactivetime in enumerate(node_df['Inactive Time']):
+        if isinstance(inactivetime, str):
+            pass
+        else:
+            node_df.loc[idx,'Inactive Time'] = inactivetime.time()
     
     return(node_df)
