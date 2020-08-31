@@ -340,8 +340,8 @@ class SubFunctions():
            tree.column("Date", width=100, stretch='no')
            tree.column("Active Time", width=100, stretch='no')
            tree.column("Inactive Time", width=100, stretch='no')
-           tree.column("Time from Node Start", width=100, stretch='no')
-           tree.column("Interlock Duration", width=100, stretch='no')
+           tree.column("Time from Node Start (min)", width=100, stretch='no')
+           tree.column("Interlock Duration (min)", width=100, stretch='no')
            
        if 'page3' in str(tab):
            for i in range(1,len(columns)):

@@ -78,7 +78,7 @@ def ReadLogs(file, find_keys):
     # find entries of interest
     parse_idx = [3,4,7,10] #only keep date, time, node, and desciption
     for i, line in enumerate(lines):
-        if 'Configuring log file:' in line or 'set to load_config' in line or 'Signal 15' in line:
+        if 'Configuring log file:' in line or 'Operating mode' in line or 'set to load_config' in line or 'Signal 15' in line:
             entry = line.split(" ", 10)
             endpoints.append([entry[i] for i in parse_idx]) 
         if '***' in line:
@@ -123,7 +123,7 @@ def ReadNodeLogs(file, find_keys):
     # find entries of interest
     parse_idx = [0,1,4,7] #only keep date, time, node, and desciption
     for i, line in enumerate(lines):
-        if i == 0 or 'command: set to load_config' in line or 'Signal 15' in line:
+        if i == 0 or 'Operating mode' in line or 'command: set to load_config' in line or 'Signal 15' in line:
             entry = line.split(" ", 7)
             endpoints.append([entry[i] for i in parse_idx]) 
         if '***' in line:
@@ -194,16 +194,18 @@ def GetEntries(filenames):
     endpoints_df = pd.DataFrame(endpoints, columns=columns)
     endpoints_df['Date'] = pd.to_datetime(endpoints_df['Date']).dt.date #convert to datetime format
     endpoints_df['Time'] = pd.to_datetime(endpoints_df['Time']).dt.time
-    
+
     # Change endpoint_df descriptions and combine with entries_df
     for i, row in enumerate(endpoints_df['Description']):
         if 'command' in row:
             endpoints_df.loc[i,'Description'] = '------ NODE START ------'
         elif 'Signal' in row:
             endpoints_df.loc[i,'Description'] = '------ NODE END ------'
-        else:
-            endpoints_df.loc[i,'Description'] = '------ LOG START ------'
-
+        elif 'Log' in row or 'log' in row:
+            mode = endpoints_df.loc[i+1,'Description'].split('------------')[-1]
+            endpoints_df.loc[i,'Description'] = '------ LOG START (' + mode +') ------'
+    endpoints_df = endpoints_df[~endpoints_df['Description'].str.contains("Operating")]
+    
     # Seperate entries by nodes
     sys_log = entries_df.loc[entries_df['Node'] == 'SY']
     sys_log.drop(columns='Node', inplace = True)

@@ -95,7 +95,7 @@ def NodeInterlocks(node_log, sys_log, endpoints):
      
     # Duration of node interlocks
     node_df = dts.interlock_duration(node_df)
-    
+
     # HV status before active/ inactive interlock
     kvct_HV_status['Description'] = [descr.split('Set HV ')[-1] for descr in kvct_HV_status['Description']]
     node_df['HV Status (before active)'] = dts.find_last_entry(node_df, node_df['Active Time'], kvct_HV_status)
@@ -150,7 +150,7 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     # Clean up final kvct_df
     node_df['Date'] = [activetime.date() for activetime in node_df['Active Time']]
     
-    columns = ['Date', 'Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration', 'HV Status (before active)', 
+    columns = ['Date', 'Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start (min)', 'Interlock Duration (min)', 'HV Status (before active)', 
             'HV Status (before inactive)', 'BEL Open', 'Machine State (before active)', 'Machine State (before inactive)', 'Node State (before active)',
             'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 
             'Last user command received (before active)', 'Last user command received (before inactive)', 'Last user input', 'Sysnode State', 'Sysnode Restart', 
