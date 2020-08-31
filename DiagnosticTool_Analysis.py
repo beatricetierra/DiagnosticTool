@@ -35,19 +35,19 @@ def filter_expected(interlocks_df):
     df.insert(0, 'Datetime', datetimes)
     
     # save start and end entries
-    log_start = df.loc[df['Interlock Number'] == '------ LOG START ------']['Datetime']
+    log_start = df.loc[df['Interlock Number'].str.contains('LOG START')]['Datetime']
     log_start_idx = log_start.index.values
     
-    node_start = df.loc[df['Interlock Number'] == '------ NODE START ------']['Datetime']
+    node_start = df.loc[(df['Interlock Number'] == '------ NODE START ------') | \
+                        (df['Interlock Number'] == '------ LOG START (maintenance) ------')]['Datetime']
     node_start_idx = node_start.index.values
     
     node_end = df.loc[df['Interlock Number'] == '------ NODE END ------']['Datetime']
     node_end_idx = node_end.index.values
-    
+
     # skip all endpoint entries
-    df = df.drop(log_start_idx)
-    df = df.drop(node_start_idx)
-    df = df.drop(node_end_idx)
+    endpoint_idx = list(set(list(log_start_idx) + list(node_start_idx) + list(node_end_idx)))
+    df = df.drop(endpoint_idx)
     df.reset_index(drop=True, inplace=True)
     
     # Remove startup and shutdown interlocks
@@ -56,7 +56,7 @@ def filter_expected(interlocks_df):
     
     for start in node_start:
         limit = start + datetime.timedelta(seconds=30)   
-        for idx, (time, duration) in enumerate(zip(df['Datetime'], df['Interlock Duration'])):
+        for idx, (time, duration) in enumerate(zip(df['Datetime'], df['Interlock Duration (min)'])):
             if duration == 'Still Active':
                 pass
             elif start < time < limit and duration < 2:
@@ -159,10 +159,8 @@ def filter_expected(interlocks_df):
 
 # Analyze unexpected interlocks
 def analysis(filtered_df):
-    # remove restart entries
-    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ LOG START ------']
-    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE START ------']
-    filtered_df = filtered_df[filtered_df['Interlock Number'] != '------ NODE END ------']
+    # remove endpoints
+    filtered_df = filtered_df[~filtered_df['Interlock Number'].str.contains("------")]
         
     dummies = pd.get_dummies(filtered_df['Date'])
     filtered_df = pd.concat([filtered_df['Interlock Number'], dummies], axis=1)
@@ -173,7 +171,7 @@ def analysis(filtered_df):
 # Analyzes expected interlocks (startup/shutdown interlocks, ViewAvgTooHigh, TriggerInvalid)
 def analysis_expected(filtered_out):
     # Extract columns needed for analysis 
-    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from Node Start', 'Interlock Duration']
+    columns = ['Date', 'Active Time', 'Interlock Number', 'Time from Node Start (min)', 'Interlock Duration (min)']
     filtered_out = filtered_out.reindex(columns= columns)
     
     # Find indices where node restarts

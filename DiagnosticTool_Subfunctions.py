@@ -83,36 +83,40 @@ def find_endpoints(interlocks_df, node_endpoints):
 
 # Time since start of node
 def node_start_delta(interlocks_df):
-    interlocks_df['Time from Node Start'] = ''*len(interlocks_df)
-    restart_times = interlocks_df[interlocks_df['Interlock Number'].str.contains("------ NODE START ------")]['Active Time']
-    restart_times_idx = restart_times.index.values
-    endpoint_times = interlocks_df[(interlocks_df['Interlock Number'].str.contains('LOG')) | (interlocks_df['Interlock Number']\
-                                   .str.contains('END'))]['Active Time']
-    endpoint_times_idx = endpoint_times.index.values
-    
+    interlocks_df['Time from Node Start (min)'] = ''*len(interlocks_df)
+    restart_times = []
+    restart_times_idx = []
+    endpoint_times_idx = []
+    for idx, entry in enumerate(interlocks_df['Interlock Number']):
+        if 'NODE START' in entry or 'maintenance' in entry:
+            restart_times.append(interlocks_df.loc[idx,'Active Time'])
+            restart_times_idx.append(idx)
+        elif 'Interlock' not in entry:
+            endpoint_times_idx.append(idx)
+
     for idx, active_time in enumerate(interlocks_df['Active Time']):
         if idx not in restart_times_idx and idx not in endpoint_times_idx:
             restart = [] 
             for start_time in restart_times:
                 if start_time < active_time:
-                    restart.append(start_time)
+                    restart.append(start_time)            
             try:
-                interlocks_df.loc[idx, 'Time from Node Start'] = round(datetime.timedelta.total_seconds(active_time - restart[-1])/60,6)
+                interlocks_df.loc[idx, 'Time from Node Start (min)'] = round(datetime.timedelta.total_seconds(active_time - restart[-1])/60,6)
             except:
                 pass
     return(interlocks_df)
     
 # Time duration of interlock
 def interlock_duration(interlock_df):
-    interlock_df['Interlock Duration'] = ''*len(interlock_df)
+    interlock_df['Interlock Duration (min)'] = ''*len(interlock_df)
     for idx, (active, inactive) in enumerate(zip(interlock_df['Active Time'], interlock_df['Inactive Time'])):
         try:
-            interlock_df.loc[idx, 'Interlock Duration'] =  round(datetime.timedelta.total_seconds(inactive - active)/60, 6)
+            interlock_df.loc[idx, 'Interlock Duration (min)'] =  round(datetime.timedelta.total_seconds(inactive - active)/60, 6)
         except:
             if not active or not inactive:
                 pass
             else:
-                interlock_df.loc[idx, 'Interlock Duration'] = 'Still Active'
+                interlock_df.loc[idx, 'Interlock Duration (min)'] = 'Still Active'
     return(interlock_df)
 
 #find the the last entry of given entry dataframe prior to given interlock (active or inactive) time
@@ -131,17 +135,28 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
     entries.drop('Time', axis=1, inplace=True)
     entries.sort_values('Datetime', ascending=True, inplace=True)
     
+    # Find log times 
+    logstart_times = interlock_df[interlock_df['Interlock Number'].str.contains("LOG START")]['Active Time']
+    
     # Find last entry before interlock active/ inactive
     last_entries = []
     for idx, time in enumerate(interlock_times):
-        try: 
-            possible_entries = []
-            try:
-                for status_time, description in zip(entries['Datetime'], entries['Description']):
-                    if time > status_time:
-                        possible_entries.append(description)
+        limits = []
+        try:
+            for logstart in logstart_times:
+                if time >= logstart:
+                    limits.append(logstart)
+            limit = limits[-1]
+            try: 
+                possible_entries = []
                 try:
-                    last_entries.append(possible_entries[-1])
+                    for status_time, description in zip(entries['Datetime'], entries['Description']):
+                        if status_time > limit and status_time < time:
+                            possible_entries.append(description)
+                    try:
+                        last_entries.append(possible_entries[-1])
+                    except:
+                        last_entries.append('')
                 except:
                     last_entries.append('')
             except:
