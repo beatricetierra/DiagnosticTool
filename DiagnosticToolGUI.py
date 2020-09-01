@@ -158,17 +158,16 @@ class Page2(Page):
        Page2.tabControl.add(Page2.tab3, text = 'KVCT Interlocks (Expected)')
         
        Page2.tab4 = ttk.Frame(Page2.tabControl)
-       Page2.tabControl.add(Page2.tab4, text = 'KVCT Recon Interlocks')
+       Page2.tabControl.add(Page2.tab4, text = 'KVCT Analysis (Unexpected)')
+       
+       Page2.tab5 = ttk.Frame(Page2.tabControl)
+       Page2.tabControl.add(Page2.tab5, text = 'KVCT Analysis (Expected)')
 
        Page2.tabControl.pack(expan=1, fill='both')
        
        # Add filtering menubars
-       # kvct dataframes
-       Page2.menubar1 = tk.Menubutton(self, text='Filter KVCT Interlocks \u25BE', font=20, relief='raised')
-       Page2.menubar1.place(relx=0.62, relheight=0.025)
-       # pet dataframes
-#       Page2.menubar2 = tk.Menubutton(self, text='Filter PET Interlocks \u25BE', font=20, relief='raised')
-#       Page2.menubar2.place(relx=0.63, relheight=0.025)
+       Page2.menubar = tk.Menubutton(self, text='Filter KVCT Interlocks \u25BE', font=20, relief='raised')
+       Page2.menubar.place(relx=0.62, relheight=0.025)
        
        button_filter = tk.Button(self, text="Filter", font=20, command = Page2.filter_by_interlock)
        button_filter.place(relx=0.89, relheight=0.025)
@@ -180,22 +179,22 @@ class Page2(Page):
        button_selectnone.place(relx=0.82, relheight=0.025)
        
     def menubar_filter(df, menubar):
-        global interlock_set 
+        global kvct_interlock_set 
         items = sorted(list(set(df['Interlock Number'])))
         
         menubar.menu = tk.Menu(menubar, tearoff=0)
         menubar["menu"] = menubar.menu
         
-        interlock_set = {}
+        kvct_interlock_set = {}
         for idx, item in enumerate(items):
             var = tk.BooleanVar()
             var.set(True)
             menubar.menu.add_checkbutton(label=item, variable=var)
-            interlock_set[str(item)] = var
+            kvct_interlock_set[str(item)] = var
        
     def filter_by_interlock():
         interlock_list = []
-        for interlock, var in interlock_set.items():
+        for interlock, var in kvct_interlock_set.items():
             if var.get() == True:
                 interlock_list.append(interlock)
                 
@@ -210,11 +209,11 @@ class Page2(Page):
         SubFunctions.df_tree(df3, Page2.tab3)
     
     def selectall():
-        for interlock, var in interlock_set.items():
+        for interlock, var in kvct_interlock_set.items():
             var.set(True)
         Page2.filter_by_interlock()
     def selectnone():
-        for interlock, var in interlock_set.items():
+        for interlock, var in kvct_interlock_set.items():
             var.set(False)
         Page2.filter_by_interlock()
             
@@ -224,15 +223,74 @@ class Page3(Page):
        Page3.tabControl = ttk.Notebook(self)        
        
        Page3.tab1 = ttk.Frame(Page3.tabControl)
-       Page3.tabControl.add(Page3.tab1, text = 'KVCT Analysis (Unexpected)')
+       Page3.tabControl.add(Page3.tab1, text = 'Recon Interlocks (All)')
        
        Page3.tab2 = ttk.Frame(Page3.tabControl)
-       Page3.tabControl.add(Page3.tab2, text = 'KVCT Analysis (Expected)')
+       Page3.tabControl.add(Page3.tab2, text = 'Recon Interlocks (Unexpected)')
        
        Page3.tab3 = ttk.Frame(Page3.tabControl)
-       Page3.tabControl.add(Page3.tab3, text = 'PET Analysis')
+       Page3.tabControl.add(Page3.tab3, text = 'Recon Interlocks (Expected)')
+       
+       Page3.tab4 = ttk.Frame(Page3.tabControl)
+       Page3.tabControl.add(Page3.tab4, text = 'Recon Interlocks (Expected)')
+       
+       Page3.tab5 = ttk.Frame(Page3.tabControl)
+       Page3.tabControl.add(Page3.tab5, text = 'Recon Interlocks (Expected)')
        
        Page3.tabControl.pack(expan=1, fill='both')
+       
+       # Add filtering menubars
+       Page3.menubar = tk.Menubutton(self, text='Filter Recon Interlocks \u25BE', font=20, relief='raised')
+       Page3.menubar.place(relx=0.62, relheight=0.025)
+       
+       button_filter = tk.Button(self, text="Filter", font=20, command = Page3.filter_by_interlock)
+       button_filter.place(relx=0.89, relheight=0.025)
+       
+       button_selectall = tk.Button(self, text="Select All", font=20, command=Page3.selectall)
+       button_selectall.place(relx=0.76, relheight=0.025)
+       
+       button_selectnone = tk.Button(self, text="Select None", font=20, command=Page3.selectnone)
+       button_selectnone.place(relx=0.82, relheight=0.025)
+       
+   def menubar_filter(df, menubar):
+       global recon_interlock_set 
+       items = sorted(list(set(df['Interlock Number'])))
+        
+       menubar.menu = tk.Menu(menubar, tearoff=0)
+       menubar["menu"] = menubar.menu
+       
+       recon_interlock_set = {}
+       for idx, item in enumerate(items):
+           var = tk.BooleanVar()
+           var.set(True)
+           menubar.menu.add_checkbutton(label=item, variable=var)
+           recon_interlock_set[str(item)] = var
+       
+   def filter_by_interlock():
+       interlock_list = []
+       for interlock, var in recon_interlock_set.items():
+           if var.get() == True:
+               interlock_list.append(interlock)
+            
+       df1 = recon_df[recon_df['Interlock Number'].isin(interlock_list)]
+       df2 = recon_filtered[recon_filtered['Interlock Number'].isin(interlock_list)]
+       df3 = recon_filtered_out[recon_filtered_out['Interlock Number'].isin(interlock_list)]
+       [widget.destroy() for widget in Page3.tab1.winfo_children()]
+       [widget.destroy() for widget in Page3.tab2.winfo_children()]
+       [widget.destroy() for widget in Page3.tab3.winfo_children()]
+       SubFunctions.df_tree(df1, Page3.tab1)
+       SubFunctions.df_tree(df2, Page3.tab2)
+       SubFunctions.df_tree(df3, Page3.tab3)
+       
+   def selectall():
+       for interlock, var in recon_interlock_set.items():
+           var.set(True)
+       Page3.filter_by_interlock()
+       
+   def selectnone():
+       for interlock, var in recon_interlock_set.items():
+           var.set(False)
+       Page3.filter_by_interlock()
 
 class MainView(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -260,8 +318,8 @@ class MainView(tk.Frame):
         p3.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
 
         b1 = tk.Button(buttonframe, text="Choose Files", command=p1.lift)
-        b2 = tk.Button(buttonframe, text="Interlocks List", command=p2.lift)
-        b3 = tk.Button(buttonframe, text="Analysis", command=p3.lift)
+        b2 = tk.Button(buttonframe, text="Kvct Results", command=p2.lift)
+        b3 = tk.Button(buttonframe, text="Recon Results", command=p3.lift)
 
         b1.pack(side="left")
         b2.pack(side="left")
@@ -271,16 +329,17 @@ class MainView(tk.Frame):
 
 class SubFunctions():
     def findEntries(files):
-       global kvct_df, recon_df, kvct_filtered, kvct_filtered_out, system, dates
-       global filtered_analysis, sessions, unfiltered_analysis, recon_analysis
+       global kvct_df, kvct_filtered, kvct_filtered_out, kvct_analysis, kvct_unfiltered_analysis
+       global recon_df, recon_filtered, recon_filtered_out, recon_analysis, recon_unfiltered_analysis
+       global system, dates
        
        # Find all interlocks
        try:
            system, kvct_df, recon_df = DiagnosticTool.GetEntries(files)
            SubFunctions.df_tree(kvct_df, Page2.tab1)
-           SubFunctions.df_tree(recon_df, Page2.tab4)
-           Page2.menubar_filter(kvct_df, Page2.menubar1)
-           #Page2.menubar_filter(pet_df, Page2.menubar2)
+           SubFunctions.df_tree(recon_df, Page3.tab1)
+           Page2.menubar_filter(kvct_df, Page2.menubar)
+           Page3.menubar_filter(recon_df, Page3.menubar)
            
            # Get dates
            start_date = kvct_df['Date'][0]
@@ -292,23 +351,28 @@ class SubFunctions():
        
        # Filter interlocks
        try:
-           kvct_filtered, kvct_filtered_out = DiagnosticTool.FilterEntries(kvct_df)
+           kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out = DiagnosticTool.FilterEntries(kvct_df, recon_df)
            SubFunctions.df_tree(kvct_filtered, Page2.tab2)
            SubFunctions.df_tree(kvct_filtered_out, Page2.tab3)
+           SubFunctions.df_tree(recon_filtered, Page3.tab2)
+           SubFunctions.df_tree(recon_filtered_out, Page3.tab3)
        except:
            messagebox.showerror("Error", "Cannot filter interlocks.")
            pass
        
        # Analyze interlocks 
-       try:
-           filtered_analysis, sessions, unfiltered_analysis, recon_analysis = DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, recon_df)
-           SubFunctions.df_tree(filtered_analysis, Page3.tab1)
-           SubFunctions.df_tree(unfiltered_analysis, Page3.tab2)
-           SubFunctions.df_tree(recon_analysis, Page3.tab3)
-
-       except: 
-           messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
-           pass
+#       try:
+       kvct_analysis, kvct_unfiltered_analysis, recon_analysis, recon_unfiltered_analysis = \
+       DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out)
+       
+       SubFunctions.df_tree(kvct_analysis, Page2.tab4)
+       SubFunctions.df_tree(kvct_unfiltered_analysis, Page2.tab5)
+       
+       SubFunctions.df_tree(recon_analysis, Page3.tab4)
+       SubFunctions.df_tree(recon_unfiltered_analysis, Page3.tab5)
+#       except: 
+#           messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
+#           pass
        
     def df_tree(df, tab):
        # Scrollbars
@@ -334,18 +398,18 @@ class SubFunctions():
        treeScroll_x.configure(command=tree.xview)
        tree.configure(xscrollcommand=treeScroll_x.set)
        
-       tree.column("#0", width=50, stretch='no') 
-       tree.column("Interlock Number", width=300, stretch='no')
-       if 'page2' in str(tab):
-           tree.column("Date", width=100, stretch='no')
-           tree.column("Active Time", width=100, stretch='no')
-           tree.column("Inactive Time", width=100, stretch='no')
-           tree.column("Time from Node Start (min)", width=100, stretch='no')
-           tree.column("Interlock Duration (min)", width=100, stretch='no')
-           
-       if 'page3' in str(tab):
-           for i in range(1,len(columns)):
-               tree.column(columns[i], width=60, stretch='no')
+#       tree.column("#0", width=50, stretch='no') 
+#       tree.column("Interlock Number", width=300, stretch='no')
+#       if 'page2' in str(tab):
+#           tree.column("Date", width=100, stretch='no')
+#           tree.column("Active Time", width=100, stretch='no')
+#           tree.column("Inactive Time", width=100, stretch='no')
+#           tree.column("Time from Node Start (min)", width=100, stretch='no')
+#           tree.column("Interlock Duration (min)", width=100, stretch='no')
+#           
+#       if 'page3' in str(tab):
+#           for i in range(1,len(columns)):
+#               tree.column(columns[i], width=60, stretch='no')
                
     def sortby(tree, col, descending, int_descending):
         # grab values to sort
@@ -375,7 +439,7 @@ class SubFunctions():
            kvct_writer = pd.ExcelWriter(directory + '\KvctInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
            sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Unexpect)', 'KVCT Interlocks (Expect)',
                          'KVCT Analysis (Unexpect)', 'KVCT Analysis (Expect)']
-           dataframes = [kvct_df, kvct_filtered, kvct_filtered_out, filtered_analysis, unfiltered_analysis]
+           dataframes = [kvct_df, kvct_filtered, kvct_filtered_out, kvct_analysis, kvct_unfiltered_analysis]
            for df,sheetname in zip(dataframes,sheetnames):
                df.to_excel(kvct_writer,sheetname, index=False)
                
@@ -393,7 +457,7 @@ class SubFunctions():
            # Recon Interlocks
            recon_writer = pd.ExcelWriter(directory + '\ReconInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
            sheetnames = ['Recon Interlocks', 'Recon Analysis']
-           dataframes = [recon_df, recon_analysis]
+           dataframes = [recon_df, recon_filtered, recon_filtered_out, recon_analysis, recon_unfiltered_analysis]
            for df,sheetname in zip(dataframes,sheetnames):
                df.to_excel(recon_writer,sheetname, index=False)
                
