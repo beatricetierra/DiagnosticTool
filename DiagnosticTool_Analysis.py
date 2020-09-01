@@ -80,4 +80,4 @@ def analysis_expected(filtered_out):
     df.insert(1, 'Total in ' + str(total_sessions) + ' Sessions', df.sum(axis=1))
     df.iloc[:,1:] = df.iloc[:,1:].astype(int)
 
-    return(total_sessions, df)
+    return(df)

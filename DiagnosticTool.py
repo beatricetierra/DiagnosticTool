@@ -246,11 +246,10 @@ def FilterEntries(kvct_interlocks, recon_interlocks):
     
 def Analysis(kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out):    
     kvct_analysis = dta.analysis(kvct_filtered)
-    kvct_sessions, kvct_unfiltered_analysis = dta.analysis_expected(kvct_filtered_out)
+    kvct_unfiltered_analysis = dta.analysis_expected(kvct_filtered_out)
     try:    
         recon_analysis = dta.analysis(recon_filtered)
-        recon_sessions, recon_unfiltered_analysis = dta.analysis_expected(recon_filtered_out)
+        recon_unfiltered_analysis = dta.analysis_expected(recon_filtered_out)
     except:
-        recon_analysis = pd.DataFrame()
-    return(kvct_sessions, kvct_analysis, kvct_unfiltered_analysis,
-           recon_sessions, recon_analysis, recon_unfiltered_analysis)
+        recon_analysis, recon_unfiltered_analysis = pd.DataFrame(), pd.DataFrame()
+    return(kvct_analysis, kvct_unfiltered_analysis, recon_analysis, recon_unfiltered_analysis)
