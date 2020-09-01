@@ -88,10 +88,10 @@ def node_start_delta(interlocks_df):
     restart_times_idx = []
     endpoint_times_idx = []
     for idx, entry in enumerate(interlocks_df['Interlock Number']):
-        if 'NODE START' in entry or 'maintenance' in entry:
+        if 'NODE START' in entry or 'Maintenance' in entry:
             restart_times.append(interlocks_df.loc[idx,'Active Time'])
             restart_times_idx.append(idx)
-        elif 'Interlock' not in entry:
+        elif '-----' in entry:
             endpoint_times_idx.append(idx)
 
     for idx, active_time in enumerate(interlocks_df['Active Time']):

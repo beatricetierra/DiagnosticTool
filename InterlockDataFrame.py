@@ -89,7 +89,7 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     
     # Insert node endpoints (start of log, start of node, end of node)
     node_df = dts.find_endpoints(node_df, node_endpoints)
-    
+
     # Time since start/restart of node
     node_df = dts.node_start_delta(node_df)
      

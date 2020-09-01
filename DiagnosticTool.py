@@ -9,6 +9,7 @@ import os
 import csv
 import pandas as pd
 import InterlockDataFrame as idf
+import DiagnosticTool_Filter as dtf
 import DiagnosticTool_Analysis as dta
 
 def DeleteFiles(folderpath):
@@ -42,7 +43,7 @@ def GetSWVersion(folderpath):
     key = '* current branch: '
     
     for file in filenames:
-        if '-log-' in file:
+        if '-kvct-' in file:
             with open(file) as log:
                 for line in log:
                     if key in line:
@@ -202,7 +203,13 @@ def GetEntries(filenames):
         elif 'Signal' in row:
             endpoints_df.loc[i,'Description'] = '------ NODE END ------'
         elif 'Log' in row or 'log' in row:
-            mode = endpoints_df.loc[i+1,'Description'].split('------------')[-1]
+            operating_mode = endpoints_df.loc[i+1,'Description']
+            if 'clinical' in operating_mode:
+                mode = 'Clinical'
+            elif 'service' in operating_mode:
+                mode = 'Service'
+            elif 'maintenance' in operating_mode:
+                mode = 'Maintenance' 
             endpoints_df.loc[i,'Description'] = '------ LOG START (' + mode +') ------'
     endpoints_df = endpoints_df[~endpoints_df['Description'].str.contains("Operating")]
     
@@ -213,7 +220,7 @@ def GetEntries(filenames):
     kvct_log = entries_df.loc[entries_df['Node'] == 'KV']
     kvct_log.drop(columns='Node', inplace = True)
     kvct_log.name = 'kvct_log'
-    
+
     kvct_df = idf.NodeInterlocks(kvct_log, sys_log, endpoints_df)
 
     try:
@@ -227,17 +234,23 @@ def GetEntries(filenames):
     
     return(system_model, kvct_df, recon_df)
     
-def FilterEntries(kvct_interlocks):    
+def FilterEntries(kvct_interlocks, recon_interlocks):    
     # Remove Expected, Startup, and Shutdown Interlocks
-    kvct_filtered, kvct_filtered_out = dta.filter_expected(kvct_interlocks)
+    kvct_filtered, kvct_filtered_out = dtf.filter_kvct(kvct_interlocks)
+    try:
+        recon_filtered, recon_filtered_out = dtf.filter_recon(recon_interlocks)
+    except:
+        recon_filtered, recon_filtered_out = pd.DataFrame(), pd.DataFrame()
     
-    return(kvct_filtered, kvct_filtered_out)
+    return(kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out)
     
-def Analysis(kvct_filtered, kvct_filtered_out, recon_df):    
+def Analysis(kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out):    
     kvct_analysis = dta.analysis(kvct_filtered)
-    sessions, kvct_unfiltered_analysis = dta.analysis_expected(kvct_filtered_out)
+    kvct_sessions, kvct_unfiltered_analysis = dta.analysis_expected(kvct_filtered_out)
     try:    
-        recon_analysis = dta.analysis(recon_df)
+        recon_analysis = dta.analysis(recon_filtered)
+        recon_sessions, recon_unfiltered_analysis = dta.analysis_expected(recon_filtered_out)
     except:
         recon_analysis = pd.DataFrame()
-    return(kvct_analysis, sessions, kvct_unfiltered_analysis, recon_analysis)
+    return(kvct_sessions, kvct_analysis, kvct_unfiltered_analysis,
+           recon_sessions, recon_analysis, recon_unfiltered_analysis)
