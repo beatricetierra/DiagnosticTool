@@ -381,6 +381,7 @@ class SubFunctions():
        treeScroll_x = ttk.Scrollbar(tab, orient='horizontal')
        treeScroll_x.pack(side='bottom', fill='x')
        
+       # View dataframe in Treeview format
        columns = list(df.columns)
        tree = ttk.Treeview(tab)
        tree.pack(expand=1, fill='both')
@@ -393,24 +394,33 @@ class SubFunctions():
        for index, row in df.iterrows():
            tree.insert("",tk.END,text=index,values=list(row))
        
+       # Configure scrollbars to the Treeview
        treeScroll_y.configure(command=tree.yview)
        tree.configure(yscrollcommand=treeScroll_y.set)
        treeScroll_x.configure(command=tree.xview)
        tree.configure(xscrollcommand=treeScroll_x.set)
        
-#       tree.column("#0", width=50, stretch='no') 
-#       tree.column("Interlock Number", width=300, stretch='no')
-#       if 'page2' in str(tab):
-#           tree.column("Date", width=100, stretch='no')
-#           tree.column("Active Time", width=100, stretch='no')
-#           tree.column("Inactive Time", width=100, stretch='no')
-#           tree.column("Time from Node Start (min)", width=100, stretch='no')
-#           tree.column("Interlock Duration (min)", width=100, stretch='no')
-#           
-#       if 'page3' in str(tab):
-#           for i in range(1,len(columns)):
-#               tree.column(columns[i], width=60, stretch='no')
-               
+       # Format columns per tab
+       tree.column("#0", width=50, stretch='no') 
+       tree.column("Interlock Number", width=300, stretch='no')
+       
+       # format based on list or analysis dataframes
+       if tab == Page2.tab1 or tab == Page2.tab2 or tab == Page2.tab3 or \
+       tab == Page3.tab1 or tab == Page3.tab2 or tab == Page3.tab3:
+           tree.column("Date", width=80, stretch='no')
+           tree.column("Active Time", width=90, stretch='no')
+           tree.column("Inactive Time", width=90, stretch='no')
+           tree.column("Time from Node Start (min)", width=100, stretch='no')
+           tree.column("Interlock Duration (min)", width=100, stretch='no')
+           for i in range(6,len(columns)):
+               tree.column(columns[i], width=200, stretch='no')
+
+       # Analysis tabs
+       if tab == Page2.tab4 or tab == Page2.tab5 or tab == Page3.tab4 or tab == Page3.tab5:
+           tree.column(columns[1], width=100, stretch='no')
+           for i in range(1,len(columns)):
+               tree.column(columns[i], width=50, stretch='no')
+#               
     def sortby(tree, col, descending, int_descending):
         # grab values to sort
         data = [(tree.set(child, col), child) \
