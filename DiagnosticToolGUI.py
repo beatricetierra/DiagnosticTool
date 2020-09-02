@@ -361,18 +361,18 @@ class SubFunctions():
            pass
        
        # Analyze interlocks 
-#       try:
-       kvct_analysis, kvct_unfiltered_analysis, recon_analysis, recon_unfiltered_analysis = \
-       DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out)
-       
-       SubFunctions.df_tree(kvct_analysis, Page2.tab4)
-       SubFunctions.df_tree(kvct_unfiltered_analysis, Page2.tab5)
-       
-       SubFunctions.df_tree(recon_analysis, Page3.tab4)
-       SubFunctions.df_tree(recon_unfiltered_analysis, Page3.tab5)
-#       except: 
-#           messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
-#           pass
+       try:
+           kvct_analysis, kvct_unfiltered_analysis, recon_analysis, recon_unfiltered_analysis = \
+           DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out)
+           
+           SubFunctions.df_tree(kvct_analysis, Page2.tab4)
+           SubFunctions.df_tree(kvct_unfiltered_analysis, Page2.tab5)
+           
+           SubFunctions.df_tree(recon_analysis, Page3.tab4)
+           SubFunctions.df_tree(recon_unfiltered_analysis, Page3.tab5)
+       except: 
+           messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
+           pass
        
     def df_tree(df, tab):
        # Scrollbars
@@ -420,7 +420,7 @@ class SubFunctions():
            tree.column(columns[1], width=100, stretch='no')
            for i in range(1,len(columns)):
                tree.column(columns[i], width=50, stretch='no')
-#               
+               
     def sortby(tree, col, descending, int_descending):
         # grab values to sort
         data = [(tree.set(child, col), child) \
@@ -466,7 +466,8 @@ class SubFunctions():
            
            # Recon Interlocks
            recon_writer = pd.ExcelWriter(directory + '\ReconInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
-           sheetnames = ['Recon Interlocks', 'Recon Analysis']
+           sheetnames = ['Recon Interlocks (All)' , 'Recon Interlocks (Unexpect)', 'Recon Interlocks (Expect)',
+                         'Recon Analysis (Unexpect)', 'Recon Analysis (Expect)']
            dataframes = [recon_df, recon_filtered, recon_filtered_out, recon_analysis, recon_unfiltered_analysis]
            for df,sheetname in zip(dataframes,sheetnames):
                df.to_excel(recon_writer,sheetname, index=False)
