@@ -383,43 +383,55 @@ class SubFunctions():
        
        # View dataframe in Treeview format
        columns = list(df.columns)
-       tree = ttk.Treeview(tab)
-       tree.pack(expand=1, fill='both')
-       tree["columns"] = columns
+       tab.tree = ttk.Treeview(tab)
+       tab.tree.pack(expand=1, fill='both')
+       tab.tree["columns"] = columns
        
        for i in columns:
-           tree.column(i, anchor="w")
-           tree.heading(i, text=i, anchor='w')
+           tab.tree.column(i, anchor="w")
+           tab.tree.heading(i, text=i, anchor='w')
             
        for index, row in df.iterrows():
-           tree.insert("",tk.END,text=index,values=list(row))
+           tab.tree.insert("",tk.END,text=index,values=list(row))
        
+       tab.tree.bind("<Double-1>", SubFunctions.OnDoubleClick)
+        
        # Configure scrollbars to the Treeview
-       treeScroll_y.configure(command=tree.yview)
-       tree.configure(yscrollcommand=treeScroll_y.set)
-       treeScroll_x.configure(command=tree.xview)
-       tree.configure(xscrollcommand=treeScroll_x.set)
+       treeScroll_y.configure(command=tab.tree.yview)
+       tab.tree.configure(yscrollcommand=treeScroll_y.set)
+       treeScroll_x.configure(command=tab.tree.xview)
+       tab.tree.configure(xscrollcommand=treeScroll_x.set)
        
        # Format columns per tab
-       tree.column("#0", width=50, stretch='no') 
-       tree.column("Interlock Number", width=300, stretch='no')
+       tab.tree.column("#0", width=50, stretch='no') 
+       tab.tree.column("Interlock Number", width=300, stretch='no')
        
        # format based on list or analysis dataframes
        if tab == Page2.tab1 or tab == Page2.tab2 or tab == Page2.tab3 or \
        tab == Page3.tab1 or tab == Page3.tab2 or tab == Page3.tab3:
-           tree.column("Date", width=80, stretch='no')
-           tree.column("Active Time", width=90, stretch='no')
-           tree.column("Inactive Time", width=90, stretch='no')
-           tree.column("Time from Node Start (min)", width=100, stretch='no')
-           tree.column("Interlock Duration (min)", width=100, stretch='no')
+           tab.tree.column("Date", width=80, stretch='no')
+           tab.tree.column("Active Time", width=90, stretch='no')
+           tab.tree.column("Inactive Time", width=90, stretch='no')
+           tab.tree.column("Time from Node Start (min)", width=100, stretch='no')
+           tab.tree.column("Interlock Duration (min)", width=100, stretch='no')
            for i in range(6,len(columns)):
-               tree.column(columns[i], width=200, stretch='no')
+               tab.tree.column(columns[i], width=200, stretch='no')
 
        # Analysis tabs
        if tab == Page2.tab4 or tab == Page2.tab5 or tab == Page3.tab4 or tab == Page3.tab5:
-           tree.column(columns[1], width=100, stretch='no')
+           tab.tree.column(columns[1], width=100, stretch='no')
            for i in range(1,len(columns)):
-               tree.column(columns[i], width=50, stretch='no')
+               tab.tree.column(columns[i], width=50, stretch='no')
+               
+    def OnDoubleClick(event):
+        tree = event.widget
+        row = [tree.item(item)["text"] for item in tree.selection()]
+        win = tk.Toplevel()
+        win.wm_title("Window")
+        win.wm_geometry("600x400")
+        
+        info = tk.Label(win, text=row)
+        info.grid(row=0, column=0)
                
     def sortby(tree, col, descending, int_descending):
         # grab values to sort
