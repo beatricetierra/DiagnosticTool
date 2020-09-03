@@ -394,6 +394,7 @@ class SubFunctions():
        for index, row in df.iterrows():
            tab.tree.insert("",tk.END,text=index,values=list(row))
        
+       # Bind double-click function 
        tab.tree.bind("<Double-1>", SubFunctions.OnDoubleClick)
         
        # Configure scrollbars to the Treeview
@@ -424,14 +425,18 @@ class SubFunctions():
                tab.tree.column(columns[i], width=50, stretch='no')
                
     def OnDoubleClick(event):
+        global headers
         tree = event.widget
-        row = [tree.item(item)["text"] for item in tree.selection()]
+        headers = tree['columns'][6:]        
+        items = tree.focus()
+        info = tree.item(items)['values']
+            
         win = tk.Toplevel()
         win.wm_title("Window")
         win.wm_geometry("600x400")
-        
-        info = tk.Label(win, text=row)
-        info.grid(row=0, column=0)
+          
+        message = tk.Label(win, text=info[6:])
+        message.grid(row=0, column=0)
                
     def sortby(tree, col, descending, int_descending):
         # grab values to sort
