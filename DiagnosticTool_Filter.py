@@ -107,7 +107,7 @@ def filter_kvct(interlocks_df):
             
     # filter interlocks based on time of other events
     for idx, (interlock, interlock_time, bel) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL Open'])):
-        if 'HvOnStatusMismatch' in interlock:
+        if 'HvOnStatusMismatch' in interlock and type(bel) == pd._libs.tslibs.timestamps.Timestamp:
             if interlock_time - bel < datetime.timedelta(seconds=.1):
                 filter_out_idx.append(idx)
                 interlock_type.append('BEL is open')
