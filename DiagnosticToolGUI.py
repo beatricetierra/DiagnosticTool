@@ -381,8 +381,12 @@ class SubFunctions():
        treeScroll_x = ttk.Scrollbar(tab, orient='horizontal')
        treeScroll_x.pack(side='bottom', fill='x')
        
-       # View dataframe in Treeview format
-       columns = list(df.columns)
+       # Add a 'Comments' column for future user input
+       if tab == Page2.tab1 or tab == Page3.tab1:
+           df.insert(4, 'Comments', '') 
+       
+        # View dataframe in Treeview format
+       columns = list(df.columns)      
        tab.tree = ttk.Treeview(tab)
        tab.tree.pack(expand=1, fill='both')
        tab.tree["columns"] = columns
@@ -394,9 +398,10 @@ class SubFunctions():
        for index, row in df.iterrows():
            tab.tree.insert("",tk.END,text=index,values=list(row))
        
-       # Bind double-click function 
+       # Bind double-click function
+       tab.tree.df = df
        tab.tree.bind("<Double-1>", SubFunctions.OnDoubleClick)
-        
+
        # Configure scrollbars to the Treeview
        treeScroll_y.configure(command=tab.tree.yview)
        tab.tree.configure(yscrollcommand=treeScroll_y.set)
@@ -425,19 +430,27 @@ class SubFunctions():
                tab.tree.column(columns[i], width=50, stretch='no')
                
     def OnDoubleClick(event):
-        global headers
         tree = event.widget
-        headers = tree['columns'][6:]        
-        items = tree.focus()
-        info = tree.item(items)['values']
-            
+        row = tree.item(tree.selection())['text']
+        
         win = tk.Toplevel()
         win.wm_title("Window")
-        win.wm_geometry("600x400")
+        win.wm_geometry("300x100")
           
-        message = tk.Label(win, text=info[6:])
-        message.grid(row=0, column=0)
-               
+        entry = tk.Entry(win)
+        entry.pack()
+        
+        def call():
+            row_values = tree.item(tree.selection())['values']
+            tree.delete(tree.selection()[0])
+            
+            row_values[4] = entry.get()
+            tree.insert('', row, text=row, values=row_values)
+            win.destroy()
+
+        b = tk.Button(win, text="Comment", width=10, command=call)
+        b.pack()
+        
     def sortby(tree, col, descending, int_descending):
         # grab values to sort
         data = [(tree.set(child, col), child) \
