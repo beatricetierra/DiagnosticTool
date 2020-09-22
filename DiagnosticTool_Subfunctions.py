@@ -188,13 +188,13 @@ def sys_interlocks_during(interlock_df, entries_df):
     interlock_df['Sysnode Relevant Interlock (during)'] = ''*len(interlock_df)
     
     for idx in range(0,len(entries_df)):
-            sys_interlock_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
-            for row, (active_time, inactive_time) in enumerate(zip(interlock_df['Active Time'], interlock_df['Inactive Time'])):
-                try:
-                    if active_time < sys_interlock_time < inactive_time:
-                        previous = interlock_df['Sysnode Relevant Interlock (during)'][row]
-                        interlock_df.loc[row,'Sysnode Relevant Interlock (during)'] = previous + \
-                        str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
-                except:
-                    pass
+        sys_interlock_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
+        for row, (active_time, inactive_time) in enumerate(zip(interlock_df['Active Time'], interlock_df['Inactive Time'])):
+            try:
+                if active_time < sys_interlock_time < inactive_time:
+                    previous = interlock_df['Sysnode Relevant Interlock (during)'][row]
+                    interlock_df.loc[row,'Sysnode Relevant Interlock (during)'] = previous + \
+                    str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
+            except:
+                pass
     return(interlock_df)

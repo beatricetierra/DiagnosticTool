@@ -438,7 +438,8 @@ class SubFunctions():
         win.wm_geometry("300x100")
           
         entry = tk.Entry(win)
-        entry.pack()
+        entry.insert('end', tree.item(tree.selection())['values'][4])
+        entry.place(relx=0.5, rely=0.2, relwidth=0.9, relheight=0.30, anchor='n')
         
         def call():
             row_values = tree.item(tree.selection())['values']
@@ -449,7 +450,7 @@ class SubFunctions():
             win.destroy()
 
         b = tk.Button(win, text="Comment", width=10, command=call)
-        b.pack()
+        b.place(relx=0.5, rely=0.6, relwidth=0.4, relheight=0.2, anchor='n')
         
     def sortby(tree, col, descending, int_descending):
         # grab values to sort
