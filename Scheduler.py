@@ -11,6 +11,7 @@ from datetime import datetime
 import os
 import paramiko
 from scp import SCPClient
+import DiagnosticTool
 
 def GetLogs():
     # Connect to system gateway (A2)
@@ -49,9 +50,12 @@ def GetLogs():
     
     sftp.close()
     ssh.close()
+    
+    # Run diagnosis
+    files = DiagnosticTool.GetFiles(parent_dir + foldername)
+    system, kvct_df, recon_df = DiagnosticTool.GetEntries(files)
 
-schedule.every(1).minutes.do(GetLogs)
-#schedule.every().day.at("23:00").do(GetLogs)
+schedule.every().day.at("23:00").do(GetLogs)
 while True:
     schedule.run_pending()
     time.sleep(60) # wait one minute
