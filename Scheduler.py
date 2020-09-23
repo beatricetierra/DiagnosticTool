@@ -18,16 +18,14 @@ def GetLogs():
     ssh = paramiko.SSHClient() 
     ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
     ssh.connect(hostname='192.168.45.210', username='rxm', password='plokokok')
-    sftp = ssh.open_sftp()
     
     # Create folder to keep logs before transfer
-    sftp = paramiko.SFTPClient.from_transport(ssh.get_transport())
     storage_folder = '/home/rxm/kvctlogs'
     try:
         stdin, stdout, stderr = ssh.exec_command("rm -r "  +  storage_folder)   # remove existing files
-        sftp.mkdir(storage_folder)  
+        stdin, stdout, stderr = ssh.exec_command("mkdir "  +  storage_folder) 
     except:
-        sftp.mkdir(storage_folder)  # Create new folder 
+        stdin, stdout, stderr = ssh.exec_command("mkdir "  +  storage_folder) 
         
     # Copy kvct, pet, and sysnode log files to new directory
     date_time = datetime.today()
@@ -44,18 +42,19 @@ def GetLogs():
     parent_dir = r'C:/Users/btierra/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Python 3.7/Log Diagnostic Tool/Output/'
     foldername = date_time.strftime("%Y%m%d_%H%M%S")
     os.mkdir(parent_dir + foldername)
+    print(parent_dir + foldername)
     
     scp = SCPClient(ssh.get_transport())
     scp.get(r'/home/rxm/kvctlogs', parent_dir + foldername, recursive=True)
-    
-    sftp.close()
+
     ssh.close()
     
     # Run diagnosis
     files = DiagnosticTool.GetFiles(parent_dir + foldername)
     system, kvct_df, recon_df = DiagnosticTool.GetEntries(files)
+    kvct_df.to_excel(r'C:\Users\btierra\Downloads\A2\KVCTInterlocks_test.xlsx')
 
-schedule.every().day.at("23:00").do(GetLogs)
+schedule.every().day.at("19:00").do(GetLogs)
 while True:
     schedule.run_pending()
     time.sleep(60) # wait one minute
