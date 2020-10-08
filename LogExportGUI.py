@@ -29,14 +29,18 @@ class LogExportGUI(tk.Frame):
         entry = tk.Entry(self)
         entry.place(relx=0.26, rely=0.5, relwidth=0.64, relheight=0.05)
         
-        button = tk.Button(self, text='Get Logs', command=lambda: SubFunctions.FindLogs(cal_start.get_date(), cal_end.get_date(), entry.get()))
-        button.place(relx=0.5, rely=0.6, relwidth=0.15, relheight=0.05, anchor='n')
+        button1 = tk.Button(self, text='List Files', command=lambda: SubFunctions.ListFiles(cal_start.get_date(), cal_end.get_date()))
+        button1.place(relx=0.40, rely=0.6, relwidth=0.15, relheight=0.05, anchor='n')
 
+        button2 = tk.Button(self, text='Get Logs', command=lambda: SubFunctions.GetLogs(entry.get()))
+        button2.place(relx=0.60, rely=0.6, relwidth=0.15, relheight=0.05, anchor='n')
         
 class SubFunctions():
-    def FindLogs(date_start, date_end, ouput):
+    def ListFiles(date_start, date_end):
         
         # Get all dates from given range
+        global dates, storage_folder
+        
         date_start = datetime.strptime(date_start, '%m/%d/%y').date()
         date_end = datetime.strptime(date_end, '%m/%d/%y').date()       
         delta = date_end - date_start
@@ -48,26 +52,39 @@ class SubFunctions():
         ssh = paramiko.SSHClient() 
         ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
         ssh.connect(hostname='192.168.45.210', username='rxm', password='plokokok')
-        scp = SCPClient(ssh.get_transport())
-        
-        ## Create folder to keep logs before transfer        
+
+        ## Create folder to keep logs before transfer    
         storage_folder = '/home/rxm/kvctlogs/'
         try:
-            stdin, stdout, stderr = ssh.exec_command("rm -r "  +  storage_folder)   # remove existing files
-            stdin, stdout, stderr = ssh.exec_command("mkdir "  +  storage_folder)
+            stdin, stdout, stderr = ssh.exec_command('rm -r ' + storage_folder)
+            stdin, stdout, stderr = ssh.exec_command('mkdir ' + storage_folder)
         except:
-            stdin, stdout, stderr = ssh.exec_command("mkdir "  +  storage_folder)
+            stdin, stdout, stderr = ssh.exec_command('mkdir ' + storage_folder)
             
         ## Transfer kvct, pet_recon, and sysnode log files to new directory
         for date in dates:
             stdin, stdout, stderr = ssh.exec_command("mkdir "  +  storage_folder + date)
             stdin, stdout, stderr = ssh.exec_command('cp -r /home/rxm/log/archive/' + date + '/*-pet_recon-* ' + storage_folder + date)
             stdin, stdout, stderr = ssh.exec_command('scp -r 192.168.10.106:/home/rxm/log/archive/' + date +  '/*-kvct-* ' + storage_folder + date)
-            stdin, stdout, stderr = ssh.exec_command('scp -r 192.168.10.110:/home/rxm/log/archive/' + date +  '/*-sysnode-* ' + storage_folder + date)    
-            scp.get(storage_folder+date, r'C:\Users\btierra\Downloads\A2\new', recursive=True)
-
+            stdin, stdout, stderr = ssh.exec_command('scp -r 192.168.10.110:/home/rxm/log/archive/' + date +  '/*-sysnode-* ' + storage_folder + date)
+        
+        ## List files in folder
+        sftp = ssh.open_sftp()
+        for date in dates:
+            print('\n*****' + date + '*****')
+            [print(file) for file in sftp.listdir(storage_folder+date)]
+            
         ssh.close()
-
+        
+    def GetLogs(output):
+        ## Log in to Alpha2
+        ssh = paramiko.SSHClient() 
+        ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
+        ssh.connect(hostname='192.168.45.210', username='rxm', password='plokokok')
+        
+        scp = SCPClient(ssh.get_transport())
+        [scp.get(storage_folder+date, output, recursive=True) for date in dates]
+        
 if __name__ == "__main__":
     root = tk.Tk()
     LogExportGUI(root).pack(side="top", fill="both", expand=True)
