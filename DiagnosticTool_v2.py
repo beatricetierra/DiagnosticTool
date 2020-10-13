@@ -127,8 +127,8 @@ class Page2(Page):
        if Page2.toggleButton.config('relief')[-1] == 'sunken':
            Page2.toggleButton.config(relief="raised")
            [widget.destroy() for widget in Page2.Frame.winfo_children()]
-           SubFunctions.df_tree(kvct_df, Page2.Frame)
-           Page2.menubar_filter(kvct_df, Page2.menubar)
+           SubFunctions.df_tree(kvct_unfiltered, Page2.Frame)
+           Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
        else:
            Page2.toggleButton.config(relief="sunken")
            [widget.destroy() for widget in Page2.Frame.winfo_children()]
@@ -156,7 +156,7 @@ class Page2(Page):
                 interlock_list.append(interlock)
                 
         if Page2.toggleButton.config('relief')[-1] == 'raised':
-            df1 = kvct_df[kvct_df['Interlock Number'].isin(interlock_list)]
+            df1 = kvct_unfiltered[kvct_unfiltered['Interlock Number'].isin(interlock_list)]
             [widget.destroy() for widget in Page2.Frame.winfo_children()]
             SubFunctions.df_tree(df1, Page2.Frame)
         elif Page2.toggleButton.config('relief')[-1] == 'sunken':
@@ -203,8 +203,8 @@ class Page3(Page):
        if Page3.toggleButton.config('relief')[-1] == 'sunken':
            Page3.toggleButton.config(relief="raised")
            [widget.destroy() for widget in Page3.Frame.winfo_children()]
-           SubFunctions.df_tree(recon_df, Page3.Frame)
-           Page3.menubar_filter(recon_df, Page3.menubar)
+           SubFunctions.df_tree(recon_unfiltered, Page3.Frame)
+           Page3.menubar_filter(recon_unfiltered, Page3.menubar)
        else:
            Page3.toggleButton.config(relief="sunken")
            [widget.destroy() for widget in Page3.Frame.winfo_children()]
@@ -232,7 +232,7 @@ class Page3(Page):
                 interlock_list.append(interlock)
                 
         if Page3.toggleButton.config('relief')[-1] == 'raised':
-            df1 = recon_df[recon_df['Interlock Number'].isin(interlock_list)]
+            df1 = recon_unfiltered[recon_unfiltered['Interlock Number'].isin(interlock_list)]
             [widget.destroy() for widget in Page3.Frame.winfo_children()]
             SubFunctions.df_tree(df1, Page3.Frame)
         elif Page3.toggleButton.config('relief')[-1] == 'sunken':
@@ -258,6 +258,10 @@ class MainView(tk.Frame):
         file = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label='File', menu = file)
         file.add_command(label='Save Results', command = SubFunctions.exportExcel)
+        
+        analyze = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='Analyze', menu = analyze)
+        analyze.add_command(label='Summary Report', command = SubFunctions.SummarizeResults)
         root.config(menu=menubar)
         
         # Navigate between pages
@@ -286,37 +290,38 @@ class MainView(tk.Frame):
 
 class SubFunctions():
     def findEntries(files):
-       global kvct_df, kvct_filtered, kvct_filtered_out
-       global recon_df, recon_filtered, recon_filtered_out
+       global kvct_df, kvct_filtered, kvct_unfiltered
+       global recon_df, recon_filtered, recon_unfiltered
        global system, dates
        
        # Clear old entries
        [widget.destroy() for widget in Page2.Frame.winfo_children()]
        [widget.destroy() for widget in Page3.Frame.winfo_children()]
        
-       # Find all interlocks
+       # Find interlocks from given log files and filter expected events
        try:
            system, kvct_df, recon_df = DiagnosticTool.GetEntries(files)
-           SubFunctions.df_tree(kvct_df, Page2.Frame)
-           SubFunctions.df_tree(recon_df, Page3.Frame)
-           Page2.menubar_filter(kvct_df, Page2.menubar)
-           Page3.menubar_filter(recon_df, Page3.menubar)
-           
            # Get dates
            start_date = kvct_df['Date'][0]
            end_date = kvct_df['Date'][len(kvct_df)-1]
            dates = str(start_date)+' - '+str(end_date)
        except:
            messagebox.showerror("Error", "Cannot find entries for listed files.")
-           pass
-       
-       # Filter interlocks
+           
        try:
-           kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out = DiagnosticTool.FilterEntries(kvct_df, recon_df)
+           kvct_filtered, kvct_unfiltered, recon_filtered, recon_unfiltered = DiagnosticTool.FilterEntries(kvct_df, recon_df)
+           
+           SubFunctions.df_tree(kvct_unfiltered, Page2.Frame)
+           Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
+           SubFunctions.df_tree(recon_unfiltered, Page3.Frame)
+           Page3.menubar_filter(recon_unfiltered, Page3.menubar)
        except:
            messagebox.showerror("Error", "Cannot filter interlocks.")
-           pass
-       
+           SubFunctions.df_tree(kvct_df, Page2.Frame)
+           Page2.menubar_filter(kvct_df, Page2.menubar)
+           SubFunctions.df_tree(recon_df, Page3.Frame)
+           Page3.menubar_filter(recon_df, Page3.menubar)
+
     def df_tree(df, frame):
        # Scrollbars
        treeScroll_y = ttk.Scrollbar(frame)
@@ -343,16 +348,19 @@ class SubFunctions():
        treeScroll_x.configure(command=frame.tree.xview)
        frame.tree.configure(xscrollcommand=treeScroll_x.set)
        
-       # Format columns per tab
-       frame.tree.column("#0", width=50, stretch='no') 
-       frame.tree.column("Interlock Number", width=350, stretch='no')
-       frame.tree.column("Date", width=80, stretch='no')
-       frame.tree.column("Active Time", width=90, stretch='no')
-       frame.tree.column("Inactive Time", width=90, stretch='no')
-       frame.tree.column("Time from Node Start (min)", width=170, stretch='no')
-       frame.tree.column("Interlock Duration (min)", width=150, stretch='no')
-       for i in range(6,len(columns)):
-           frame.tree.column(columns[i], width=200, stretch='no')    
+       try:
+           # Format columns per tab
+           frame.tree.column("#0", width=50, stretch='no') 
+           frame.tree.column("Interlock Number", width=350, stretch='no')
+           frame.tree.column("Date", width=80, stretch='no')
+           frame.tree.column("Active Time", width=90, stretch='no')
+           frame.tree.column("Inactive Time", width=90, stretch='no')
+           frame.tree.column("Time from Node Start (min)", width=170, stretch='no')
+           frame.tree.column("Interlock Duration (min)", width=150, stretch='no')
+           for i in range(6,len(columns)):
+               frame.tree.column(columns[i], width=200, stretch='no')    
+       except:
+           pass
         
     def sortby(tree, col, descending, int_descending):
         # grab values to sort
@@ -368,10 +376,33 @@ class SubFunctions():
             tree.move(item[1], '', ix)
         # switch the heading so it will sort in the opposite direction
         tree.heading(col, command=lambda col=col: SubFunctions.sortby(tree, col, int(not descending),int_descending=not int_descending))
+    
+    def SummarizeResults():      
+        win = tk.Toplevel()
+        win.wm_title("Window")
+        win.wm_geometry("800x500")
         
+        Frame = tk.Frame(win, bd=1, relief='solid')
+        Frame.place(relx=0.5, relwidth=1, relheight=1, anchor='n')
+        
+        tabControl = ttk.Notebook(Frame)        
+        tab1 = ttk.Frame(tabControl)
+        tabControl.add(tab1, text = 'KVCT Interlocks')
+        tab2 = ttk.Frame(tabControl)
+        tabControl.add(tab2, text = 'Recon Interlocks')
+        tabControl.pack(expand=1, fill='both')
+       
+        try:
+            kvct_filtered_analysis, kvct_unfiltered_analysis, recon_filtered_analysis, recon_unfiltered_analysis = DiagnosticTool.Analysis(
+                    kvct_unfiltered, kvct_filtered, recon_unfiltered, recon_filtered)
+            
+            SubFunctions.df_tree(kvct_filtered_analysis, tab1)
+            SubFunctions.df_tree(recon_filtered_analysis, tab2)
+        except:
+            messagebox.showerror("Error", "Cannot analyze entries for listed files.")
+            
     def exportExcel():  
        directory = filedialog.askdirectory()
-       
        try:
            # Dates to save file under new name each time
            start_date = ('').join(dates.split('-')[1:3])
@@ -380,8 +411,8 @@ class SubFunctions():
            
            # KVCT Interlocks
            kvct_writer = pd.ExcelWriter(directory + '\KvctInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
-           sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Unexpect)', 'KVCT Interlocks (Expect)']
-           dataframes = [kvct_df, kvct_filtered, kvct_filtered_out]
+           sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Filtered)']
+           dataframes = [kvct_unfiltered, kvct_filtered]
            for df,sheetname in zip(dataframes,sheetnames):
                df.to_excel(kvct_writer,sheetname, index=False)
                
@@ -398,8 +429,8 @@ class SubFunctions():
            
            # Recon Interlocks
            recon_writer = pd.ExcelWriter(directory + '\ReconInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
-           sheetnames = ['Recon Interlocks (All)' , 'Recon Interlocks (Unexpect)', 'Recon Interlocks (Expect)']
-           dataframes = [recon_df, recon_filtered, recon_filtered_out]
+           sheetnames = ['Recon Interlocks (All)' , 'Recon Interlocks (Filtered)']
+           dataframes = [recon_unfiltered, recon_filtered]
            for df,sheetname in zip(dataframes,sheetnames):
                df.to_excel(recon_writer,sheetname, index=False)
                

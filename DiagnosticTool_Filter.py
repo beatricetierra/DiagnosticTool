@@ -37,9 +37,8 @@ def filter_kvct(interlocks_df):
     df.reset_index(drop=True, inplace=True)
     
     # Remove startup and shutdown interlocks
-    # keep separate because node start != node end everytime (ex. wait_config error, unexpected shutdown)
-    #filter interlocks that occur 30 seconds after node starts and duration is less than 2 minutes
-    
+    # keep separate because node start does not mean node ended properly every time (ex. wait_config error, unexpected shutdown)
+    # filter interlocks that occur 30 seconds after node starts and duration is less than 2 minutes
     for start in node_start:
         limit = start + datetime.timedelta(seconds=30)   
         for idx, (time, duration) in enumerate(zip(df['Datetime'], df['Interlock Duration (min)'])):
@@ -105,43 +104,58 @@ def filter_kvct(interlocks_df):
             filter_out_idx.append(idx)
             interlock_type.append('ContactorOn')
             
-    # filter interlocks based on time of other events
+    # filter interlocks based on time of other known events
+    # if time difference between BEL open and HVOnStatusMismatch interlock time is less than 0.1 seconds 
     for idx, (interlock, interlock_time, bel) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL Open'])):
         if 'HvOnStatusMismatch' in interlock and type(bel) == pd._libs.tslibs.timestamps.Timestamp:
             if interlock_time - bel < datetime.timedelta(seconds=.1):
                 filter_out_idx.append(idx)
                 interlock_type.append('BEL is open')
-            
-    # separate interlocks_df into filtered and filtered_out 
-    df2 = pd.DataFrame({'Index': filter_out_idx, 'Type':interlock_type})
-    df2 = df2.drop_duplicates(subset=['Index']).sort_values(['Index'])    #remove duplicates (incase interlock meets multiple filtering criteria)
+           
+    # Combine index and interlock type to sort values by index 
+    expected_interlocks = pd.DataFrame({'IDX': filter_out_idx, 'Type':interlock_type})
+    expected_interlocks = expected_interlocks.drop_duplicates(subset=['IDX']).sort_values(['IDX'])   #remove duplicates and sort
+                                                                                                            
+    # Separate interlocks_df into filtered and unfiltered
+    # Create new dataframe that removed expected interlocks 
+    filtered = df.drop(list(expected_interlocks['IDX']))
     
-    filtered = df.drop(list(df2['Index']))
-    filtered_out = df.iloc[list(df2['Index'])]
-    filtered_out.insert(5, 'Type', list(df2['Type']))
-
+    # Add new 'Expected Interlock Type' column to original unfiltered interlocks dataframe
+    expected_interlock_types = ['']*len(df)
+    for idx in expected_interlocks['IDX']:
+        expected_interlock_types[idx] = expected_interlocks.loc[expected_interlocks['IDX']==idx, 'Type'].values[0]
+    df.insert(5, 'Expected Interlock Type', expected_interlock_types)
+    
     # finalize filtered and filtered out dataframes
     # insert start and end times and sort by date and active time
     log_start_entries = interlocks_df.iloc[log_start_idx]
     start_entries = interlocks_df.iloc[node_start_idx] 
     end_entries = interlocks_df.iloc[node_end_idx] 
     
-    filtered_out = pd.concat([filtered_out, log_start_entries], axis=0, sort=False)
+    unfiltered = pd.concat([df, log_start_entries], axis=0, sort=False)
+    unfiltered = pd.concat([unfiltered, start_entries], axis=0, sort=False)
+    unfiltered = pd.concat([unfiltered, end_entries], axis=0, sort=False)
+    
     filtered = pd.concat([filtered, log_start_entries], axis=0, sort=False)
-    filtered_out = pd.concat([filtered_out, start_entries], axis=0, sort=False)
     filtered = pd.concat([filtered, start_entries], axis=0, sort=False)
-    filtered_out = pd.concat([filtered_out, end_entries], axis=0, sort=False)
     filtered = pd.concat([filtered, end_entries ], axis=0, sort=False)
     
-    filtered_out.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True)
-    filtered_out.reset_index(drop=True, inplace=True)
+    # Sort and reset both filter and unfiltered dataframes 
+    unfiltered.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True)
+    unfiltered.reset_index(drop=True, inplace=True)
     filtered.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True) 
     filtered.reset_index(drop=True, inplace=True)
     
-    filtered_out.drop('Datetime', axis=1, inplace=True)
+    # Clean up dataframes
+    # remove column values if entry is log start, node start, or node end
+    for idx, row in unfiltered.iterrows():
+        if 'LOG' in row['Interlock Number'] or 'NODE' in row['Interlock Number']:
+            unfiltered.loc[idx, 5:] = ''
+            
+    unfiltered.drop('Datetime', axis=1, inplace=True)
     filtered.drop('Datetime', axis=1, inplace=True)
 
-    return(filtered, filtered_out)
+    return(filtered, unfiltered)
     
 def filter_recon(interlocks_df):
      # find entries to be filtered out and insert into new dataframe
@@ -193,35 +207,48 @@ def filter_recon(interlocks_df):
                 interlock_type.append('Shutdown Interlock')
             else:
                 pass         
-                
-    # separate interlocks_df into filtered and filtered_out 
-    df2 = pd.DataFrame({'Index': filter_out_idx, 'Type':interlock_type})
-    df2 = df2.drop_duplicates(subset=['Index']).sort_values(['Index'])    #remove duplicates (incase interlock meets multiple filtering criteria)
     
-    filtered = df.drop(list(df2['Index']))
-    filtered_out = df.iloc[list(df2['Index'])]
-    filtered_out.insert(5, 'Type', list(df2['Type']))
-
+    # Combine index and interlock type to sort values by index 
+    expected_interlocks = pd.DataFrame({'IDX': filter_out_idx, 'Type':interlock_type})
+    expected_interlocks = expected_interlocks.drop_duplicates(subset=['IDX']).sort_values(['IDX'])   #remove duplicates and sort
+                                                                                                            
+    # Separate interlocks_df into filtered and unfiltered
+    # Create new dataframe that removed expected interlocks 
+    filtered = df.drop(list(expected_interlocks['IDX']))
+    
+    # Add new 'Expected Interlock Type' column to original unfiltered interlocks dataframe
+    expected_interlock_types = ['']*len(df)
+    for idx in expected_interlocks['IDX']:
+        expected_interlock_types[idx] = expected_interlocks.loc[expected_interlocks['IDX']==idx, 'Type'].values[0]
+    df.insert(5, 'Expected Interlock Type', expected_interlock_types)
+    
     # finalize filtered and filtered out dataframes
     # insert start and end times and sort by date and active time
     log_start_entries = interlocks_df.iloc[log_start_idx]
     start_entries = interlocks_df.iloc[node_start_idx] 
     end_entries = interlocks_df.iloc[node_end_idx] 
     
-    filtered_out = pd.concat([filtered_out, log_start_entries], axis=0, sort=False)
+    unfiltered = pd.concat([df, log_start_entries], axis=0, sort=False)
+    unfiltered = pd.concat([unfiltered, start_entries], axis=0, sort=False)
+    unfiltered = pd.concat([unfiltered, end_entries], axis=0, sort=False)
+    
     filtered = pd.concat([filtered, log_start_entries], axis=0, sort=False)
-    filtered_out = pd.concat([filtered_out, start_entries], axis=0, sort=False)
     filtered = pd.concat([filtered, start_entries], axis=0, sort=False)
-    filtered_out = pd.concat([filtered_out, end_entries], axis=0, sort=False)
     filtered = pd.concat([filtered, end_entries ], axis=0, sort=False)
     
-    filtered_out.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True)
-    filtered_out.reset_index(drop=True, inplace=True)
+    # Sort and reset both filter and unfiltered dataframes 
+    unfiltered.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True)
+    unfiltered.reset_index(drop=True, inplace=True)
     filtered.sort_values(['Date', 'Active Time'], ascending=[True, True], inplace=True) 
     filtered.reset_index(drop=True, inplace=True)
     
-    filtered_out.drop('Datetime', axis=1, inplace=True)
+    # Clean up dataframes
+    # remove column values if entry is log start, node start, or node end
+    for idx, row in unfiltered.iterrows():
+        if 'LOG' in row['Interlock Number'] or 'NODE' in row['Interlock Number']:
+            unfiltered.loc[idx, 5:] = ''
+            
+    unfiltered.drop('Datetime', axis=1, inplace=True)
     filtered.drop('Datetime', axis=1, inplace=True)
-    
-    return(filtered, filtered_out)
-                
+
+    return(filtered, unfiltered)                

@@ -241,23 +241,23 @@ def GetEntries(filenames):
     
 def FilterEntries(kvct_interlocks, recon_interlocks):    
     # Remove Expected, Startup, and Shutdown Interlocks
-    kvct_filtered, kvct_filtered_out = dtf.filter_kvct(kvct_interlocks)
+    kvct_filtered, kvct_unfiltered = dtf.filter_kvct(kvct_interlocks)
     try:
-        recon_filtered, recon_filtered_out = dtf.filter_recon(recon_interlocks)
+        recon_filtered, recon_unfiltered = dtf.filter_recon(recon_interlocks)
     except:
-        recon_filtered, recon_filtered_out = pd.DataFrame(), pd.DataFrame()
+        recon_filtered, recon_unfiltered = pd.DataFrame(), pd.DataFrame()
     
-    return(kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out)
+    return(kvct_filtered, kvct_unfiltered, recon_filtered, recon_unfiltered)
     
-def Analysis(kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out):    
-    kvct_analysis = dta.analysis(kvct_filtered)
-    kvct_unfiltered_analysis = dta.analysis_expected(kvct_filtered_out)
+def Analysis(kvct_unfiltered, kvct_filtered, recon_unfiltered, recon_filtered):    
+    kvct_filtered_analysis = dta.analysis(kvct_filtered)
+    kvct_unfiltered_analysis = dta.analysis_expected(kvct_unfiltered)
     try:    
-        recon_analysis = dta.analysis(recon_filtered)
+        recon_filtered_analysis = dta.analysis(recon_filtered)
     except:
-        recon_analysis = pd.DataFrame()
+        recon_filtered_analysis = pd.DataFrame()
     try:
-        recon_unfiltered_analysis = dta.analysis_expected(recon_filtered_out)
+        recon_unfiltered_analysis = dta.analysis_expected(recon_unfiltered)
     except:
         recon_unfiltered_analysis = pd.DataFrame()
-    return(kvct_analysis, kvct_unfiltered_analysis, recon_analysis, recon_unfiltered_analysis)
+    return(kvct_filtered_analysis, kvct_unfiltered_analysis, recon_filtered_analysis, recon_unfiltered_analysis)
