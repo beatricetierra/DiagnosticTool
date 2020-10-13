@@ -5,54 +5,10 @@ Created on Wed May 20 17:58:42 2020
 @author: btierra
 """
 import os
-import paramiko
-from scp import SCPClient
 import pandas as pd
-import datetime 
 import InterlockDataFrame as idf
 import DiagnosticTool_Filter as dtf
 import DiagnosticTool_Analysis as dta
-
-def GetLogs(ipaddress, start = str(datetime.datetime.today().date()), end = str(datetime.datetime.today().date())):    
-    ssh = paramiko.SSHClient() 
-    ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
-    ssh.connect(hostname=ipaddress, username='rxm', password='plokokok')
-    sftp = ssh.open_sftp()
-    
-    # Create folder to keep logs before transfer
-    sftp = paramiko.SFTPClient.from_transport(ssh.get_transport())
-    storage_folder = '/home/rxm/kvctlogs'
-    try:
-        stdin, stdout, stderr = ssh.exec_command("rm -r "  +  storage_folder)   # remove existing files
-        sftp.mkdir(storage_folder)  
-    except:
-        sftp.mkdir(storage_folder)  # Create new folder 
-        
-    ## Copy kvct, pet, and sysnode log files to new directory
-    start_date = datetime.datetime.strptime(start, '%Y-%m-%d')
-    end_date = datetime.datetime.strptime(end, '%Y-%m-%d')
-    dates = [start_date.date() + datetime.timedelta(days=x) for x in range(0, (end_date-start_date+datetime.timedelta(days=1)).days)]
-    
-    for date in dates: 
-        stdin, stdout, stderr = ssh.exec_command('cp -r /home/rxm/log/archive/' + str(date) + ' /home/rxm/kvctlogs')
-        stdin, stdout, stderr = ssh.exec_command('scp -r 192.168.10.106:/home/rxm/log/archive/' + str(date) +' /home/rxm/kvctlogs')
-        stdin, stdout, stderr = ssh.exec_command('scp -r 192.168.10.110:/home/rxm/log/archive/' + str(date) +' /home/rxm/kvctlogs')
-    
-    # Remove large -log- files
-    stdin, stdout, stderr = ssh.exec_command(r'find /home/rxm/kvctlogs -name \'*-log-*\' -delete')
-    
-    # Export to local computer
-    parent_dir = r'C:/Users/btierra/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Python 3.7/Log Diagnostic Tool/Output/'
-    foldername = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S") # current date and time
-    os.mkdir(parent_dir + foldername)
-    
-    scp = SCPClient(ssh.get_transport())
-    scp.get(r'/home/rxm/kvctlogs', parent_dir + foldername, recursive=True)
-    
-    sftp.close()
-    ssh.close()
-    
-    print(parent_dir + foldername)
     
 def GetFiles(folderpath):
     acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
