@@ -1,6 +1,6 @@
- # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-Created on Mon Jul  6 15:24:57 2020
+Created on Thu Oct  8 12:04:59 2020
 
 @author: btierra
 """
@@ -19,61 +19,26 @@ class Page(tk.Frame):
 class Page1(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
-
-       # ****** Top Frame ******
-       topFrame = tk.Frame(self)
-       topFrame.place(relx=0.5, relwidth=0.9, relheight=0.30, anchor='n')
-       
-       folderLabel = tk.Label(topFrame, text="Choose Folder (optional: finds all log files under all subdirectories of given folders)", font=20)
-       folderLabel.place(relx=0.08,relheight=0.1)
-       
-       scrollFrame1 = tk.Frame(topFrame, bd=1, relief='solid')
-       scrollFrame1.place(relx=0.08,rely=0.08, relwidth=0.7, relheight=0.9)
-       
-       scrollbar_x1 = tk.Scrollbar(scrollFrame1, orient='horizontal')
-       scrollbar_x1.pack(side='bottom', fill='x')
-          
-       scrollbar_y1 = tk.Scrollbar(scrollFrame1)
-       scrollbar_y1.pack(side='right', fill='y')
-          
-       self.listbox1= tk.Listbox(scrollFrame1, height = 500, width = 350, xscrollcommand=scrollbar_x1.set, yscrollcommand=scrollbar_y1.set)
-       self.listbox1.pack(expand=0, fill='both')
-       scrollbar_x1.config(command=self.listbox1.xview)
-       scrollbar_y1.config(command=self.listbox1.yview)
-          
-       # Buttons for List of Folders
-       button_find1 = tk.Button(topFrame, text='Find Files', font=30, command=self.findFiles)
-       button_find1.place(relx=0.8, rely=0.85, relwidth=0.1, relheight=0.08)
-          
-       button_add1 = tk.Button(topFrame, text='Add', font=20, command=self.addFolder)
-       button_add1.place(relx=0.8, rely=0.1, relwidth=0.1, relheight=0.08)
-          
-       button_delete_select1 = tk.Button(topFrame, text='Delete', font=20, command=self.deleteFolder_selected)
-       button_delete_select1.place(relx=0.8, rely=0.18, relwidth=0.1, relheight=0.08)
-       
-       # ****** Bottom Frame ******
-       bottomFrame = tk.Frame(self)
-       bottomFrame.place(relx=0.5, rely=0.3, relwidth=0.9, relheight=0.7, anchor='n')
-       
-       fileLabel = tk.Label(bottomFrame, text="Choose Files", font=20)
-       fileLabel.place(relx=0.08,relheight=0.1)
+      
+       Frame = tk.Frame(self)
+       Frame.place(relx=0.5, relwidth=0.95, relheight=0.95, anchor='n')
        
        # Scrollbox to list details of chosen log files
-       scrollFrame2 = tk.Frame(bottomFrame, bd=1, relief='solid')
-       scrollFrame2.place(relx=0.08,rely=0.08, relwidth=0.7, relheight=0.9)
+       scrollFrame = tk.Frame(Frame, bd=1, relief='solid')
+       scrollFrame.place(relx=0.42, rely=0.1, relwidth=0.80, relheight=0.9, anchor='n')
        
-       self.tree = ttk.Treeview(scrollFrame2)
+       self.tree = ttk.Treeview(scrollFrame)
        self.tree['show'] = 'headings'
        
-       scrollbar_x2 = ttk.Scrollbar(scrollFrame2, orient="horizontal", command=self.tree.xview)
-       scrollbar_y2  = ttk.Scrollbar(scrollFrame2, orient="vertical", command=self.tree.yview)
+       scrollbar_x = ttk.Scrollbar(scrollFrame, orient="horizontal", command=self.tree.xview)
+       scrollbar_y  = ttk.Scrollbar(scrollFrame, orient="vertical", command=self.tree.yview)
        
-       self.tree.configure(yscrollcommand=scrollbar_y2.set, xscrollcommand=scrollbar_x2.set)
-       self.tree.grid(column=0, row=0, sticky='nsew', in_=scrollFrame2)
-       scrollbar_y2.grid(column=1, row=0, sticky='ns', in_=scrollFrame2)
-       scrollbar_x2.grid(column=0, row=1, sticky='ew', in_=scrollFrame2)
-       scrollFrame2.grid_columnconfigure(0, weight=1)
-       scrollFrame2.grid_rowconfigure(0, weight=1)
+       self.tree.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
+       self.tree.grid(column=0, row=0, sticky='nsew', in_=scrollFrame)
+       scrollbar_y.grid(column=1, row=0, sticky='ns', in_=scrollFrame)
+       scrollbar_x.grid(column=0, row=1, sticky='ew', in_=scrollFrame)
+       scrollFrame.grid_columnconfigure(0, weight=1)
+       scrollFrame.grid_rowconfigure(0, weight=1)
        
        columns = ['File', 'Size', 'Path']
        self.tree["columns"] = columns
@@ -83,39 +48,27 @@ class Page1(Page):
        self.tree.column('Path', width=500, stretch='no')
 
        # Buttons for List of Files
-       button_find2 = tk.Button(bottomFrame, text='Find Interlocks', font=15, command=self.findInterlocks)
-       button_find2.place(relx=0.8, rely=0.9, relwidth=0.1, relheight=0.06)
+       button_selectfolder = tk.Button(Frame, text='Select Folder', font=30, command=self.addFolder)
+       button_selectfolder.place(relx=0.85, rely=0.1, relwidth=0.1, relheight=0.05)
           
-       button_add2 = tk.Button(bottomFrame, text='Add', font=15, command=self.addFile)
-       button_add2.place(relx=0.8, rely=0.1, relwidth=0.1, relheight=0.05)
+       button_add = tk.Button(Frame, text='Add', font=15, command=self.addFile)
+       button_add.place(relx=0.85, rely=0.4, relwidth=0.1, relheight=0.05)
        
-       button_delete_select2 = tk.Button(bottomFrame, text='Delete', font=15, command=self.deleteFile_selected)
-       button_delete_select2.place(relx=0.8, rely=0.15, relwidth=0.1, relheight=0.05)
+       button_delete_select = tk.Button(Frame, text='Delete', font=15, command=self.deleteFile_selected)
+       button_delete_select.place(relx=0.85, rely=0.45, relwidth=0.1, relheight=0.05)
           
-       button_delete2 = tk.Button(bottomFrame, text='Delete All', font=15, command=self.deleteFile_all)
-       button_delete2.place(relx=0.8, rely=0.2, relwidth=0.1, relheight=0.05)
+       button_delete = tk.Button(Frame, text='Delete All', font=15, command=self.deleteFile_all)
+       button_delete.place(relx=0.85, rely=0.5, relwidth=0.1, relheight=0.05)
+       
+       button_find = tk.Button(Frame, text='Find Interlocks', font=15, command=self.findInterlocks)
+       button_find.place(relx=0.85, rely=0.9, relwidth=0.1, relheight=0.05)
 
    def addFolder(self):
-       folderlist = []
        folder = filedialog.askdirectory()
-       folderlist.append(folder)
-       [self.listbox1.insert(tk.END, item) for item in folderlist]
-     
-   def deleteFolder_selected(self):
-       self.listbox1.delete(tk.ANCHOR)
-       
-   def findFiles(self):
-       global all_files
-       folders = list(self.listbox1.get(0,tk.END))
-       all_files = []
-       for folder in folders:
-           files = DiagnosticTool.GetFiles(folder)
-           for file in files:
-               all_files.append(file)
-       Page1.addFileDetails(self.tree, all_files)
+       files = DiagnosticTool.GetFiles(folder)
+       Page1.addFileDetails(self.tree, files)
       
    def addFile(self):
-       global content
        content = filedialog.askopenfilenames(title='Choose files', filetypes=[('Text Document', '*.log')])
        Page1.addFileDetails(self.tree, content)
        
@@ -139,7 +92,6 @@ class Page1(Page):
    def findInterlocks(self):
        global files
        
-       SubFunctions.ClearPages()
        files=[]
        for child in self.tree.get_children():
           files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
@@ -148,38 +100,41 @@ class Page1(Page):
 class Page2(Page):
     def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
-       Page2.tabControl = ttk.Notebook(self)        
-        
-       Page2.tab1 = ttk.Frame(Page2.tabControl)
-       Page2.tabControl.add(Page2.tab1, text = 'KVCT Interlocks')
-        
-       Page2.tab2 = ttk.Frame(Page2.tabControl)
-       Page2.tabControl.add(Page2.tab2, text = 'KVCT Interlocks (Unexpected)')
-        
-       Page2.tab3 = ttk.Frame(Page2.tabControl)
-       Page2.tabControl.add(Page2.tab3, text = 'KVCT Interlocks (Expected)')
-        
-       Page2.tab4 = ttk.Frame(Page2.tabControl)
-       Page2.tabControl.add(Page2.tab4, text = 'KVCT Analysis (Unexpected)')
        
-       Page2.tab5 = ttk.Frame(Page2.tabControl)
-       Page2.tabControl.add(Page2.tab5, text = 'KVCT Analysis (Expected)')
-
-       Page2.tabControl.pack(expan=1, fill='both')
+       Page2.Frame = tk.Frame(self, bd=1, relief='solid')
+       Page2.Frame.place(relx=0.5, rely=0.08, relwidth=0.99, relheight=0.91, anchor='n')
        
+       Page2.toggleButton = tk.Button(self, text="Filter Expected Interlocks", width=12, relief="raised", command=Page2.toggle)
+       Page2.toggleButton.place(relx=0.4, rely=0.02, relwidth=0.15, relheight=0.04)
+           
        # Add filtering menubars
-       Page2.menubar = tk.Menubutton(self, text='Filter KVCT Interlocks \u25BE', font=20, relief='raised')
-       Page2.menubar.place(relx=0.62, relheight=0.025)
+       FilterButtons = tk.Frame(self)
+       FilterButtons.place(relx=0.7, relwidth=0.3, relheight=0.08, anchor='nw')
        
-       button_filter = tk.Button(self, text="Filter", font=20, command = Page2.filter_by_interlock)
-       button_filter.place(relx=0.89, relheight=0.025)
+       Page2.menubar = tk.Menubutton(FilterButtons, text='Filter KVCT Interlocks \u25BE', font=20, relief='raised')
+       Page2.menubar.place(rely=0.5, relwidth=0.53, relheight=0.45)
        
-       button_selectall = tk.Button(self, text="Select All", font=20, command=Page2.selectall)
-       button_selectall.place(relx=0.76, relheight=0.025)
+       button_filter = tk.Button(FilterButtons, text="Filter", font=20, command = Page2.filter_by_interlock)
+       button_filter.place(relx=0.6,rely=0.3, relwidth=0.3, relheight=0.4)
        
-       button_selectnone = tk.Button(self, text="Select None", font=20, command=Page2.selectnone)
-       button_selectnone.place(relx=0.82, relheight=0.025)
+       button_selectall = tk.Button(FilterButtons, text="Select All", font=20, command=Page2.selectall)
+       button_selectall.place(relwidth= 0.22, relheight=0.45)
        
+       button_selectnone = tk.Button(FilterButtons, text="Select None", font=20, command=Page2.selectnone)
+       button_selectnone.place(relx=0.25,relwidth=0.28, relheight=0.45)
+    
+    def toggle():
+       if Page2.toggleButton.config('relief')[-1] == 'sunken':
+           Page2.toggleButton.config(relief="raised")
+           [widget.destroy() for widget in Page2.Frame.winfo_children()]
+           SubFunctions.df_tree(kvct_unfiltered, Page2.Frame)
+           Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
+       else:
+           Page2.toggleButton.config(relief="sunken")
+           [widget.destroy() for widget in Page2.Frame.winfo_children()]
+           SubFunctions.df_tree(kvct_filtered, Page2.Frame)
+           Page2.menubar_filter(kvct_filtered, Page2.menubar)
+            
     def menubar_filter(df, menubar):
         global kvct_interlock_set 
         items = sorted(list(set(df['Interlock Number'])))
@@ -200,16 +155,15 @@ class Page2(Page):
             if var.get() == True:
                 interlock_list.append(interlock)
                 
-        df1 = kvct_df[kvct_df['Interlock Number'].isin(interlock_list)]
-        df2 = kvct_filtered[kvct_filtered['Interlock Number'].isin(interlock_list)]
-        df3 = kvct_filtered_out[kvct_filtered_out['Interlock Number'].isin(interlock_list)]
-        [widget.destroy() for widget in Page2.tab1.winfo_children()]
-        [widget.destroy() for widget in Page2.tab2.winfo_children()]
-        [widget.destroy() for widget in Page2.tab3.winfo_children()]
-        SubFunctions.df_tree(df1, Page2.tab1)
-        SubFunctions.df_tree(df2, Page2.tab2)
-        SubFunctions.df_tree(df3, Page2.tab3)
-    
+        if Page2.toggleButton.config('relief')[-1] == 'raised':
+            df1 = kvct_unfiltered[kvct_unfiltered['Interlock Number'].isin(interlock_list)]
+            [widget.destroy() for widget in Page2.Frame.winfo_children()]
+            SubFunctions.df_tree(df1, Page2.Frame)
+        elif Page2.toggleButton.config('relief')[-1] == 'sunken':
+            df2 = kvct_filtered[kvct_filtered['Interlock Number'].isin(interlock_list)]
+            [widget.destroy() for widget in Page2.Frame.winfo_children()]
+            SubFunctions.df_tree(df2, Page2.Frame)
+
     def selectall():
         for interlock, var in kvct_interlock_set.items():
             var.set(True)
@@ -220,79 +174,80 @@ class Page2(Page):
         Page2.filter_by_interlock()
             
 class Page3(Page):
-   def __init__(self, *args, **kwargs):
-       Page.__init__(self, *args, **kwargs)        
-       Page3.tabControl = ttk.Notebook(self)        
+    def __init__(self, *args, **kwargs):
+       Page.__init__(self, *args, **kwargs)
        
-       Page3.tab1 = ttk.Frame(Page3.tabControl)
-       Page3.tabControl.add(Page3.tab1, text = 'Recon Interlocks (All)')
+       Page3.Frame = tk.Frame(self, bd=1, relief='solid')
+       Page3.Frame.place(relx=0.5, rely=0.08, relwidth=0.99, relheight=0.91, anchor='n')
        
-       Page3.tab2 = ttk.Frame(Page3.tabControl)
-       Page3.tabControl.add(Page3.tab2, text = 'Recon Interlocks (Unexpected)')
-       
-       Page3.tab3 = ttk.Frame(Page3.tabControl)
-       Page3.tabControl.add(Page3.tab3, text = 'Recon Interlocks (Expected)')
-       
-       Page3.tab4 = ttk.Frame(Page3.tabControl)
-       Page3.tabControl.add(Page3.tab4, text = 'Recon Interlocks (Expected)')
-       
-       Page3.tab5 = ttk.Frame(Page3.tabControl)
-       Page3.tabControl.add(Page3.tab5, text = 'Recon Interlocks (Expected)')
-       
-       Page3.tabControl.pack(expan=1, fill='both')
-       
+       Page3.toggleButton = tk.Button(self, text="Filter Expected Interlocks", width=12, relief="raised", command=Page3.toggle)
+       Page3.toggleButton.place(relx=0.4, rely=0.02, relwidth=0.15, relheight=0.04)
+           
        # Add filtering menubars
-       Page3.menubar = tk.Menubutton(self, text='Filter Recon Interlocks \u25BE', font=20, relief='raised')
-       Page3.menubar.place(relx=0.62, relheight=0.025)
+       FilterButtons = tk.Frame(self)
+       FilterButtons.place(relx=0.7, relwidth=0.3, relheight=0.08, anchor='nw')
        
-       button_filter = tk.Button(self, text="Filter", font=20, command = Page3.filter_by_interlock)
-       button_filter.place(relx=0.89, relheight=0.025)
+       Page3.menubar = tk.Menubutton(FilterButtons, text='Filter Recon Interlocks \u25BE', font=20, relief='raised')
+       Page3.menubar.place(rely=0.5, relwidth=0.53, relheight=0.45)
        
-       button_selectall = tk.Button(self, text="Select All", font=20, command=Page3.selectall)
-       button_selectall.place(relx=0.76, relheight=0.025)
+       button_filter = tk.Button(FilterButtons, text="Filter", font=20, command = Page3.filter_by_interlock)
+       button_filter.place(relx=0.6,rely=0.3, relwidth=0.3, relheight=0.4)
        
-       button_selectnone = tk.Button(self, text="Select None", font=20, command=Page3.selectnone)
-       button_selectnone.place(relx=0.82, relheight=0.025)
+       button_selectall = tk.Button(FilterButtons, text="Select All", font=20, command=Page3.selectall)
+       button_selectall.place(relwidth= 0.22, relheight=0.45)
        
-   def menubar_filter(df, menubar):
-       global recon_interlock_set 
-       items = sorted(list(set(df['Interlock Number'])))
-        
-       menubar.menu = tk.Menu(menubar, tearoff=0)
-       menubar["menu"] = menubar.menu
-       
-       recon_interlock_set = {}
-       for idx, item in enumerate(items):
-           var = tk.BooleanVar()
-           var.set(True)
-           menubar.menu.add_checkbutton(label=item, variable=var)
-           recon_interlock_set[str(item)] = var
-       
-   def filter_by_interlock():
-       interlock_list = []
-       for interlock, var in recon_interlock_set.items():
-           if var.get() == True:
-               interlock_list.append(interlock)
+       button_selectnone = tk.Button(FilterButtons, text="Select None", font=20, command=Page3.selectnone)
+       button_selectnone.place(relx=0.25,relwidth=0.28, relheight=0.45)
+    
+    def toggle():
+       if Page3.toggleButton.config('relief')[-1] == 'sunken':
+           Page3.toggleButton.config(relief="raised")
+           [widget.destroy() for widget in Page3.Frame.winfo_children()]
+           SubFunctions.df_tree(recon_unfiltered, Page3.Frame)
+           Page3.menubar_filter(recon_unfiltered, Page3.menubar)
+       else:
+           Page3.toggleButton.config(relief="sunken")
+           [widget.destroy() for widget in Page3.Frame.winfo_children()]
+           SubFunctions.df_tree(recon_filtered, Page3.Frame)
+           Page3.menubar_filter(recon_filtered, Page3.menubar)
             
-       df1 = recon_df[recon_df['Interlock Number'].isin(interlock_list)]
-       df2 = recon_filtered[recon_filtered['Interlock Number'].isin(interlock_list)]
-       df3 = recon_filtered_out[recon_filtered_out['Interlock Number'].isin(interlock_list)]
-       [widget.destroy() for widget in Page3.tab1.winfo_children()]
-       [widget.destroy() for widget in Page3.tab2.winfo_children()]
-       [widget.destroy() for widget in Page3.tab3.winfo_children()]
-       SubFunctions.df_tree(df1, Page3.tab1)
-       SubFunctions.df_tree(df2, Page3.tab2)
-       SubFunctions.df_tree(df3, Page3.tab3)
+    def menubar_filter(df, menubar):
+        global recon_interlock_set 
+        items = sorted(list(set(df['Interlock Number'])))
+        
+        menubar.menu = tk.Menu(menubar, tearoff=0)
+        menubar["menu"] = menubar.menu
+        
+        recon_interlock_set = {}
+        for idx, item in enumerate(items):
+            var = tk.BooleanVar()
+            var.set(True)
+            menubar.menu.add_checkbutton(label=item, variable=var)
+            recon_interlock_set[str(item)] = var
        
-   def selectall():
-       for interlock, var in recon_interlock_set.items():
-           var.set(True)
-       Page3.filter_by_interlock()
-       
-   def selectnone():
-       for interlock, var in recon_interlock_set.items():
-           var.set(False)
-       Page3.filter_by_interlock()
+    def filter_by_interlock():
+        interlock_list = []
+        for interlock, var in recon_interlock_set.items():
+            if var.get() == True:
+                interlock_list.append(interlock)
+                
+        if Page3.toggleButton.config('relief')[-1] == 'raised':
+            df1 = recon_unfiltered[recon_unfiltered['Interlock Number'].isin(interlock_list)]
+            [widget.destroy() for widget in Page3.Frame.winfo_children()]
+            SubFunctions.df_tree(df1, Page3.Frame)
+        elif Page3.toggleButton.config('relief')[-1] == 'sunken':
+            df2 = recon_filtered[recon_filtered['Interlock Number'].isin(interlock_list)]
+            [widget.destroy() for widget in Page3.Frame.winfo_children()]
+            SubFunctions.df_tree(df2, Page3.Frame)
+
+    def selectall():
+        for interlock, var in recon_interlock_set.items():
+            var.set(True)
+        Page3.filter_by_interlock()
+    def selectnone():
+        for interlock, var in recon_interlock_set.items():
+            var.set(False)
+        Page3.filter_by_interlock()
 
 class MainView(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -303,6 +258,10 @@ class MainView(tk.Frame):
         file = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label='File', menu = file)
         file.add_command(label='Save Results', command = SubFunctions.exportExcel)
+        
+        analyze = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='Analyze', menu = analyze)
+        analyze.add_command(label='Summary Report', command = SubFunctions.SummarizeResults)
         root.config(menu=menubar)
         
         # Navigate between pages
@@ -312,7 +271,7 @@ class MainView(tk.Frame):
 
         buttonframe = tk.Frame(self)
         container = tk.Frame(self)
-        buttonframe.pack(side="top", fill="x", expand=False)
+        buttonframe.pack(side="top", anchor='nw')
         container.pack(side="top", fill="both", expand=True)
 
         p1.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
@@ -330,142 +289,78 @@ class MainView(tk.Frame):
         p1.show()
 
 class SubFunctions():
-    def ClearPages():
-       [widget.destroy() for widget in Page2.tab1.winfo_children()]
-       [widget.destroy() for widget in Page2.tab2.winfo_children()]
-       [widget.destroy() for widget in Page2.tab3.winfo_children()]
-       [widget.destroy() for widget in Page2.tab4.winfo_children()]
-       [widget.destroy() for widget in Page2.tab5.winfo_children()]
-       
-       [widget.destroy() for widget in Page3.tab1.winfo_children()]
-       [widget.destroy() for widget in Page3.tab2.winfo_children()]
-       [widget.destroy() for widget in Page3.tab3.winfo_children()]
-       [widget.destroy() for widget in Page3.tab4.winfo_children()]
-       [widget.destroy() for widget in Page3.tab5.winfo_children()]
-
     def findEntries(files):
-       global kvct_df, kvct_filtered, kvct_filtered_out, kvct_analysis, kvct_unfiltered_analysis
-       global recon_df, recon_filtered, recon_filtered_out, recon_analysis, recon_unfiltered_analysis
+       global kvct_df, kvct_filtered, kvct_unfiltered
+       global recon_df, recon_filtered, recon_unfiltered
        global system, dates
        
-       # Find all interlocks
+       # Clear old entries
+       [widget.destroy() for widget in Page2.Frame.winfo_children()]
+       [widget.destroy() for widget in Page3.Frame.winfo_children()]
+       
+       # Find interlocks from given log files and filter expected events
        try:
            system, kvct_df, recon_df = DiagnosticTool.GetEntries(files)
-           SubFunctions.df_tree(kvct_df, Page2.tab1)
-           SubFunctions.df_tree(recon_df, Page3.tab1)
-           Page2.menubar_filter(kvct_df, Page2.menubar)
-           Page3.menubar_filter(recon_df, Page3.menubar)
-           
            # Get dates
            start_date = kvct_df['Date'][0]
            end_date = kvct_df['Date'][len(kvct_df)-1]
            dates = str(start_date)+' - '+str(end_date)
        except:
            messagebox.showerror("Error", "Cannot find entries for listed files.")
-           pass
-       
-       # Filter interlocks
+           
        try:
-           kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out = DiagnosticTool.FilterEntries(kvct_df, recon_df)
-           SubFunctions.df_tree(kvct_filtered, Page2.tab2)
-           SubFunctions.df_tree(kvct_filtered_out, Page2.tab3)
-           SubFunctions.df_tree(recon_filtered, Page3.tab2)
-           SubFunctions.df_tree(recon_filtered_out, Page3.tab3)
+           kvct_filtered, kvct_unfiltered, recon_filtered, recon_unfiltered = DiagnosticTool.FilterEntries(kvct_df, recon_df)
+           
+           SubFunctions.df_tree(kvct_unfiltered, Page2.Frame)
+           Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
+           SubFunctions.df_tree(recon_unfiltered, Page3.Frame)
+           Page3.menubar_filter(recon_unfiltered, Page3.menubar)
        except:
            messagebox.showerror("Error", "Cannot filter interlocks.")
-           pass
-       
-       # Analyze interlocks 
-       try:
-           kvct_analysis, kvct_unfiltered_analysis, recon_analysis, recon_unfiltered_analysis = \
-           DiagnosticTool.Analysis(kvct_filtered, kvct_filtered_out, recon_filtered, recon_filtered_out)
-           
-           SubFunctions.df_tree(kvct_analysis, Page2.tab4)
-           SubFunctions.df_tree(kvct_unfiltered_analysis, Page2.tab5)
-           
-           SubFunctions.df_tree(recon_analysis, Page3.tab4)
-           SubFunctions.df_tree(recon_unfiltered_analysis, Page3.tab5)
-       except: 
-           messagebox.showerror("Error", "Cannot analyze filtered interlocks.")
-           pass
-       
-    def df_tree(df, tab):
+           SubFunctions.df_tree(kvct_df, Page2.Frame)
+           Page2.menubar_filter(kvct_df, Page2.menubar)
+           SubFunctions.df_tree(recon_df, Page3.Frame)
+           Page3.menubar_filter(recon_df, Page3.menubar)
+
+    def df_tree(df, frame):
        # Scrollbars
-       treeScroll_y = ttk.Scrollbar(tab)
+       treeScroll_y = ttk.Scrollbar(frame)
        treeScroll_y.pack(side='right', fill='y')
-       treeScroll_x = ttk.Scrollbar(tab, orient='horizontal')
+       treeScroll_x = ttk.Scrollbar(frame, orient='horizontal')
        treeScroll_x.pack(side='bottom', fill='x')
-       
-       # Add a 'Comments' column for future user input
-       if tab == Page2.tab1 or tab == Page3.tab1:
-           df.insert(4, 'Comments', '') 
        
         # View dataframe in Treeview format
        columns = list(df.columns)      
-       tab.tree = ttk.Treeview(tab)
-       tab.tree.pack(expand=1, fill='both')
-       tab.tree["columns"] = columns
+       frame.tree = ttk.Treeview(frame)
+       frame.tree.pack(expand=1, fill='both')
+       frame.tree["columns"] = columns
        
        for i in columns:
-           tab.tree.column(i, anchor="w")
-           tab.tree.heading(i, text=i, anchor='w')
+           frame.tree.column(i, anchor="w")
+           frame.tree.heading(i, text=i, anchor='w')
             
        for index, row in df.iterrows():
-           tab.tree.insert("",tk.END,text=index,values=list(row))
-       
-       # Bind double-click function
-       tab.tree.df = df
-       tab.tree.bind("<Double-1>", SubFunctions.OnDoubleClick)
+           frame.tree.insert("",tk.END,text=index,values=list(row))
 
        # Configure scrollbars to the Treeview
-       treeScroll_y.configure(command=tab.tree.yview)
-       tab.tree.configure(yscrollcommand=treeScroll_y.set)
-       treeScroll_x.configure(command=tab.tree.xview)
-       tab.tree.configure(xscrollcommand=treeScroll_x.set)
+       treeScroll_y.configure(command=frame.tree.yview)
+       frame.tree.configure(yscrollcommand=treeScroll_y.set)
+       treeScroll_x.configure(command=frame.tree.xview)
+       frame.tree.configure(xscrollcommand=treeScroll_x.set)
        
-       # Format columns per tab
-       tab.tree.column("#0", width=50, stretch='no') 
-       tab.tree.column("Interlock Number", width=300, stretch='no')
-       
-       # format based on list or analysis dataframes
-       if tab == Page2.tab1 or tab == Page2.tab2 or tab == Page2.tab3 or \
-       tab == Page3.tab1 or tab == Page3.tab2 or tab == Page3.tab3:
-           tab.tree.column("Date", width=80, stretch='no')
-           tab.tree.column("Active Time", width=90, stretch='no')
-           tab.tree.column("Inactive Time", width=90, stretch='no')
-           tab.tree.column("Time from Node Start (min)", width=100, stretch='no')
-           tab.tree.column("Interlock Duration (min)", width=100, stretch='no')
+       try:
+           # Format columns per tab
+           frame.tree.column("#0", width=50, stretch='no') 
+           frame.tree.column("Interlock Number", width=350, stretch='no')
+           frame.tree.column("Date", width=80, stretch='no')
+           frame.tree.column("Active Time", width=90, stretch='no')
+           frame.tree.column("Inactive Time", width=90, stretch='no')
+           frame.tree.column("Time from Node Start (min)", width=170, stretch='no')
+           frame.tree.column("Interlock Duration (min)", width=150, stretch='no')
            for i in range(6,len(columns)):
-               tab.tree.column(columns[i], width=200, stretch='no')
-
-       # Analysis tabs
-       if tab == Page2.tab4 or tab == Page2.tab5 or tab == Page3.tab4 or tab == Page3.tab5:
-           tab.tree.column(columns[1], width=100, stretch='no')
-           for i in range(1,len(columns)):
-               tab.tree.column(columns[i], width=50, stretch='no')
-               
-    def OnDoubleClick(event):
-        tree = event.widget
-        row = tree.item(tree.selection())['text']
-        
-        win = tk.Toplevel()
-        win.wm_title("Window")
-        win.wm_geometry("300x100")
-          
-        entry = tk.Entry(win)
-        entry.insert('end', tree.item(tree.selection())['values'][4])
-        entry.place(relx=0.5, rely=0.2, relwidth=0.9, relheight=0.30, anchor='n')
-        
-        def call():
-            row_values = tree.item(tree.selection())['values']
-            tree.delete(tree.selection()[0])
-            
-            row_values[4] = entry.get()
-            tree.insert('', row, text=row, values=row_values)
-            win.destroy()
-
-        b = tk.Button(win, text="Comment", width=10, command=call)
-        b.place(relx=0.5, rely=0.6, relwidth=0.4, relheight=0.2, anchor='n')
+               frame.tree.column(columns[i], width=200, stretch='no')    
+       except:
+           pass
         
     def sortby(tree, col, descending, int_descending):
         # grab values to sort
@@ -481,10 +376,33 @@ class SubFunctions():
             tree.move(item[1], '', ix)
         # switch the heading so it will sort in the opposite direction
         tree.heading(col, command=lambda col=col: SubFunctions.sortby(tree, col, int(not descending),int_descending=not int_descending))
+    
+    def SummarizeResults():      
+        win = tk.Toplevel()
+        win.wm_title("Window")
+        win.wm_geometry("800x500")
         
+        Frame = tk.Frame(win, bd=1, relief='solid')
+        Frame.place(relx=0.5, relwidth=1, relheight=1, anchor='n')
+        
+        tabControl = ttk.Notebook(Frame)        
+        tab1 = ttk.Frame(tabControl)
+        tabControl.add(tab1, text = 'KVCT Interlocks')
+        tab2 = ttk.Frame(tabControl)
+        tabControl.add(tab2, text = 'Recon Interlocks')
+        tabControl.pack(expand=1, fill='both')
+       
+        try:
+            kvct_filtered_analysis, kvct_unfiltered_analysis, recon_filtered_analysis, recon_unfiltered_analysis = DiagnosticTool.Analysis(
+                    kvct_unfiltered, kvct_filtered, recon_unfiltered, recon_filtered)
+            
+            SubFunctions.df_tree(kvct_filtered_analysis, tab1)
+            SubFunctions.df_tree(recon_filtered_analysis, tab2)
+        except:
+            messagebox.showerror("Error", "Cannot analyze entries for listed files.")
+            
     def exportExcel():  
        directory = filedialog.askdirectory()
-       
        try:
            # Dates to save file under new name each time
            start_date = ('').join(dates.split('-')[1:3])
@@ -493,9 +411,8 @@ class SubFunctions():
            
            # KVCT Interlocks
            kvct_writer = pd.ExcelWriter(directory + '\KvctInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
-           sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Unexpect)', 'KVCT Interlocks (Expect)',
-                         'KVCT Analysis (Unexpect)', 'KVCT Analysis (Expect)']
-           dataframes = [kvct_df, kvct_filtered, kvct_filtered_out, kvct_analysis, kvct_unfiltered_analysis]
+           sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Filtered)']
+           dataframes = [kvct_unfiltered, kvct_filtered]
            for df,sheetname in zip(dataframes,sheetnames):
                df.to_excel(kvct_writer,sheetname, index=False)
                
@@ -512,9 +429,8 @@ class SubFunctions():
            
            # Recon Interlocks
            recon_writer = pd.ExcelWriter(directory + '\ReconInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
-           sheetnames = ['Recon Interlocks (All)' , 'Recon Interlocks (Unexpect)', 'Recon Interlocks (Expect)',
-                         'Recon Analysis (Unexpect)', 'Recon Analysis (Expect)']
-           dataframes = [recon_df, recon_filtered, recon_filtered_out, recon_analysis, recon_unfiltered_analysis]
+           sheetnames = ['Recon Interlocks (All)' , 'Recon Interlocks (Filtered)']
+           dataframes = [recon_unfiltered, recon_filtered]
            for df,sheetname in zip(dataframes,sheetnames):
                df.to_excel(recon_writer,sheetname, index=False)
                
@@ -535,8 +451,7 @@ class SubFunctions():
                                     
 if __name__ == "__main__":
     root = tk.Tk()
-    root.state('zoomed')
     main = MainView(root)
     main.pack(side="top", fill="both", expand=True)
-    root.wm_geometry("1500x800")
+    root.wm_geometry("1300x800")
     root.mainloop()           
