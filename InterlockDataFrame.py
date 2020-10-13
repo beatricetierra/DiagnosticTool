@@ -158,12 +158,18 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     
     node_df.sort_values('Active Time', ascending=True, inplace=True)
     node_df = node_df.reindex(columns= columns)
-
+    
+    # Save active and inactive times as datetime.time formats
     node_df['Active Time'] = [activetime.time() for activetime in node_df['Active Time']]
     for idx, inactivetime in enumerate(node_df['Inactive Time']):
         if isinstance(inactivetime, str):
             pass
         else:
             node_df.loc[idx,'Inactive Time'] = inactivetime.time()
+            
+    # Remove all column values for log start, node start, and node end entries
+    for idx, row in node_df.iterrows():
+        if 'LOG' in row['Interlock Number'] or 'NODE' in row['Interlock Number']:
+            node_df.loc[idx, 4:] = ''
     
     return(node_df)
