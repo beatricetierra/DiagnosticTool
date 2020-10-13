@@ -138,6 +138,8 @@ class Page1(Page):
        
    def findInterlocks(self):
        global files
+       
+       SubFunctions.ClearPages()
        files=[]
        for child in self.tree.get_children():
           files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
@@ -328,6 +330,19 @@ class MainView(tk.Frame):
         p1.show()
 
 class SubFunctions():
+    def ClearPages():
+       [widget.destroy() for widget in Page2.tab1.winfo_children()]
+       [widget.destroy() for widget in Page2.tab2.winfo_children()]
+       [widget.destroy() for widget in Page2.tab3.winfo_children()]
+       [widget.destroy() for widget in Page2.tab4.winfo_children()]
+       [widget.destroy() for widget in Page2.tab5.winfo_children()]
+       
+       [widget.destroy() for widget in Page3.tab1.winfo_children()]
+       [widget.destroy() for widget in Page3.tab2.winfo_children()]
+       [widget.destroy() for widget in Page3.tab3.winfo_children()]
+       [widget.destroy() for widget in Page3.tab4.winfo_children()]
+       [widget.destroy() for widget in Page3.tab5.winfo_children()]
+
     def findEntries(files):
        global kvct_df, kvct_filtered, kvct_filtered_out, kvct_analysis, kvct_unfiltered_analysis
        global recon_df, recon_filtered, recon_filtered_out, recon_analysis, recon_unfiltered_analysis
@@ -525,5 +540,3 @@ if __name__ == "__main__":
     main.pack(side="top", fill="both", expand=True)
     root.wm_geometry("1500x800")
     root.mainloop()           
-           
-
