@@ -8,7 +8,7 @@ import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
-from DiagnosticTool import ThreadedTasks
+from DiagnosticToolFunctions import ThreadedTasks
 
 class Page(tk.Frame):
     def __init__(self, *args, **kwargs):

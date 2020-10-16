@@ -9,9 +9,9 @@ import pandas as pd
 import datetime
 import threading
 import time
-import DiagnosticTool_Filter as dtf
-import DiagnosticTool_Analysis as dta
-import DiagnosticTool_Subfunctions as dts 
+import DiagnosticToolFilter as dtf
+import DiagnosticToolAnalysis as dta
+import DiagnosticToolSubfunctions as dts 
 
 
 class ThreadedTasks(threading.Thread):
