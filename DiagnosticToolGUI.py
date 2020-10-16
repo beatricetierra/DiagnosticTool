@@ -8,7 +8,7 @@ import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
-import DiagnosticTool
+from DiagnosticTool import ThreadedTasks
 
 class Page(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -65,7 +65,7 @@ class Page1(Page):
 
    def addFolder(self):
        folder = filedialog.askdirectory()
-       files = DiagnosticTool.GetFiles(folder)
+       files = ThreadedTasks.GetFiles(folder)
        Page1.addFileDetails(self.tree, files)
       
    def addFile(self):
@@ -96,6 +96,7 @@ class Page1(Page):
        for child in self.tree.get_children():
           files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
        SubFunctions.findEntries(files)
+       MainView.p2.lift()
 
 class Page2(Page):
     def __init__(self, *args, **kwargs):
@@ -266,8 +267,8 @@ class MainView(tk.Frame):
         
         # Navigate between pages
         p1 = Page1(self)
-        p2 = Page2(self)
-        p3 = Page3(self)
+        MainView.p2 = Page2(self)
+        MainView.p3 = Page3(self)
 
         buttonframe = tk.Frame(self)
         container = tk.Frame(self)
@@ -275,18 +276,23 @@ class MainView(tk.Frame):
         container.pack(side="top", fill="both", expand=True)
 
         p1.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
-        p2.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
-        p3.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
+        MainView.p2.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
+        MainView.p3.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
 
         b1 = tk.Button(buttonframe, text="Choose Files", command=p1.lift)
-        b2 = tk.Button(buttonframe, text="Kvct Results", command=p2.lift)
-        b3 = tk.Button(buttonframe, text="Recon Results", command=p3.lift)
+        b2 = tk.Button(buttonframe, text="Kvct Results", command=MainView.p2.lift)
+        b3 = tk.Button(buttonframe, text="Recon Results", command=MainView.p3.lift)
 
         b1.pack(side="left")
         b2.pack(side="left")
         b3.pack(side="left")
 
         p1.show()
+        
+        # Progress Bar
+        MainView.progress = ttk.Progressbar(self, orient='horizontal', mode='determinate')
+        MainView.progress.pack(side='bottom', fill='x')
+        tasks = ThreadedTasks(MainView.progress, root)
 
 class SubFunctions():
     def findEntries(files):
@@ -300,7 +306,7 @@ class SubFunctions():
        
        # Find interlocks from given log files and filter expected events
        try:
-           system, kvct_df, recon_df = DiagnosticTool.GetEntries(files)
+           system, kvct_df, recon_df = ThreadedTasks.GetEntries(files)
            # Get dates
            start_date = kvct_df['Date'][0]
            end_date = kvct_df['Date'][len(kvct_df)-1]
@@ -309,7 +315,7 @@ class SubFunctions():
            messagebox.showerror("Error", "Cannot find entries for listed files.")
            
        try:
-           kvct_filtered, kvct_unfiltered, recon_filtered, recon_unfiltered = DiagnosticTool.FilterEntries(kvct_df, recon_df)
+           kvct_filtered, kvct_unfiltered, recon_filtered, recon_unfiltered = ThreadedTasks.FilterEntries(kvct_df, recon_df)
            
            SubFunctions.df_tree(kvct_unfiltered, Page2.Frame)
            Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
@@ -393,7 +399,7 @@ class SubFunctions():
         tabControl.pack(expand=1, fill='both')
        
         try:
-            kvct_filtered_analysis, kvct_unfiltered_analysis, recon_filtered_analysis, recon_unfiltered_analysis = DiagnosticTool.Analysis(
+            kvct_filtered_analysis, kvct_unfiltered_analysis, recon_filtered_analysis, recon_unfiltered_analysis = ThreadedTasks.Analysis(
                     kvct_unfiltered, kvct_filtered, recon_unfiltered, recon_filtered)
             
             SubFunctions.df_tree(kvct_filtered_analysis, tab1)
