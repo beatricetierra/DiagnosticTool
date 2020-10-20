@@ -4,11 +4,16 @@ Created on Thu Oct  8 12:04:59 2020
 
 @author: btierra
 """
+# import libraryies
 import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
-from DiagnosticToolFunctions import ThreadedTasks
+
+# import script dependencies 
+from GetInterlocks import GetInterlocks as get
+import FilterInterlocks as filt
+import AnalyzeInterlocks as analyze 
 
 class Page(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -65,7 +70,7 @@ class Page1(Page):
 
    def addFolder(self):
        folder = filedialog.askdirectory()
-       files = ThreadedTasks.GetFiles(folder)
+       files = SubFunctions.GetFiles(folder)
        Page1.addFileDetails(self.tree, files)
       
    def addFile(self):
@@ -95,7 +100,7 @@ class Page1(Page):
        files=[]
        for child in self.tree.get_children():
           files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
-       SubFunctions.findEntries(files)
+       SubFunctions.FindEntries(files)
        MainView.p2.lift()
 
 class Page2(Page):
@@ -301,10 +306,22 @@ class MainView(tk.Frame):
         # Progress Bar
         MainView.progress = ttk.Progressbar(self, orient='horizontal', mode='determinate')
         MainView.progress.pack(side='bottom', fill='x')
-        tasks = ThreadedTasks(MainView.progress, root)
+        config_progress = get(MainView.progress, root)
 
 class SubFunctions():
-    def findEntries(files):
+    def GetFiles(folderpath):
+        acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
+        filenames = []  
+    
+        for root, dirs, files in os.walk(folderpath):
+            for file in files:
+                if '.log' in file:
+                    for word in acceptable_files:
+                        if word in file:   
+                            filenames.append(os.path.join(root, file))
+        return(filenames)
+        
+    def FindEntries(files):
        global kvct_df, kvct_filtered, kvct_unfiltered
        global recon_df, recon_filtered, recon_unfiltered
        global system, dates
@@ -315,7 +332,7 @@ class SubFunctions():
        
        # Find interlocks from given log files and filter expected events
        try:
-           system, kvct_df, recon_df = ThreadedTasks.GetEntries(files)
+           system, kvct_df, recon_df = get.GetEntries(files)
            # Get dates
            start_date = kvct_df['Date'][0]
            end_date = kvct_df['Date'][len(kvct_df)-1]
@@ -324,7 +341,8 @@ class SubFunctions():
            messagebox.showerror("Error", "Cannot find entries for listed files.")
            
        try:
-           kvct_filtered, kvct_unfiltered, recon_filtered, recon_unfiltered = ThreadedTasks.FilterEntries(kvct_df, recon_df)
+           kvct_filtered, kvct_unfiltered = filt.filter_kvct(kvct_df)
+           recon_filtered, recon_unfiltered = filt.filter_recon(recon_df)
            
            SubFunctions.df_tree(kvct_unfiltered, Page2.Frame)
            Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
@@ -408,8 +426,8 @@ class SubFunctions():
         tabControl.pack(expand=1, fill='both')
        
         try:
-            kvct_filtered_analysis, kvct_unfiltered_analysis, recon_filtered_analysis, recon_unfiltered_analysis = ThreadedTasks.Analysis(
-                    kvct_unfiltered, kvct_filtered, recon_unfiltered, recon_filtered)
+            kvct_filtered_analysis = analyze.unexpected(kvct_filtered)
+            recon_filtered_analysis = analyze.unexpected(recon_filtered)
             
             SubFunctions.df_tree(kvct_filtered_analysis, tab1)
             SubFunctions.df_tree(recon_filtered_analysis, tab2)
