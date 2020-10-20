@@ -278,10 +278,19 @@ class MainView(tk.Frame):
         p1.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         MainView.p2.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         MainView.p3.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
+        
+        photo1 = tk.PhotoImage(file = r"Page1Button.png") 
+        photo2 = tk.PhotoImage(file = r"Page2Button.png") 
+        photo3 = tk.PhotoImage(file = r"Page3Button.png") 
 
-        b1 = tk.Button(buttonframe, text="Choose Files", command=p1.lift)
-        b2 = tk.Button(buttonframe, text="Kvct Results", command=MainView.p2.lift)
-        b3 = tk.Button(buttonframe, text="Recon Results", command=MainView.p3.lift)
+        MainView.photo1 = photo1.subsample(2)
+        MainView.photo2 = photo2.subsample(2) 
+        MainView.photo3 = photo3.subsample(2) 
+        
+
+        b1 = tk.Button(buttonframe, text="Choose Files", image=MainView.photo1, compound='top', command=p1.lift)
+        b2 = tk.Button(buttonframe, text="Kvct Results",  image=MainView.photo2, compound='top', command=MainView.p2.lift)
+        b3 = tk.Button(buttonframe, text="Recon Results",  image=MainView.photo3, compound='top', command=MainView.p3.lift)
 
         b1.pack(side="left")
         b2.pack(side="left")
