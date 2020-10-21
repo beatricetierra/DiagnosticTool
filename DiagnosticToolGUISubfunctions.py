@@ -86,6 +86,8 @@ def FindEntries(Page2, Page3, MainView, files):
        MainView.p3.lift()
    elif kvct_unfiltered.empty == True and recon_unfiltered.empty == True:
        messagebox.showinfo(title=None, message='No interlocks found')
+       
+   return(kvct_df, kvct_filtered, kvct_unfiltered, recon_df, recon_filtered, recon_unfiltered, system, dates)
 
 def df_tree(df, frame):
    # Scrollbars
@@ -114,7 +116,7 @@ def df_tree(df, frame):
    frame.tree.configure(xscrollcommand=treeScroll_x.set)
    
    # Format columns per tab
-   if df.empty == False:
+   try:
        frame.tree.column("#0", width=50, stretch='no') 
        frame.tree.column("Interlock Number", width=350, stretch='no')
        frame.tree.column("Date", width=80, stretch='no')
@@ -124,7 +126,7 @@ def df_tree(df, frame):
        frame.tree.column("Interlock Duration (min)", width=150, stretch='no')
        for i in range(6,len(columns)):
            frame.tree.column(columns[i], width=200, stretch='no')
-   else: 
+   except:
        pass
 
     
@@ -152,20 +154,26 @@ def SummarizeResults():
     Frame.place(relx=0.5, relwidth=1, relheight=1, anchor='n')
     
     tabControl = ttk.Notebook(Frame)        
-    tab1 = ttk.Frame(tabControl)
-    tabControl.add(tab1, text = 'KVCT Interlocks')
-    tab2 = ttk.Frame(tabControl)
-    tabControl.add(tab2, text = 'Recon Interlocks')
+    SummarizeResults.tab1 = ttk.Frame(tabControl)
+    tabControl.add(SummarizeResults.tab1, text = 'KVCT Interlocks')
+    SummarizeResults.tab2 = ttk.Frame(tabControl)
+    tabControl.add(SummarizeResults.tab2, text = 'Recon Interlocks')
     tabControl.pack(expand=1, fill='both')
-   
+    
     try:
         kvct_filtered_analysis = analyze.unexpected(kvct_filtered)
         recon_filtered_analysis = analyze.unexpected(recon_filtered)
-        
-        df_tree(kvct_filtered_analysis, tab1)
-        df_tree(recon_filtered_analysis, tab2)
     except:
         messagebox.showerror("Error", "Cannot analyze entries for listed files.")
+    
+#    if kvct_filtered_analysis.empty == False:
+    df_tree(kvct_filtered_analysis, SummarizeResults.tab1)
+#    else:
+#        pass
+#    if recon_filtered_analysis.empty == False:
+    df_tree(recon_filtered_analysis, SummarizeResults.tab2)
+#    else:
+#        pass
         
 def exportExcel():  
    directory = filedialog.askdirectory()

@@ -91,10 +91,14 @@ class Page1(Page):
        
    def findInterlocks(self):
        global files
+       global kvct_df, kvct_filtered, kvct_unfiltered
+       global recon_df, recon_filtered, recon_unfiltered
+       global system, dates
        
        files=[]
        for child in self.tree.get_children():
           files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
+       kvct_df, kvct_filtered, kvct_unfiltered, recon_df, recon_filtered, recon_unfiltered, system, dates = \
        Subfunctions.FindEntries(Page2, Page3, MainView, files)
       
 class Page2(Page):
@@ -271,7 +275,7 @@ class MainView(tk.Frame):
         root.config(menu=menubar)
         
         # Navigate between pages
-        p1 = Page1(self)
+        MainView.p1 = Page1(self)
         MainView.p2 = Page2(self)
         MainView.p3 = Page3(self)
 
@@ -280,7 +284,7 @@ class MainView(tk.Frame):
         buttonframe.pack(side="top", anchor='nw')
         container.pack(side="top", fill="both", expand=True)
 
-        p1.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
+        MainView.p1.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         MainView.p2.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         MainView.p3.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         
@@ -293,20 +297,34 @@ class MainView(tk.Frame):
         MainView.photo3 = photo3.subsample(2) 
         
 
-        b1 = tk.Button(buttonframe, text="Choose Files", image=MainView.photo1, compound='top', command=p1.lift)
-        b2 = tk.Button(buttonframe, text="Kvct Results",  image=MainView.photo2, compound='top', command=MainView.p2.lift)
-        b3 = tk.Button(buttonframe, text="Recon Results",  image=MainView.photo3, compound='top', command=MainView.p3.lift)
+        MainView.b1 = tk.Button(buttonframe, text="Choose Files", image=MainView.photo1, compound='top', command=lambda: MainView.SwitchPage(MainView.p1))
+        MainView.b2 = tk.Button(buttonframe, text="Kvct Results",  image=MainView.photo2, compound='top', command=lambda: MainView.SwitchPage(MainView.p2))
+        MainView.b3 = tk.Button(buttonframe, text="Recon Results",  image=MainView.photo3, compound='top', command=lambda: MainView.SwitchPage(MainView.p3))
 
-        b1.pack(side="left")
-        b2.pack(side="left")
-        b3.pack(side="left")
+        MainView.b1.pack(side="left")
+        MainView.b2.pack(side="left")
+        MainView.b3.pack(side="left")
 
-        p1.show()
-        
+        MainView.p1.show()
+
         # Progress Bar
         MainView.progress = ttk.Progressbar(self, orient='horizontal', mode='determinate')
         MainView.progress.pack(side='bottom', fill='x')
         get(MainView.progress, root)
+    def SwitchPage(page):
+        page.lift()
+        if page == MainView.p1:
+            MainView.b1.config(relief='sunken')
+            MainView.b2.config(relief='raised')
+            MainView.b3.config(relief='raised')
+        elif page == MainView.p2:
+            MainView.b1.config(relief='raised')
+            MainView.b2.config(relief='sunken')
+            MainView.b3.config(relief='raised')
+        elif page == MainView.p3:
+            MainView.b1.config(relief='raised')
+            MainView.b2.config(relief='raised')
+            MainView.b3.config(relief='sunken')        
 
 if __name__ == "__main__":
     root = tk.Tk()
