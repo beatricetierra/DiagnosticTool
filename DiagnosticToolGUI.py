@@ -101,8 +101,7 @@ class Page1(Page):
        for child in self.tree.get_children():
           files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
        SubFunctions.FindEntries(files)
-       MainView.p2.lift()
-
+      
 class Page2(Page):
     def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
@@ -143,17 +142,20 @@ class Page2(Page):
             
     def menubar_filter(df, menubar):
         global kvct_interlock_set 
-        items = sorted(list(set(df['Interlock Number'])))
-        
-        menubar.menu = tk.Menu(menubar, tearoff=0)
-        menubar["menu"] = menubar.menu
-        
-        kvct_interlock_set = {}
-        for idx, item in enumerate(items):
-            var = tk.BooleanVar()
-            var.set(True)
-            menubar.menu.add_checkbutton(label=item, variable=var)
-            kvct_interlock_set[str(item)] = var
+        if df.empty == False:
+            items = sorted(list(set(df['Interlock Number'])))
+            
+            menubar.menu = tk.Menu(menubar, tearoff=0)
+            menubar["menu"] = menubar.menu
+            
+            kvct_interlock_set = {}
+            for idx, item in enumerate(items):
+                var = tk.BooleanVar()
+                var.set(True)
+                menubar.menu.add_checkbutton(label=item, variable=var)
+                kvct_interlock_set[str(item)] = var
+        else:
+            pass
        
     def filter_by_interlock():
         interlock_list = []
@@ -219,17 +221,20 @@ class Page3(Page):
             
     def menubar_filter(df, menubar):
         global recon_interlock_set 
-        items = sorted(list(set(df['Interlock Number'])))
-        
-        menubar.menu = tk.Menu(menubar, tearoff=0)
-        menubar["menu"] = menubar.menu
-        
-        recon_interlock_set = {}
-        for idx, item in enumerate(items):
-            var = tk.BooleanVar()
-            var.set(True)
-            menubar.menu.add_checkbutton(label=item, variable=var)
-            recon_interlock_set[str(item)] = var
+        if df.empty == False:
+            items = sorted(list(set(df['Interlock Number'])))
+            
+            menubar.menu = tk.Menu(menubar, tearoff=0)
+            menubar["menu"] = menubar.menu
+            
+            recon_interlock_set = {}
+            for idx, item in enumerate(items):
+                var = tk.BooleanVar()
+                var.set(True)
+                menubar.menu.add_checkbutton(label=item, variable=var)
+                recon_interlock_set[str(item)] = var
+        else:
+            pass
        
     def filter_by_interlock():
         interlock_list = []
@@ -306,7 +311,7 @@ class MainView(tk.Frame):
         # Progress Bar
         MainView.progress = ttk.Progressbar(self, orient='horizontal', mode='determinate')
         MainView.progress.pack(side='bottom', fill='x')
-        config_progress = get(MainView.progress, root)
+        get(MainView.progress, root)
 
 class SubFunctions():
     def GetFiles(folderpath):
@@ -330,30 +335,55 @@ class SubFunctions():
        [widget.destroy() for widget in Page2.Frame.winfo_children()]
        [widget.destroy() for widget in Page3.Frame.winfo_children()]
        
-       # Find interlocks from given log files and filter expected events
+       # Find interlocks and dates from given log files
        try:
            system, kvct_df, recon_df = get.GetEntries(files)
-           # Get dates
-           start_date = kvct_df['Date'][0]
-           end_date = kvct_df['Date'][len(kvct_df)-1]
-           dates = str(start_date)+' - '+str(end_date)
+           # Get dates 
+           if kvct_df.empty == False:
+               start_date = kvct_df['Date'][0]
+               end_date = kvct_df['Date'][len(kvct_df)-1]
+               dates = str(start_date)+' - '+str(end_date)
+           elif kvct_df.empty == True and recon_df.empty == False:
+               start_date = recon_df['Date'][0]
+               end_date = recon_df['Date'][len(recon_df)-1]
+               dates = str(start_date)+' - '+str(end_date)
+           else:
+               dates = 'NA'
        except:
            messagebox.showerror("Error", "Cannot find entries for listed files.")
            
+       # Filter interlocks
        try:
-           kvct_filtered, kvct_unfiltered = filt.filter_kvct(kvct_df)
-           recon_filtered, recon_unfiltered = filt.filter_recon(recon_df)
+           if kvct_df.empty == False:
+               kvct_filtered, kvct_unfiltered = filt.filter_kvct(kvct_df)
+           else:
+               kvct_filtered, kvct_unfiltered = kvct_df, kvct_df
+               messagebox.showinfo(title=None, message='No kVCT interlocks to filter')
+           if recon_df.empty == False:
+               recon_filtered, recon_unfiltered = filt.filter_recon(recon_df)
+           else:
+               recon_filtered, recon_unfiltered = recon_df, recon_df
+               messagebox.showinfo(title=None, message='No recon interlocks to filter')
+       except:
+           messagebox.showerror("Error", "Cannot filter interlocks.")
            
+        # Add dataframes to window
+       if kvct_unfiltered.empty == False and recon_unfiltered.empty == False:
            SubFunctions.df_tree(kvct_unfiltered, Page2.Frame)
            Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
            SubFunctions.df_tree(recon_unfiltered, Page3.Frame)
            Page3.menubar_filter(recon_unfiltered, Page3.menubar)
-       except:
-           messagebox.showerror("Error", "Cannot filter interlocks.")
-           SubFunctions.df_tree(kvct_df, Page2.Frame)
-           Page2.menubar_filter(kvct_df, Page2.menubar)
-           SubFunctions.df_tree(recon_df, Page3.Frame)
-           Page3.menubar_filter(recon_df, Page3.menubar)
+           MainView.p2.lift()
+       elif kvct_unfiltered.empty == False and recon_unfiltered.empty == True:
+           SubFunctions.df_tree(kvct_unfiltered, Page2.Frame)
+           Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
+           MainView.p2.lift()
+       elif kvct_unfiltered.empty == True and recon_unfiltered.empty == False:
+           SubFunctions.df_tree(recon_unfiltered, Page3.Frame)
+           Page3.menubar_filter(recon_unfiltered, Page3.menubar)
+           MainView.p3.lift()
+       elif kvct_unfiltered.empty == True and recon_unfiltered.empty == True:
+           messagebox.showinfo(title=None, message='No interlocks found')
 
     def df_tree(df, frame):
        # Scrollbars
@@ -381,8 +411,8 @@ class SubFunctions():
        treeScroll_x.configure(command=frame.tree.xview)
        frame.tree.configure(xscrollcommand=treeScroll_x.set)
        
-       try:
-           # Format columns per tab
+       # Format columns per tab
+       if df.empty == False:
            frame.tree.column("#0", width=50, stretch='no') 
            frame.tree.column("Interlock Number", width=350, stretch='no')
            frame.tree.column("Date", width=80, stretch='no')
@@ -391,9 +421,10 @@ class SubFunctions():
            frame.tree.column("Time from Node Start (min)", width=170, stretch='no')
            frame.tree.column("Interlock Duration (min)", width=150, stretch='no')
            for i in range(6,len(columns)):
-               frame.tree.column(columns[i], width=200, stretch='no')    
-       except:
+               frame.tree.column(columns[i], width=200, stretch='no')
+       else: 
            pass
+
         
     def sortby(tree, col, descending, int_descending):
         # grab values to sort

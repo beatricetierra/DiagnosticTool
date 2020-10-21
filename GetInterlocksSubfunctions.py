@@ -7,6 +7,97 @@ Created on Mon May 18 19:32:01 2020
 import pandas as pd
 import datetime
 
+# Read -log- log files (compiled log file of all node log files)
+def ReadLogs(file, find_keys):
+    system, endpoints, entries  = ([] for i in range(3))
+    # read whole file as one large string
+    lines = []
+    with open(file) as log:
+        first_line = log.readline()
+        sys = first_line.split(" ")
+        system.append(sys[6])    
+        for line in log:
+            try:
+                node = line.split(' ', 8)[7]
+                if node == 'KV' or node == 'PR' or node == 'SY':
+                    lines.append(line)
+            except:
+                pass
+    # find entries of interest
+    parse_idx = [3,4,7,10] #only keep date, time, node, and desciption
+    for i, line in enumerate(lines):
+        if 'Configuring log file:' in line or 'Operating mode' in line or 'set to load_config' in line or 'Signal 15' in line:
+            entry = line.split(" ", 10)
+            endpoints.append([entry[i] for i in parse_idx]) 
+        if '***' in line:
+            if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
+                entry = line.split(" ", 10)
+                entries.append([entry[i] for i in parse_idx])
+        if 'Received command' in line:
+            if 'set_state' in line:
+                next_entries = lines[i+1:i+10]
+                possible_entries = []
+                for next_entry in next_entries:
+                    if 'Got command set state' in next_entry:
+                        possible_entries.append(next_entry)
+                        entry = possible_entries[0].split(" ", 10)
+                        entries.append([entry[i] for i in parse_idx])
+            else:
+                entry = line.split(" ", 10)
+                entries.append([entry[i] for i in parse_idx])        
+        else:
+            for word in find_keys:
+                if word in line:
+                    entry = line.split(" ", 10)
+                    entries.append([entry[i] for i in parse_idx])
+    return(system, endpoints, entries)
+
+# read node log files (sysnode, kvct, and pet_recon)
+def ReadNodeLogs(file, find_keys):
+    system, endpoints, entries  = ([] for i in range(3))
+    
+    # read whole file as one large string
+    with open(file) as log:
+        first_line = log.readline()
+        sys = first_line.split(" ")
+        system.append(sys[3])    
+        file = log.read().split('\n\n')
+        if len(file) > 1:
+            del file[1:]
+    
+    # break each line into another element of list
+    for f in file:
+        lines = [line for line in f.split('\n')]
+
+    # find entries of interest
+    parse_idx = [0,1,4,7] #only keep date, time, node, and desciption
+    for i, line in enumerate(lines):
+        if i == 0 or 'Operating mode' in line or 'command: set to load_config' in line or 'Signal 15' in line:
+            entry = line.split(" ", 7)
+            endpoints.append([entry[i] for i in parse_idx]) 
+        if '***' in line:
+            if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
+                entry = line.split(" ", 7)
+                entries.append([entry[i] for i in parse_idx])
+        if 'Received command' in line:
+            if 'set_state' in line:
+                next_entries = lines[i+1:i+10]
+                possible_entries = []
+                for next_entry in next_entries:
+                    if 'Got command set state' in next_entry:
+                        possible_entries.append(next_entry)
+                        entry = possible_entries[0].split(" ", 7)
+                        entries.append([entry[i] for i in parse_idx])
+            else:
+                entry = line.split(" ", 7)
+                entries.append([entry[i] for i in parse_idx])        
+        else:
+            for word in find_keys:
+                if word in line:
+                    entry = line.split(" ", 7)
+                    entries.append([entry[i] for i in parse_idx])
+    return(system, endpoints, entries)
+
 #Format Time Differences (values of datetime.timedelta formats)
 def timedelta_format(timedelta):
     sec = timedelta.total_seconds()

@@ -21,95 +21,6 @@ class GetInterlocks(threading.Thread):
         time.sleep(0.1)
         GetInterlocks.root.update_idletasks()
         
-    def ReadLogs(file, find_keys):
-        system, endpoints, entries  = ([] for i in range(3))
-        # read whole file as one large string
-        lines = []
-        with open(file) as log:
-            first_line = log.readline()
-            sys = first_line.split(" ")
-            system.append(sys[6])    
-            for line in log:
-                try:
-                    node = line.split(' ', 8)[7]
-                    if node == 'KV' or node == 'PR' or node == 'SY':
-                        lines.append(line)
-                except:
-                    pass
-        # find entries of interest
-        parse_idx = [3,4,7,10] #only keep date, time, node, and desciption
-        for i, line in enumerate(lines):
-            if 'Configuring log file:' in line or 'Operating mode' in line or 'set to load_config' in line or 'Signal 15' in line:
-                entry = line.split(" ", 10)
-                endpoints.append([entry[i] for i in parse_idx]) 
-            if '***' in line:
-                if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
-                    entry = line.split(" ", 10)
-                    entries.append([entry[i] for i in parse_idx])
-            if 'Received command' in line:
-                if 'set_state' in line:
-                    next_entries = lines[i+1:i+10]
-                    possible_entries = []
-                    for next_entry in next_entries:
-                        if 'Got command set state' in next_entry:
-                            possible_entries.append(next_entry)
-                            entry = possible_entries[0].split(" ", 10)
-                            entries.append([entry[i] for i in parse_idx])
-                else:
-                    entry = line.split(" ", 10)
-                    entries.append([entry[i] for i in parse_idx])        
-            else:
-                for word in find_keys:
-                    if word in line:
-                        entry = line.split(" ", 10)
-                        entries.append([entry[i] for i in parse_idx])
-        return(system, endpoints, entries)
-    
-    def ReadNodeLogs(file, find_keys):
-        system, endpoints, entries  = ([] for i in range(3))
-        
-        # read whole file as one large string
-        with open(file) as log:
-            first_line = log.readline()
-            sys = first_line.split(" ")
-            system.append(sys[3])    
-            file = log.read().split('\n\n')
-            if len(file) > 1:
-                del file[1:]
-        
-        # break each line into another element of list
-        for f in file:
-            lines = [line for line in f.split('\n')]
-    
-        # find entries of interest
-        parse_idx = [0,1,4,7] #only keep date, time, node, and desciption
-        for i, line in enumerate(lines):
-            if i == 0 or 'Operating mode' in line or 'command: set to load_config' in line or 'Signal 15' in line:
-                entry = line.split(" ", 7)
-                endpoints.append([entry[i] for i in parse_idx]) 
-            if '***' in line:
-                if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
-                    entry = line.split(" ", 7)
-                    entries.append([entry[i] for i in parse_idx])
-            if 'Received command' in line:
-                if 'set_state' in line:
-                    next_entries = lines[i+1:i+10]
-                    possible_entries = []
-                    for next_entry in next_entries:
-                        if 'Got command set state' in next_entry:
-                            possible_entries.append(next_entry)
-                            entry = possible_entries[0].split(" ", 7)
-                            entries.append([entry[i] for i in parse_idx])
-                else:
-                    entry = line.split(" ", 7)
-                    entries.append([entry[i] for i in parse_idx])        
-            else:
-                for word in find_keys:
-                    if word in line:
-                        entry = line.split(" ", 7)
-                        entries.append([entry[i] for i in parse_idx])
-        return(system, endpoints, entries)
-        
     def GetEntries(filenames):    
         # Find entries of interest
         acceptable_files = ['kvct','pet','sysnode']
@@ -132,14 +43,14 @@ class GetInterlocks(threading.Thread):
         system, endpoints, entries  = ([] for i in range(3))
         for file in files:
             if '-log-' in file: # read compiled log file from gateway
-                system_tmp, endpoints_tmp, entries_tmp = GetInterlocks.ReadLogs(file, find_keys)
+                system_tmp, endpoints_tmp, entries_tmp = sub.ReadLogs(file, find_keys)
             else:
-                system_tmp, endpoints_tmp, entries_tmp = GetInterlocks.ReadNodeLogs(file, find_keys)
+                system_tmp, endpoints_tmp, entries_tmp = sub.ReadNodeLogs(file, find_keys)
             [system.append(system_tmp[i]) for i in range(0, len(system_tmp))]
             [endpoints.append(endpoints_tmp[i]) for i in range(0, len(endpoints_tmp))]
             [entries.append(entries_tmp[i]) for i in range(0, len(entries_tmp))]
             
-        GetInterlocks.UpdateProgress(2)     #Update Progressbar
+        GetInterlocks.UpdateProgress(4)
             
         # Find system model (check if all log files are from same system)
         if all(i == system[0] for i in system):
@@ -158,7 +69,7 @@ class GetInterlocks(threading.Thread):
         endpoints_df['Date'] = pd.to_datetime(endpoints_df['Date']).dt.date #convert to datetime format
         endpoints_df['Time'] = pd.to_datetime(endpoints_df['Time']).dt.time
     
-        # Change endpoint_df descriptions and combine with entries_df
+        # Change endpoint_df descriptions to combine with entries_df
         for i, row in enumerate(endpoints_df['Description']):
             if 'command' in row:
                 endpoints_df.loc[i,'Description'] = '------ NODE START ------'
@@ -176,23 +87,28 @@ class GetInterlocks(threading.Thread):
         endpoints_df = endpoints_df[~endpoints_df['Description'].str.contains("Operating")]
         
         # Seperate entries by nodes
-        sys_log = entries_df.loc[entries_df['Node'] == 'SY']
-        sys_log.drop(columns='Node', inplace = True)
+        if any(entries_df['Node'] == 'SY') == True:
+            sys_log = entries_df.loc[entries_df['Node'] == 'SY']
+            sys_log.drop(columns='Node', inplace = True)
+        else:
+            sys_log = pd.DataFrame()
+            
+        if any(entries_df['Node'] == 'KV') == True:
+            kvct_log = entries_df.loc[entries_df['Node'] == 'KV']
+            kvct_log.drop(columns='Node', inplace = True)
+            kvct_log.name = 'kvct_log'
         
-        kvct_log = entries_df.loc[entries_df['Node'] == 'KV']
-        kvct_log.drop(columns='Node', inplace = True)
-        kvct_log.name = 'kvct_log'
-    
-        kvct_df = GetInterlocks.NodeInterlocks(kvct_log, sys_log, endpoints_df)
+            kvct_df = GetInterlocks.NodeInterlocks(kvct_log, sys_log, endpoints_df)
+        else:
+            kvct_df = pd.DataFrame()
         
-    
-        try:
+        if any(entries_df['Node'] == 'PR') == True:
             recon_log = entries_df.loc[entries_df['Node'] == 'PR']
             recon_log.drop(columns='Node', inplace = True)
             recon_log.name = 'recon_log'
             
             recon_df = GetInterlocks.NodeInterlocks(recon_log, sys_log, endpoints_df)
-        except:
+        else:
             recon_df = pd.DataFrame()
             
         return(system_model, kvct_df, recon_df)
@@ -257,24 +173,26 @@ class GetInterlocks(threading.Thread):
         sys_state_transition = pd.DataFrame(columns=columns)
         sys_relevant_interlock = pd.DataFrame(columns=columns)
         
-        for idx, entry in enumerate(sys_log['Description']):
-            if "***" in entry:
-                sys_user_action = sys_user_action.append(sys_log.iloc[idx], ignore_index=True)
-            if find_keys[3] in entry or find_keys[2] in entry:
-                sys_received_command = sys_received_command.append(sys_log.iloc[idx], ignore_index=True)
-            if find_keys[6] in entry:
-                sys_state_transition = sys_state_transition.append(sys_log.iloc[idx], ignore_index=True)
-            if find_keys[7] in entry:
-                sys_relevant_interlock = sys_relevant_interlock.append(sys_log.iloc[idx], ignore_index=True)
-                
-        sys_endpoints = endpoints[(endpoints['Node'] == 'SY') & (endpoints['Description'] == '------ NODE START ------')]
-        sys_endpoints.drop(columns='Node', inplace = True)
-        sys_endpoints.reset_index(drop=True, inplace=True)
-    
+        if sys_log.empty == False:
+            for idx, entry in enumerate(sys_log['Description']):
+                if "***" in entry:
+                    sys_user_action = sys_user_action.append(sys_log.iloc[idx], ignore_index=True)
+                if find_keys[3] in entry or find_keys[2] in entry:
+                    sys_received_command = sys_received_command.append(sys_log.iloc[idx], ignore_index=True)
+                if find_keys[6] in entry:
+                    sys_state_transition = sys_state_transition.append(sys_log.iloc[idx], ignore_index=True)
+                if find_keys[7] in entry:
+                    sys_relevant_interlock = sys_relevant_interlock.append(sys_log.iloc[idx], ignore_index=True)
+                    
+            sys_endpoints = endpoints[(endpoints['Node'] == 'SY') & (endpoints['Description'] == '------ NODE START ------')]
+            sys_endpoints.drop(columns='Node', inplace = True)
+            sys_endpoints.reset_index(drop=True, inplace=True)
+        else:
+            sys_endpoints = pd.DataFrame()
+            
         # Construct node_df 
         # Get node interlocks active vs inactive
         node_df = GetInterlocks.find_interlocks(node_interlocks)
-        GetInterlocks.UpdateProgress(15)
         
         # Insert node endpoints (start of log, start of node, end of node)
         node_df = sub.find_endpoints(node_df, node_endpoints)
@@ -288,9 +206,13 @@ class GetInterlocks(threading.Thread):
         GetInterlocks.UpdateProgress(3)
     
         # HV status before active/ inactive interlock
-        kvct_HV_status['Description'] = [descr.split('Set HV ')[-1] for descr in kvct_HV_status['Description']]
-        node_df['HV Status (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], kvct_HV_status)
-        node_df['HV Status (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], kvct_HV_status)
+        if 'kvct_HV_status' in globals():
+            kvct_HV_status['Description'] = [descr.split('Set HV ')[-1] for descr in kvct_HV_status['Description']]
+            node_df['HV Status (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], kvct_HV_status)
+            node_df['HV Status (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], kvct_HV_status)
+        else:
+            node_df['HV Status (before active)'] = ''
+            node_df['HV Status (before inactive)'] = ''
         GetInterlocks.UpdateProgress(3)
         
         # Machine state before active/ inactive interlock
@@ -327,13 +249,19 @@ class GetInterlocks(threading.Thread):
         GetInterlocks.UpdateProgress(3)
         
         # BEL open 
-        BEL_open['Description'] = [datetime.datetime.combine(date, time) for date,time in zip(BEL_open['Date'], BEL_open['Time'])]
-        node_df['BEL Open'] = sub.find_last_entry(node_df, node_df['Active Time'], BEL_open)
+        if 'BEL_open' in globals():
+            BEL_open['Description'] = [datetime.datetime.combine(date, bel_time) for date, bel_time in zip(BEL_open['Date'], BEL_open['Time'])]
+            node_df['BEL Open'] = sub.find_last_entry(node_df, node_df['Active Time'], BEL_open)
+        else:
+            node_df['BEL Open'] = ''
         GetInterlocks.UpdateProgress(3)
         
         # Sysnode start time before active interlock
-        sys_endpoints['Description'] = [datetime.datetime.combine(date, time) for date,time in zip(sys_endpoints['Date'], sys_endpoints['Time'])]
-        node_df['Sysnode Restart'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_endpoints)
+        if sys_endpoints.empty == False:
+            sys_endpoints['Description'] = [datetime.datetime.combine(date, sys_time) for date,sys_time in zip(sys_endpoints['Date'], sys_endpoints['Time'])]
+            node_df['Sysnode Restart'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_endpoints)
+        else:
+            node_df['Sysnode Restart'] = '' 
         GetInterlocks.UpdateProgress(3)
         
         # sysnode state (transition state)
@@ -400,6 +328,7 @@ class GetInterlocks(threading.Thread):
                         interlock_inactive_name.append(interlock)
                         interlock_inactive_time.append(datetime.datetime.combine(node_interlocks['Date'][idx],\
                                                                                  node_interlocks['Time'][idx]))
+        GetInterlocks.UpdateProgress(5)
         
         interlocks_df = pd.DataFrame({'Interlock Number': interlock_active_name, 'Active Time': interlock_active_time})
         inactive_df = pd.DataFrame({'Interlock Number': interlock_inactive_name, 'Inactive Time': interlock_inactive_time})
@@ -418,6 +347,7 @@ class GetInterlocks(threading.Thread):
                 interlocks_df.loc[i,'Inactive Time'] = instances[nearest_time]
             except:
                 interlocks_df.loc[i,'Inactive Time'] = "Still Active"
-            
+                
+        GetInterlocks.UpdateProgress(10)
         interlocks_df.sort_values('Active Time', ascending=True, inplace=True)
         return(interlocks_df)
