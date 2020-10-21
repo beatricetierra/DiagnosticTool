@@ -100,6 +100,7 @@ class GetInterlocks(threading.Thread):
         
             kvct_df = GetInterlocks.NodeInterlocks(kvct_log, sys_log, endpoints_df)
         else:
+            GetInterlocks.UpdateProgress(48)
             kvct_df = pd.DataFrame()
         
         if any(entries_df['Node'] == 'PR') == True:
@@ -110,6 +111,7 @@ class GetInterlocks(threading.Thread):
             recon_df = GetInterlocks.NodeInterlocks(recon_log, sys_log, endpoints_df)
         else:
             recon_df = pd.DataFrame()
+            GetInterlocks.UpdateProgress(48)
             
         return(system_model, kvct_df, recon_df)
         
