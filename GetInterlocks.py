@@ -28,7 +28,6 @@ class GetInterlocks(threading.Thread):
                      'State transition', 'Top relevant interlock', 'BEL is open']
         
         files = []
-    
         # filter out log files
         # accepts all -log- files and only kvct, pet_recon, and sysnode files ending in '000'
         for file in filenames:
@@ -38,7 +37,7 @@ class GetInterlocks(threading.Thread):
                 for word in acceptable_files:
                     if word in file and '000' in file:
                         files.append(file)
-    
+
         # Read log files.
         system, endpoints, entries  = ([] for i in range(3))
         for file in files:
@@ -51,12 +50,19 @@ class GetInterlocks(threading.Thread):
             [entries.append(entries_tmp[i]) for i in range(0, len(entries_tmp))]
             
         GetInterlocks.UpdateProgress(4)
-            
-        # Find system model (check if all log files are from same system)
-        if all(i == system[0] for i in system):
-            system_model = system[0]
+        
+        # Find system model
+        if all(i == system[0] for i in system): # checks all log files are from the same system
+            try:
+                system_model = system[0]    
+            except:
+                system_model = 'Unknown' # if no system are found 
         else:
-            system_model = 'Unknown'
+            system_model = 'Unknown' # if mix of systems found
+        try:    #replace 'alpha' with 'A', may not work for future system names
+           system_model = system_model.replace('alpha', 'A')
+        except:
+            pass
             
         # Create dataframe of all entries and endpoints
         columns = ['Date', 'Time', 'Node', 'Description']
@@ -83,6 +89,8 @@ class GetInterlocks(threading.Thread):
                     mode = 'Service'
                 elif 'maintenance' in operating_mode:
                     mode = 'Maintenance' 
+                else:
+                    mode = 'Unknown'
                 endpoints_df.loc[i,'Description'] = '------ LOG START (' + mode +') ------'
         endpoints_df = endpoints_df[~endpoints_df['Description'].str.contains("Operating")]
         
