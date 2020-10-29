@@ -71,13 +71,14 @@ def filter_kvct(interlocks_df):
                     interlock_type.append('Shutdown Interlock')
         except:
             pass
-
+        
     #filter all interlocks after the last node_end if new session does not start
-    if node_end_idx[-1] > log_start_idx[-1] and node_end_idx[-1] > node_start_idx[-1]:
-        for idx, time in enumerate(df['Datetime']):
-            if time > node_end.iloc[-1]:
-                filter_out_idx.append(idx)
-                interlock_type.append('Shutdown Interlock')
+    if node_end_idx and log_start_idx and node_start_idx:
+        if node_end_idx[-1] > log_start_idx[-1] and node_end_idx[-1] > node_start_idx[-1]:
+            for idx, time in enumerate(df['Datetime']):
+                if time > node_end.iloc[-1]:
+                    filter_out_idx.append(idx)
+                    interlock_type.append('Shutdown Interlock')
   
     # filter expected interlocks based on status of other events    
     for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip\
@@ -125,7 +126,7 @@ def filter_kvct(interlocks_df):
     for idx in expected_interlocks['IDX']:
         expected_interlock_types[idx] = expected_interlocks.loc[expected_interlocks['IDX']==idx, 'Type'].values[0]
     df.insert(5, 'Expected Interlock Type', expected_interlock_types)
-    
+
     # finalize filtered and filtered out dataframes
     # insert start and end times and sort by date and active time
     log_start_entries = interlocks_df.iloc[log_start_idx]
