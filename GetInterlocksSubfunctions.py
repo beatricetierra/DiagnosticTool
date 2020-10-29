@@ -58,9 +58,6 @@ def ReadNodeLogs(file, find_keys):
     
     # read whole file as one large string
     with open(file) as log:
-        first_line = log.readline()
-        sys = first_line.split(" ")
-        system.append(sys[3])    
         file = log.read().split('\n\n')
         if len(file) > 1:
             del file[1:]
@@ -75,6 +72,8 @@ def ReadNodeLogs(file, find_keys):
         if i == 0 or 'Operating mode' in line or 'command: set to load_config' in line or 'Signal 15' in line:
             entry = line.split(" ", 7)
             endpoints.append([entry[i] for i in parse_idx]) 
+        if 'Initialising Guardian' in line:
+            system.append(line.split(" ")[-1])
         if '***' in line:
             if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
                 entry = line.split(" ", 7)
