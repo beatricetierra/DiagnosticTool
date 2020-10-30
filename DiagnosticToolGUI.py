@@ -6,7 +6,7 @@ Created on Thu Oct  8 12:04:59 2020
 """
 import os
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import filedialog, ttk, messagebox
 import DiagnosticToolGUISubfunctions as Subfunctions
 from GetInterlocks import GetInterlocks as get
 
@@ -95,11 +95,20 @@ class Page1(Page):
        global recon_df, recon_filtered, recon_unfiltered
        global system, dates
        
+       # Clear old entries and restart progress bar
+       [widget.destroy() for widget in Page2.Frame.winfo_children()]
+       [widget.destroy() for widget in Page3.Frame.winfo_children()]
+       MainView.progress['value'] = 0
+       
+       # store all files listed in window and find interlocks
        files=[]
-       for child in self.tree.get_children():
-          files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
-       kvct_df, kvct_filtered, kvct_unfiltered, recon_df, recon_filtered, recon_unfiltered, system, dates = \
-       Subfunctions.FindEntries(Page2, Page3, MainView, files)
+       if not self.tree.get_children():
+           messagebox.showerror("Error", "No files found.")
+       else:
+           for child in self.tree.get_children():
+              files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
+           kvct_df, kvct_filtered, kvct_unfiltered, recon_df, recon_filtered, recon_unfiltered, system, dates = \
+           Subfunctions.FindEntries(Page2, Page3, MainView, files)
       
 class Page2(Page):
     def __init__(self, *args, **kwargs):
