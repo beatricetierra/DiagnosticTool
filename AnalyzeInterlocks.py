@@ -22,15 +22,19 @@ def total_seconds(column):
 
 # Analyze unexpected interlocks
 def unexpected(filtered_df):
-    # remove endpoints
-    filtered_df = filtered_df[~filtered_df['Interlock Number'].str.contains("------")]
-    if filtered_df.empty == False:
-        dummies = pd.get_dummies(filtered_df['Date'])
-        filtered_df = pd.concat([filtered_df['Interlock Number'], dummies], axis=1)
-        analysis_df = filtered_df.groupby('Interlock Number').sum()
-        analysis_df.reset_index(inplace=True)
-    else:
+
+    if filtered_df.empty == False:  
+        filtered_df = filtered_df[~filtered_df['Interlock Number'].str.contains("------")]  # remove endpoints
+        if filtered_df.empty == False:  # if filtered_df is not empty and contains unexpected interlocks
+            dummies = pd.get_dummies(filtered_df['Date'])
+            filtered_df = pd.concat([filtered_df['Interlock Number'], dummies], axis=1)
+            analysis_df = filtered_df.groupby('Interlock Number').sum()
+            analysis_df.reset_index(inplace=True)
+        else: # if filtered_df has no unexpected interlocks
+            analysis_df = pd.DataFrame()
+    elif filtered_df.empty == True: #if filtered_df is empty (no interlocks found at all)
         analysis_df = pd.DataFrame()
+        
     return(analysis_df)
     
 # Analyzes expected interlocks (startup/shutdown interlocks, ViewAvgTooHigh, TriggerInvalid)
