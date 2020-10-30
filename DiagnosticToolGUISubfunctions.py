@@ -27,15 +27,10 @@ def GetFiles(folderpath):
                         filenames.append(os.path.join(root, file))
     return(filenames)
     
-def FindEntries(Page2, Page3, MainView, files):
+def FindEntries(Page2, Page3, MainView, files):        
    global kvct_df, kvct_filtered, kvct_unfiltered
    global recon_df, recon_filtered, recon_unfiltered
    global system, dates
-   
-   # Clear old entries and restart progress bar
-   [widget.destroy() for widget in Page2.Frame.winfo_children()]
-   [widget.destroy() for widget in Page3.Frame.winfo_children()]
-   MainView.progress['value'] = 0
    
    # Find interlocks and dates from given log files
    try:
@@ -75,15 +70,15 @@ def FindEntries(Page2, Page3, MainView, files):
        Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
        df_tree(recon_unfiltered, Page3.Frame)
        Page3.menubar_filter(recon_unfiltered, Page3.menubar)
-       MainView.p2.lift()
+       MainView.SwitchPage(MainView.p2)
    elif kvct_unfiltered.empty == False and recon_unfiltered.empty == True:
        df_tree(kvct_unfiltered, Page2.Frame)
        Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
-       MainView.p2.lift()
+       MainView.SwitchPage(MainView.p2)
    elif kvct_unfiltered.empty == True and recon_unfiltered.empty == False:
        df_tree(recon_unfiltered, Page3.Frame)
        Page3.menubar_filter(recon_unfiltered, Page3.menubar)
-       MainView.p3.lift()
+       MainView.SwitchPage(MainView.p3)
    elif kvct_unfiltered.empty == True and recon_unfiltered.empty == True:
        messagebox.showinfo(title=None, message='No interlocks found')
        
@@ -127,7 +122,10 @@ def df_tree(df, frame):
        for i in range(6,len(columns)):
            frame.tree.column(columns[i], width=200, stretch='no')
    except:
-       pass
+       frame.tree.column("#0", width=50, stretch='no')
+       frame.tree.column(columns[0], width=300, stretch='no')                 
+       for i in range(1,len(columns)):
+           frame.tree.column(columns[i], width=80, stretch='no')
 
     
 def sortby(tree, col, descending, int_descending):
@@ -160,20 +158,21 @@ def SummarizeResults():
     tabControl.add(SummarizeResults.tab2, text = 'Recon Interlocks')
     tabControl.pack(expand=1, fill='both')
     
-    try:
+    try: # if filtered dataframes are empty, analyze function return empty dataframes
         kvct_filtered_analysis = analyze.unexpected(kvct_filtered)
         recon_filtered_analysis = analyze.unexpected(recon_filtered)
     except:
         messagebox.showerror("Error", "Cannot analyze entries for listed files.")
     
-#    if kvct_filtered_analysis.empty == False:
-    df_tree(kvct_filtered_analysis, SummarizeResults.tab1)
-#    else:
-#        pass
-#    if recon_filtered_analysis.empty == False:
-    df_tree(recon_filtered_analysis, SummarizeResults.tab2)
-#    else:
-#        pass
+    # display dataframes in pop-up window
+    if kvct_filtered_analysis.empty == False:
+        df_tree(kvct_filtered_analysis, SummarizeResults.tab1)
+    else:
+        pass
+    if recon_filtered_analysis.empty == False:
+        df_tree(recon_filtered_analysis, SummarizeResults.tab2)
+    else:
+        pass
         
 def exportExcel():  
    directory = filedialog.askdirectory()
@@ -218,7 +217,7 @@ def exportExcel():
                worksheet.set_column(idx, idx, max_len)  # set column width
                align.set_align('center')
        recon_writer.save()
-
+    
        tk.messagebox.showinfo(title='Info', message='Excel files exported')
    except:
         tk.messagebox.showerror(title='Error', message='Cannot export files')
