@@ -7,6 +7,7 @@ Created on Thu Oct  8 12:04:59 2020
 import os
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
+import tkinter.font as font
 import DiagnosticToolGUISubfunctions as Subfunctions
 from GetInterlocks import GetInterlocks as get
 
@@ -297,18 +298,11 @@ class MainView(tk.Frame):
         MainView.p2.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         MainView.p3.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         
-        photo1 = tk.PhotoImage(file = r"Page1Button.png") 
-        photo2 = tk.PhotoImage(file = r"Page2Button.png") 
-        photo3 = tk.PhotoImage(file = r"Page3Button.png") 
-
-        MainView.photo1 = photo1.subsample(2)
-        MainView.photo2 = photo2.subsample(2) 
-        MainView.photo3 = photo3.subsample(2) 
-        
-
-        MainView.b1 = tk.Button(buttonframe, text="Choose Files", image=MainView.photo1, compound='top', command=lambda: MainView.SwitchPage(MainView.p1))
-        MainView.b2 = tk.Button(buttonframe, text="Kvct Results",  image=MainView.photo2, compound='top', command=lambda: MainView.SwitchPage(MainView.p2))
-        MainView.b3 = tk.Button(buttonframe, text="Recon Results",  image=MainView.photo3, compound='top', command=lambda: MainView.SwitchPage(MainView.p3))
+        Font = font.Font(family='Helvetica', weight='bold', size=12)
+    
+        MainView.b1 = tk.Button(buttonframe, text="Choose Files", font=Font, command=lambda: MainView.SwitchPage(MainView.p1))
+        MainView.b2 = tk.Button(buttonframe, text="Kvct Results", font=Font, command=lambda: MainView.SwitchPage(MainView.p2))
+        MainView.b3 = tk.Button(buttonframe, text="Recon Results", font=Font, command=lambda: MainView.SwitchPage(MainView.p3))
 
         MainView.b1.pack(side="left")
         MainView.b2.pack(side="left")

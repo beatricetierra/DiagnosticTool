@@ -62,6 +62,7 @@ def FindEntries(Page2, Page3, MainView, files):
            recon_filtered, recon_unfiltered = recon_df, recon_df
            messagebox.showinfo(title=None, message='No recon interlocks to filter')
    except:
+       kvct_filtered, kvct_unfiltered = pd.DataFrame(), pd.DataFrame()
        messagebox.showerror("Error", "Cannot filter interlocks.")
        
     # Add dataframes to window
@@ -80,6 +81,11 @@ def FindEntries(Page2, Page3, MainView, files):
        Page3.menubar_filter(recon_unfiltered, Page3.menubar)
        MainView.SwitchPage(MainView.p3)
    elif kvct_unfiltered.empty == True and recon_unfiltered.empty == True:
+       df_tree(kvct_df, Page2.Frame)
+       Page2.menubar_filter(kvct_df, Page2.menubar)
+       df_tree(recon_df, Page3.Frame)
+       Page3.menubar_filter(recon_df, Page3.menubar)
+       MainView.SwitchPage(MainView.p2)
        messagebox.showinfo(title=None, message='No interlocks found')
        
    return(kvct_df, kvct_filtered, kvct_unfiltered, recon_df, recon_filtered, recon_unfiltered, system, dates)
