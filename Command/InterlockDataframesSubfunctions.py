@@ -61,23 +61,28 @@ def ReadNodeLogs(file, find_keys):
         file = log.read().split('\n\n')
         if len(file) > 1:
             del file[1:]
-    
+
     # break each line into another element of list
     for f in file:
         lines = [line for line in f.split('\n')]
+    
+    #find software version
+    for line in lines:
+        if '* current branch: ' in line:
+            swver = line.split('* current branch: ')[-1]
 
     # find entries of interest
     parse_idx = [0,1,4,7] #only keep date, time, node, and desciption
     for i, line in enumerate(lines):
         if i == 0 or 'Operating mode' in line or 'command: set to load_config' in line or 'Signal 15' in line:
             entry = line.split(" ", 7)
-            endpoints.append([entry[i] for i in parse_idx]) 
+            endpoints.append([swver] + [entry[i] for i in parse_idx]) 
         if 'Initialising Guardian' in line:
             system.append(line.split(" ")[-1])
         if '***' in line:
             if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
                 entry = line.split(" ", 7)
-                entries.append([entry[i] for i in parse_idx])
+                entries.append([swver] + [entry[i] for i in parse_idx])
         if 'Received command' in line:
             if 'set_state' in line:
                 next_entries = lines[i+1:i+10]
@@ -86,15 +91,15 @@ def ReadNodeLogs(file, find_keys):
                     if 'Got command set state' in next_entry:
                         possible_entries.append(next_entry)
                         entry = possible_entries[0].split(" ", 7)
-                        entries.append([entry[i] for i in parse_idx])
+                        entries.append([swver] + [entry[i] for i in parse_idx])
             else:
                 entry = line.split(" ", 7)
-                entries.append([entry[i] for i in parse_idx])        
+                entries.append([swver] + [entry[i] for i in parse_idx])        
         else:
             for word in find_keys:
                 if word in line:
                     entry = line.split(" ", 7)
-                    entries.append([entry[i] for i in parse_idx])
+                    entries.append([swver] + [entry[i] for i in parse_idx])
     return(system, endpoints, entries)
 
 #Format Time Differences (values of datetime.timedelta formats)
@@ -113,13 +118,12 @@ def nearest(items, pivot_time):
     
 def find_endpoints(interlocks_df, node_endpoints):
     endpoints_time = [datetime.datetime.combine(date, time) for date,time in zip(node_endpoints['Date'], node_endpoints['Time'])]
-    endpoints_df = pd.DataFrame({'Interlock Number': node_endpoints['Description'], 'Active Time': endpoints_time, 
-                                 'Inactive Time': ''})
+    endpoints_df = pd.DataFrame({'SW Version': node_endpoints['SW Version'], 'Interlock Number': node_endpoints['Description'], 
+                                 'Active Time': endpoints_time, 'Inactive Time': ''})
     
     result = pd.concat([interlocks_df, endpoints_df], sort=False)
     result.reset_index(drop=True, inplace=True)
     
-    result.reset_index(drop=True, inplace=True)
     result.sort_values(by=['Active Time'], inplace=True)
     result.reset_index(drop=True, inplace=True)
     return(result)

@@ -38,7 +38,7 @@ def GetEntries(filenames):
         pass
         
     # Create dataframe of all entries and endpoints
-    columns = ['Date', 'Time', 'Node', 'Description']
+    columns = ['SW Version', 'Date', 'Time', 'Node', 'Description']
     
     entries_df = pd.DataFrame(entries, columns=columns)
     entries_df['Date'] = pd.to_datetime(entries_df['Date']).dt.date #convert to datetime format
@@ -97,7 +97,7 @@ def GetEntries(filenames):
 def NodeInterlocks(node_log, sys_log, endpoints):
 
      # Find node interlocks
-    columns = ['Date', 'Time', 'Description']
+    columns = ['SW Version', 'Date', 'Time', 'Description']
     node_interlocks = pd.DataFrame(columns=columns)
     
     for idx, entry in enumerate(node_log['Description']):
@@ -177,7 +177,7 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     
     # Insert node endpoints (start of log, start of node, end of node)
     node_df = sub.find_endpoints(node_df, node_endpoints)
-
+    
     # Time since start/restart of node
     node_df = sub.node_start_delta(node_df)
      
@@ -248,7 +248,7 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     # Clean up final kvct_df
     node_df['Date'] = [activetime.date() for activetime in node_df['Active Time']]
     
-    columns = ['Date', 'Active Time', 'Inactive Time', 'Interlock Number', 'Time from Node Start (min)', 'Interlock Duration (min)', 'HV Status (before active)', 
+    columns = ['Date', 'Active Time', 'Inactive Time', 'SW Version', 'Interlock Number', 'Time from Node Start (min)', 'Interlock Duration (min)', 'HV Status (before active)', 
             'HV Status (before inactive)', 'BEL Open', 'Machine State (before active)', 'Machine State (before inactive)', 'Node State (before active)',
             'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 
             'Last user command received (before active)', 'Last user command received (before inactive)', 'Last user input', 'Sysnode State', 'Sysnode Restart', 
@@ -268,12 +268,13 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     # Remove all column values for log start, node start, and node end entries
     for idx, row in node_df.iterrows():
         if 'LOG' in row['Interlock Number'] or 'NODE' in row['Interlock Number']:
-            node_df.loc[idx, 4:] = ''
+            node_df.loc[idx, 5:] = ''
     
     return(node_df)
     
 def find_interlocks(node_interlocks):
     interlocks_set = []
+    swver = []
     interlock_active_name = [] 
     interlock_active_time = [] 
     interlock_inactive_name =[]
@@ -291,6 +292,7 @@ def find_interlocks(node_interlocks):
         for interlock in interlocks_set:
             if interlock in interlock_desc:
                 if 'is active' in interlock_desc:
+                    swver.append(node_interlocks['SW Version'][idx])
                     interlock_active_name.append(interlock)
                     interlock_active_time.append(datetime.datetime.combine(node_interlocks['Date'][idx],\
                                                                            node_interlocks['Time'][idx]))
@@ -299,7 +301,7 @@ def find_interlocks(node_interlocks):
                     interlock_inactive_time.append(datetime.datetime.combine(node_interlocks['Date'][idx],\
                                                                              node_interlocks['Time'][idx]))
     
-    interlocks_df = pd.DataFrame({'Interlock Number': interlock_active_name, 'Active Time': interlock_active_time})
+    interlocks_df = pd.DataFrame({'SW Version': swver, 'Interlock Number': interlock_active_name, 'Active Time': interlock_active_time})
     inactive_df = pd.DataFrame({'Interlock Number': interlock_inactive_name, 'Inactive Time': interlock_inactive_time})
     
     #find closest inactive time to each active time
