@@ -12,8 +12,7 @@ import InterlockDataframes as idf
 import FilterInterlocks as filt
 
 def exportExcel(directory, system, start_date, end_date):  
-#   try:
-       # Dates to save file under new name each time
+    # Dates to save file under new name each time
    filedate = ('-').join([start_date, end_date]).replace(' ','')
    
    # KVCT Interlocks
@@ -51,8 +50,6 @@ def exportExcel(directory, system, start_date, end_date):
            worksheet.set_column(idx, idx, max_len)  # set column width
            align.set_align('center')
    recon_writer.save()
-#   except:
-#       pass
 
 # Get files from created directory
 folder = sys.argv[1] # second argument of command line        
