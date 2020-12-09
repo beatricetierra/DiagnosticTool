@@ -63,6 +63,7 @@ def FindEntries(Page2, Page3, MainView, files):
            messagebox.showinfo(title=None, message='No recon interlocks to filter')
    except:
        kvct_filtered, kvct_unfiltered = pd.DataFrame(), pd.DataFrame()
+       recon_filtered, recon_unfiltered = pd.DataFrame(), pd.DataFrame()
        messagebox.showerror("Error", "Cannot filter interlocks.")
        
     # Add dataframes to window
@@ -119,6 +120,8 @@ def df_tree(df, frame):
    # Format columns per tab
    try:
        frame.tree.column("#0", width=50, stretch='no') 
+       frame.tree.column("SW Version", width=130, stretch='no')
+       frame.tree.column("Mode", width=80, stretch='no')  
        frame.tree.column("Interlock Number", width=350, stretch='no')
        frame.tree.column("Date", width=80, stretch='no')
        frame.tree.column("Active Time", width=90, stretch='no')

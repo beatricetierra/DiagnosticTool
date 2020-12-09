@@ -127,7 +127,7 @@ def filter_kvct(interlocks_df):
     expected_interlock_types = ['']*len(df)
     for idx in expected_interlocks['IDX']:
         expected_interlock_types[idx] = expected_interlocks.loc[expected_interlocks['IDX']==idx, 'Type'].values[0]
-    df.insert(5, 'Expected Interlock Type', expected_interlock_types)
+    df.insert(7, 'Expected Interlock Type', expected_interlock_types)
 
     # finalize filtered and filtered out dataframes
     # insert start and end times and sort by date and active time
@@ -153,7 +153,7 @@ def filter_kvct(interlocks_df):
     # remove column values if entry is log start, node start, or node end
     for idx, row in unfiltered.iterrows():
         if 'LOG' in row['Interlock Number'] or 'NODE' in row['Interlock Number']:
-            unfiltered.loc[idx, 5:] = ''
+            unfiltered.loc[idx, 7:] = ''
             
     unfiltered.drop('Datetime', axis=1, inplace=True)
     filtered.drop('Datetime', axis=1, inplace=True)
@@ -223,7 +223,7 @@ def filter_recon(interlocks_df):
     expected_interlock_types = ['']*len(df)
     for idx in expected_interlocks['IDX']:
         expected_interlock_types[idx] = expected_interlocks.loc[expected_interlocks['IDX']==idx, 'Type'].values[0]
-    df.insert(5, 'Expected Interlock Type', expected_interlock_types)
+    df.insert(7, 'Expected Interlock Type', expected_interlock_types)
     
     # finalize filtered and filtered out dataframes
     # insert start and end times and sort by date and active time
@@ -249,7 +249,7 @@ def filter_recon(interlocks_df):
     # remove column values if entry is log start, node start, or node end
     for idx, row in unfiltered.iterrows():
         if 'LOG' in row['Interlock Number'] or 'NODE' in row['Interlock Number']:
-            unfiltered.loc[idx, 5:] = ''
+            unfiltered.loc[idx, 7:] = ''
             
     unfiltered.drop('Datetime', axis=1, inplace=True)
     filtered.drop('Datetime', axis=1, inplace=True)

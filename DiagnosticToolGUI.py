@@ -109,7 +109,7 @@ class Page1(Page):
            for child in self.tree.get_children():
               files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
            kvct_df, kvct_filtered, kvct_unfiltered, recon_df, recon_filtered, recon_unfiltered, system, dates = \
-           Subfunctions.FindEntries(Page2, Page3, MainView, files)
+             Subfunctions.FindEntries(Page2, Page3, MainView, files)
       
 class Page2(Page):
     def __init__(self, *args, **kwargs):
