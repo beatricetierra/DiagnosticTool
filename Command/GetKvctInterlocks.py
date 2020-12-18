@@ -78,6 +78,7 @@ try:
        recon_filtered, recon_unfiltered = recon_df, recon_df
 except:
    kvct_filtered, kvct_unfiltered = pd.DataFrame(), pd.DataFrame()
+   recon_filtered, recon_unfiltered = pd.DataFrame(), pd.DataFrame()
 
 # Get dates
    if kvct_unfiltered.empty == False:

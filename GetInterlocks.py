@@ -5,6 +5,7 @@ Created on Tue Oct 20 13:42:34 2020
 @author: btierra
 """
 import pandas as pd
+pd.options.mode.chained_assignment = None  # default='warn'
 import datetime
 import threading
 import time
@@ -266,9 +267,9 @@ class GetInterlocks(threading.Thread):
         GetInterlocks.UpdateProgress(3)
         
         # Sysnode start time before active interlock
-        if sys_endpoints.empty == False:
-            sys_endpoints['Description'] = [datetime.datetime.combine(date, sys_time) for date,sys_time in zip(sys_endpoints['Date'], sys_endpoints['Time'])]
-            node_df['Sysnode Restart'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_endpoints)
+        if sys_endpoints.empty == False: 
+             sys_endpoints['Description'] = [datetime.datetime.combine(date, sys_time) for date,sys_time in zip(sys_endpoints['Date'], sys_endpoints['Time'])]
+             node_df['Sysnode Restart'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_endpoints)
         else:
             node_df['Sysnode Restart'] = '' 
         GetInterlocks.UpdateProgress(3)

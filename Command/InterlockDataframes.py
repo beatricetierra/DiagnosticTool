@@ -5,6 +5,7 @@ Created on Tue Oct 20 13:42:34 2020
 @author: btierra
 """
 import pandas as pd
+pd.options.mode.chained_assignment = None  # default='warn'
 import datetime
 import InterlockDataframesSubfunctions as sub
 

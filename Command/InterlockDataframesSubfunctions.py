@@ -67,6 +67,7 @@ def ReadNodeLogs(file, find_keys):
         lines = [line for line in f.split('\n')]
     
     #find software version
+    swver, mode = '', ''
     for line in lines:
         if '* current branch: ' in line:
             swver = line.split('* current branch: ')[-1]
