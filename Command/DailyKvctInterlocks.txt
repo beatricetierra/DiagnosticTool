@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Make directory
+if [[ ! -d "/home/rxm/kvctinterlocks" ]]
+then
+  	mkdir /home/rxm/kvctinterlocks
+fi
+
+# Get day as number of the week
+week=$(date +%U)
+num=$(date -d "$thedate" +%u)
+
+if (ls /home/rxm/kvctinterlocks/*$week.xlsx &> /dev/null) && ([[ "$num" != 1 ]])
+then 
+	echo "File exists and it is not Monday"
+else 
+	echo "File either does not exist or it is Monday"
+	python ./kvct/CombineExcel.py 'create' /home/rxm/kvctinterlocks/ $week
+fi
+
+# Get today's log files
+date=$(date '+%Y-%m-%d')
+mkdir /home/rxm/kvctinterlocks/$date
+cp -r /home/rxm/log/archive/$date/*-pet_recon-* /home/rxm/kvctinterlocks/$date 
+scp -r 192.168.10.106:/home/rxm/log/archive/$date/*-kvct-* /home/rxm/kvctinterlocks/$date
+scp -r 192.168.10.110:/home/rxm/log/archive/$date/*-sysnode-* /home/rxm/kvctinterlocks/$date
+
+# Find interlocks for today's date and store in subfolder 'kvctinterlocks/date'
+echo "Finding Interlocks"
+mkdir /home/rxm/kvctinterlocks/$date
+python ./kvct/GetKvctInterlocks.py /home/rxm/kvctinterlocks/$date $date $date
+
+# Append new interlocks xlsx report to combined xlsx report
+python ./kvct/CombineExcel.py 'combine' /home/rxm/kvctinterlocks/Kvct*.xlsx /home/rxm/kvctinterlocks/$date/Kvct*.xlsx 
+python ./kvct/CombineExcel.py 'combine' /home/rxm/kvctinterlocks/Recon*.xlsx /home/rxm/kvctinterlocks/$date/Recon*.xlsx 
