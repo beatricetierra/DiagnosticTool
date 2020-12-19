@@ -50,6 +50,12 @@ def combinexlsx(combined_xlsx, append_xlsx):
     except:
         pass
     
+    # Drop duplicate rows (if function runs on same files)
+    All.drop_duplicates(keep='first', inplace=True)
+    Filt.drop_duplicates(keep='first', inplace=True)
+    All.reset_index(inplace=True, drop=True)
+    Filt.reset_index(inplace=True, drop=True)
+    
     # Export and replace old kvct interlocks xlsx files
     writer = pd.ExcelWriter(combined_xlsx)
     All.to_excel(writer, sheet_name=combined_sheets[0], index=False)
