@@ -8,7 +8,8 @@ import sys
 import pandas as pd
 import openpyxl
 
-def newxlsx(folderpath, week, *args):
+def NewReports(folderpath, week, *args):
+    # Create empty excel files
     kvct_filepath = folderpath + 'KvctInterlocksWeek' + week + '.xlsx'
     kvct_wb = openpyxl.Workbook()
     kvct_wb.create_sheet(title='KVCT Interlocks (All)', index=0)
@@ -20,9 +21,13 @@ def newxlsx(folderpath, week, *args):
     recon_wb.create_sheet(title='Recon Interlocks (All)', index=0)
     recon_wb.create_sheet(title='Recon Interlocks (Filtered)', index=1)
     recon_wb.save(recon_filepath)
-    return()
+    
+    # Create empty csv file
+    df = pd.DataFrame(columns=['Count', 'Interlock Number'])
+    df.to_csv(folderpath+'AnalysisReportWeek' + week + '.csv', encoding='utf-8', index=False, sep='\t')
+    return
 
-def combinexlsx(combined_xlsx, append_xlsx):    
+def CombineExcel(combined_xlsx, append_xlsx, *args):    
     # Read Excel File
     combined = pd.ExcelFile(combined_xlsx)
     append = pd.ExcelFile(append_xlsx)
@@ -61,14 +66,42 @@ def combinexlsx(combined_xlsx, append_xlsx):
     All.to_excel(writer, sheet_name=combined_sheets[0], index=False)
     Filt.to_excel(writer, sheet_name=combined_sheets[1], index=False)
     writer.save()
-    return()
+    return
+
+def CombineCSV(combined_csv, kvctpath, reconpath, *args):
+    # Read filtered sheets from excel files as dataframes
+    kvct = pd.ExcelFile(kvctpath)
+    kvct_sheets = kvct.sheet_names
+    kvct_df = pd.read_excel(kvct, kvct_sheets[1])
+    
+    recon = pd.ExcelFile(reconpath)
+    recon_sheets = recon.sheet_names
+    recon_df = pd.read_excel(recon, recon_sheets[1])
+    
+    # Analyze 
+    dataframes = {'kvct': kvct_df, 'recon': recon_df}
+    
+    for key, dataframe in dataframes.items():
+        analysis = dataframe.groupby('Interlock Number').count()
+        analysis.reset_index(inplace=True)
+        analysis = analysis[~analysis['Interlock Number'].str.contains('------')]
+        analysis = analysis.iloc[:,:2]
+        analysis.columns = ['Interlock Number', 'Count']
+        analysis = analysis[analysis.columns[::-1]]
+        dataframes[key] = analysis
+    
+    # Combine and export
+    analysis = dataframes['kvct'].append(dataframes['recon'])
+    analysis.to_csv(combined_csv, encoding='utf-8', index=False, sep='\t')
+    return
 
 if sys.argv[1] == 'create':
-    newxlsx(sys.argv[2], sys.argv[3])
-elif sys.argv[1] == 'combine':
-    combinexlsx(sys.argv[2], sys.argv[3])
-    combinexlsx(sys.argv[2], sys.argv[3])
+    NewReports(sys.argv[2], sys.argv[3])
+elif sys.argv[1] == 'combinexlsx':
+    CombineExcel(sys.argv[2], sys.argv[3])
+elif sys.argv[1] == 'combinecsv':
+    CombineCSV(sys.argv[2], sys.argv[3], sys.argv[4])
+
     
-    
-    
+
     

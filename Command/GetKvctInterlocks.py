@@ -11,12 +11,12 @@ import pandas as pd
 import InterlockDataframes as idf
 import FilterInterlocks as filt
 
-def exportExcel(directory, system, start_date, end_date):  
+def ExportExcel(system, start_date, end_date):  
     # Dates to save file under new name each time
-   filedate = ('-').join([start_date, end_date]).replace(' ','')
+   filedate = ('-').join([start_date.replace('-',''), end_date.replace('-','')]).replace(' ','')
    
    # KVCT Interlocks
-   kvct_writer = pd.ExcelWriter(directory + '/KvctInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
+   kvct_writer = pd.ExcelWriter(folder + '/KvctInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
    sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Filtered)']
    dataframes = [kvct_unfiltered, kvct_filtered]
    for df,sheetname in zip(dataframes,sheetnames):
@@ -34,7 +34,7 @@ def exportExcel(directory, system, start_date, end_date):
    kvct_writer.save()
    
    # Recon Interlocks
-   recon_writer = pd.ExcelWriter(directory + '/ReconInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
+   recon_writer = pd.ExcelWriter(folder + '/ReconInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
    sheetnames = ['Recon Interlocks (All)' , 'Recon Interlocks (Filtered)']
    dataframes = [recon_unfiltered, recon_filtered]
    for df,sheetname in zip(dataframes,sheetnames):
@@ -51,9 +51,26 @@ def exportExcel(directory, system, start_date, end_date):
            align.set_align('center')
    recon_writer.save()
 
+def AnalysisReport(kvct_filtered, recon_filtered, start_date, end_date):
+    # Count unexpected interlocks from kvct and recon 
+    dataframes = {'kvct': kvct_filtered, 'recon': recon_filtered}
+    
+    for key, dataframe in dataframes.items():
+        analysis = dataframe.groupby('Interlock Number').count()
+        analysis.reset_index(inplace=True)
+        analysis = analysis[~analysis['Interlock Number'].str.contains('------')]
+        analysis = analysis.iloc[:,:2]
+        analysis.columns = ['Interlock Number', 'Count']
+        analysis = analysis[analysis.columns[::-1]]
+        dataframes[key] = analysis
+    
+    # Combine and export
+    analysis = dataframes['kvct'].append(dataframes['recon'])
+    filedate = ('-').join([start_date.replace('-',''), end_date.replace('-','')]).replace(' ','')
+    analysis.to_csv(folder+ '/AnalysisReport_' + filedate + '.csv', encoding='utf-8', index=False, sep='\t')
+
 # Get files from created directory
 folder = sys.argv[1] # second argument of command line        
-
 acceptable_files = ['-kvct-','-pet_recon-','-sysnode-']
 filenames = []  
 
@@ -63,7 +80,7 @@ for root, dirs, files in os.walk(folder):
             for word in acceptable_files:
                 if word in file and '000' in file:   
                     filenames.append(os.path.join(root, file))
-
+# Get Interlocks
 system_model, kvct_df, recon_df = idf.GetEntries(filenames)
 
 # Filter interlocks
@@ -79,17 +96,8 @@ try:
 except:
    kvct_filtered, kvct_unfiltered = pd.DataFrame(), pd.DataFrame()
    recon_filtered, recon_unfiltered = pd.DataFrame(), pd.DataFrame()
-
-# Get dates
-   if kvct_unfiltered.empty == False:
-       start_date = str(kvct_unfiltered.loc[0,'Date'])
-       end_date = str(kvct_unfiltered.loc[len(kvct_unfiltered)-1,'Date'])
-   elif recon_unfiltered.empty == False:
-       start_date = str(recon_unfiltered.loc[0,'Date'])
-       end_date = str(recon_unfiltered.loc[len(recon_unfiltered)-1,'Date'])
-   else:
-       start_date = ''
-       end_date = ''
-
-# Export 
-exportExcel(folder, system_model, start_date=sys.argv[2], end_date=sys.argv[3])
+   
+# Analyze filtered interlocks
+AnalysisReport(kvct_filtered, recon_filtered, start_date=sys.argv[2], end_date=sys.argv[3])
+# Export excel files
+ExportExcel(system_model, start_date=sys.argv[2], end_date=sys.argv[3])

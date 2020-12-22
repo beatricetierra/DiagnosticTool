@@ -31,5 +31,6 @@ mkdir /home/rxm/kvctinterlocks/$date
 python ./kvct/GetKvctInterlocks.py /home/rxm/kvctinterlocks/$date $date $date
 
 # Append new interlocks xlsx report to combined xlsx report
-python ./kvct/CombineExcel.py 'combine' /home/rxm/kvctinterlocks/Kvct*.xlsx /home/rxm/kvctinterlocks/$date/Kvct*.xlsx 
-python ./kvct/CombineExcel.py 'combine' /home/rxm/kvctinterlocks/Recon*.xlsx /home/rxm/kvctinterlocks/$date/Recon*.xlsx 
+python ./kvct/CombineExcel.py 'combinexlsx' /home/rxm/kvctinterlocks/Kvct*$week*.xlsx /home/rxm/kvctinterlocks/$date/Kvct*.xlsx 
+python ./kvct/CombineExcel.py 'combinexlsx' /home/rxm/kvctinterlocks/Recon*$week*.xlsx /home/rxm/kvctinterlocks/$date/Recon*.xlsx
+python ./kvct/CombineExcel.py 'combinecsv' /home/rxm/kvctinterlocks/*.csv /home/rxm/kvctinterlocks/Kvct*$week*.xlsx  /home/rxm/kvctinterlocks/Recon*$week*.xlsx  
