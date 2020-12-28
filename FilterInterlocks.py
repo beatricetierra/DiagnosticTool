@@ -83,9 +83,9 @@ def filter_kvct(interlocks_df):
         pass
   
     # filter expected interlocks based on status of other events    
-    for idx, (interlock, machine, sys_before, sys_during, node_state, gantry_stop) in enumerate(zip\
+    for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip\
     (df['Interlock Number'], df['Machine State (before active)'], df['Sysnode Relevant Interlock (before)'], \
-    df['Sysnode Relevant Interlock (during)'], df['Node State (before active)'], df['Gantry Stopped'])):
+    df['Sysnode Relevant Interlock (during)'], df['Node State (before active)'])):
         # Filter Interlock 161400:(DMS.SW.Check.ViewAvgTooHigh) when in TREATMENT state
         if 'ViewAvgTooHigh' in interlock and '' in sys_before and '' in sys_during:
             filter_out_idx.append(idx)
