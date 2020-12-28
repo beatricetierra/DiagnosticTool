@@ -12,7 +12,7 @@ import InterlockDataframesSubfunctions as sub
 def GetEntries(filenames):    
     # Find entries of interest
     find_keys = ['is active', 'is inactive', 'Set HV ', 'State machine', 'State set', 'received command', 
-                 'State transition', 'Top relevant interlock', 'BEL is open']
+                 'State transition', 'Top relevant interlock', 'BEL is open', 'Success sending command id = 4642', 'Updating gantry speed RPM']
 
     # Read log files.
     system, endpoints, entries  = ([] for i in range(3))
@@ -107,12 +107,14 @@ def NodeInterlocks(node_log, sys_log, endpoints):
 
     # Group node (KV/PR) entries and endpoints
     find_keys = ['Set HV ', 'State machine', 'State set', 'received command', 'Received command', 'BEL is open', 
-                 'State transition', 'Top relevant interlock']
+                 'State transition', 'Top relevant interlock', 'Success sending command id = 4642', 'Updating gantry speed RPM']
     
     machine_state = pd.DataFrame(columns=columns)
     node_state = pd.DataFrame(columns=columns)
     received_command = pd.DataFrame(columns=columns) 
-    user_command = pd.DataFrame(columns=columns) 
+    user_command = pd.DataFrame(columns=columns)
+    gantry_stop = pd.DataFrame(columns=columns)
+    gantry_speed = pd.DataFrame(columns=columns)
     
     if node_log.name == 'kvct_log':
         global kvct_HV_status, BEL_open
@@ -165,6 +167,10 @@ def NodeInterlocks(node_log, sys_log, endpoints):
                 sys_state_transition = sys_state_transition.append(sys_log.iloc[idx], ignore_index=True)
             if find_keys[7] in entry:
                 sys_relevant_interlock = sys_relevant_interlock.append(sys_log.iloc[idx], ignore_index=True)
+            if find_keys[8] in entry:
+                gantry_stop = gantry_stop.append(sys_log.iloc[idx], ignore_index=True)
+            if find_keys[9] in entry:
+                gantry_speed = gantry_speed.append(sys_log.iloc[idx], ignore_index=True)
                 
         sys_endpoints = endpoints[(endpoints['Node'] == 'SY') & (endpoints['Description'] == '------ NODE START ------')]
         sys_endpoints.drop(columns='Node', inplace = True)
@@ -246,14 +252,25 @@ def NodeInterlocks(node_log, sys_log, endpoints):
     # add relevant sys interlocks that occur while kvct interlock is active 
     node_df = sub.sys_interlocks_during(node_df, sys_relevant_interlock)
     
+    # Gantry stopped by user
+    if gantry_stop.empty == False: 
+         gantry_stop['Description'] = [datetime.datetime.combine(date, sys_time) for date,sys_time in zip(gantry_stop['Date'], gantry_stop['Time'])]
+         node_df['Gantry Stopped'] = sub.find_last_entry(node_df, node_df['Active Time'], gantry_stop)
+    else:
+        node_df['Gantry Stopped'] = '' 
+
+    # Gantry speed
+    gantry_speed['Description'] = [descr.split("=")[-1] for descr in gantry_speed['Description']]
+    node_df['Gantry Speed (RPM)'] = sub.find_last_entry(node_df, node_df['Active Time'], gantry_speed)
+
     # Clean up final kvct_df
     node_df['Date'] = [activetime.date() for activetime in node_df['Active Time']]
     
     columns = ['Date', 'Active Time', 'Inactive Time', 'SW Version', 'Mode', 'Interlock Number', 'Time from Node Start (min)', 'Interlock Duration (min)', 
                'HV Status (before active)', 'HV Status (before inactive)', 'BEL Open', 'Machine State (before active)', 'Machine State (before inactive)', 
                'Node State (before active)', 'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 
-               'Last user command received (before active)', 'Last user command received (before inactive)', 'Last user input', 'Sysnode State', 'Sysnode Restart', 
-               'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
+               'Last user command received (before active)', 'Last user command received (before inactive)', 'Last user input', 'Gantry Stopped',
+               'Gantry Speed (RPM)', 'Sysnode State', 'Sysnode Restart', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
     
     node_df.sort_values('Active Time', ascending=True, inplace=True)
     node_df = node_df.reindex(columns= columns)

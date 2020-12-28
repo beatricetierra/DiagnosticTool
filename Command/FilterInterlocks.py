@@ -109,11 +109,15 @@ def filter_kvct(interlocks_df):
             
     # filter interlocks based on time of other known events
     # if time difference between BEL open and HVOnStatusMismatch interlock time is less than 0.1 seconds 
-    for idx, (interlock, interlock_time, bel) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL Open'])):
+    for idx, (interlock, interlock_time, bel, gantry) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL Open'], df['Gantry Stopped'])):
         if 'HvOnStatusMismatch' in interlock and type(bel) != '':
             if interlock_time - bel < datetime.timedelta(seconds=.1):
                 filter_out_idx.append(idx)
                 interlock_type.append('BEL is open')
+        if ('BadViewCounterChanged' or 'DMS.Status.RCB.CRC_Error' in interlock) and type(gantry) == pd._libs.tslibs.timestamps.Timestamp:
+            if interlock_time - gantry < datetime.timedelta(seconds=5):
+                filter_out_idx.append(idx)
+                interlock_type.append('Gantry Stopped')
            
     # Combine index and interlock type to sort values by index 
     expected_interlocks = pd.DataFrame({'IDX': filter_out_idx, 'Type':interlock_type})
