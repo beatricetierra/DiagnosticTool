@@ -26,7 +26,7 @@ class GetInterlocks(threading.Thread):
         # Find entries of interest
         acceptable_files = ['kvct','pet','sysnode']
         find_keys = ['is active', 'is inactive', 'Set HV ', 'State machine', 'State set', 'received command', 
-                     'State transition', 'Top relevant interlock', 'BEL is open']
+                     'State transition', 'Top relevant interlock', 'BEL is open', 'Success sending command id = 4642', 'Updating gantry speed RPM']
         
         files = []
         # filter out log files
@@ -36,7 +36,7 @@ class GetInterlocks(threading.Thread):
                 if '-log-' in file:
                     files.append(file)
                 for word in acceptable_files:
-                    if word in file and '000' in file:
+                    if word in file and '-000' in file:
                         files.append(file)
 
         # Read log files.
@@ -135,7 +135,7 @@ class GetInterlocks(threading.Thread):
     
         # Group node (KV/PR) entries and endpoints
         find_keys = ['Set HV ', 'State machine', 'State set', 'received command', 'Received command', 'BEL is open', 
-                     'State transition', 'Top relevant interlock']
+                     'State transition', 'Top relevant interlock','Success sending command id = 4642','Updating gantry speed RPM']
         
         machine_state = pd.DataFrame(columns=columns)
         node_state = pd.DataFrame(columns=columns)
@@ -182,6 +182,8 @@ class GetInterlocks(threading.Thread):
         sys_received_command = pd.DataFrame(columns=columns)
         sys_state_transition = pd.DataFrame(columns=columns)
         sys_relevant_interlock = pd.DataFrame(columns=columns)
+        gantry_stop = pd.DataFrame(columns=columns)
+        gantry_speed = pd.DataFrame(columns=columns)
         
         if sys_log.empty == False:
             for idx, entry in enumerate(sys_log['Description']):
@@ -193,6 +195,10 @@ class GetInterlocks(threading.Thread):
                     sys_state_transition = sys_state_transition.append(sys_log.iloc[idx], ignore_index=True)
                 if find_keys[7] in entry:
                     sys_relevant_interlock = sys_relevant_interlock.append(sys_log.iloc[idx], ignore_index=True)
+                if find_keys[8] in entry:
+                    gantry_stop = gantry_stop.append(sys_log.iloc[idx], ignore_index=True)
+                if find_keys[9] in entry:
+                    gantry_speed = gantry_speed.append(sys_log.iloc[idx], ignore_index=True)
                     
             sys_endpoints = endpoints[(endpoints['Node'] == 'SY') & (endpoints['Description'] == '------ NODE START ------')]
             sys_endpoints.drop(columns='Node', inplace = True)
@@ -209,11 +215,11 @@ class GetInterlocks(threading.Thread):
     
         # Time since start/restart of node
         node_df = sub.node_start_delta(node_df)
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(3.5)
          
         # Duration of node interlocks
         node_df = sub.interlock_duration(node_df)
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(3.5)
     
         # HV status before active/ inactive interlock
         if 'kvct_HV_status' in globals():
@@ -223,19 +229,19 @@ class GetInterlocks(threading.Thread):
         else:
             node_df['HV Status (before active)'] = ''
             node_df['HV Status (before inactive)'] = ''
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(2)
         
         # Machine state before active/ inactive interlock
         machine_state['Description'] = [descr.split(": ")[-1].split("\n")[0] for descr in machine_state['Description']]
         node_df['Machine State (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], machine_state)
         node_df['Machine State (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], machine_state)
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(2)
         
         # Node (kvct/pet) state
         node_state['Description'] = [descr.split(" ")[-1] for descr in node_state['Description']]
         node_df['Node State (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], node_state)
         node_df['Node State (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], node_state)
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(2)
         
         # last command received before active/ inactive interlock
         for idx, descr in enumerate(received_command['Description']):
@@ -245,18 +251,18 @@ class GetInterlocks(threading.Thread):
                 received_command.loc[idx, 'Description'] = descr.split(':')[0]
         node_df['Last command received (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], received_command)
         node_df['Last command received (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], received_command)
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(2)
         
         # Last user command recerived before activer interlock
         user_command['Description'] = [descr.split("command")[-1] for descr in user_command['Description']]
         node_df['Last user command received (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], user_command)
         node_df['Last user command received (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], user_command)
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(2)
         
         # last user action 
         sys_user_action['Description'] = ["***" + description.split(" = ")[1].split(" ")[0] for description in sys_user_action['Description']]
         node_df['Last user input'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_user_action)
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(2)
         
         # BEL open 
         if 'BEL_open' in globals():
@@ -264,7 +270,7 @@ class GetInterlocks(threading.Thread):
             node_df['BEL Open'] = sub.find_last_entry(node_df, node_df['Active Time'], BEL_open)
         else:
             node_df['BEL Open'] = ''
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(2)
         
         # Sysnode start time before active interlock
         if sys_endpoints.empty == False: 
@@ -272,18 +278,33 @@ class GetInterlocks(threading.Thread):
              node_df['Sysnode Restart'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_endpoints)
         else:
             node_df['Sysnode Restart'] = '' 
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(2)
         
         # sysnode state (transition state)
         sys_state_transition['Description'] = [descr.split(" to ")[1].split(" ")[0] for descr in sys_state_transition['Description']]
         node_df['Sysnode State'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_state_transition)
-        GetInterlocks.UpdateProgress(3)
+        GetInterlocks.UpdateProgress(2)
         
         # add relevant sys interlocks that occur right before kvct interlock is active
         node_df = sub.sys_interlocks_before(node_df, sys_relevant_interlock)
+        GetInterlocks.UpdateProgress(2)
         
         # add relevant sys interlocks that occur while kvct interlock is active 
         node_df = sub.sys_interlocks_during(node_df, sys_relevant_interlock)
+        GetInterlocks.UpdateProgress(2)
+        
+        # Gantry stopped by user
+        if gantry_stop.empty == False: 
+             gantry_stop['Description'] = [datetime.datetime.combine(date, sys_time) for date,sys_time in zip(gantry_stop['Date'], gantry_stop['Time'])]
+             node_df['Gantry Stopped'] = sub.find_last_entry(node_df, node_df['Active Time'], gantry_stop)
+        else:
+            node_df['Gantry Stopped'] = '' 
+        GetInterlocks.UpdateProgress(2)
+        
+        # Gantry speed
+        gantry_speed['Description'] = [descr.split("=")[-1] for descr in gantry_speed['Description']]
+        node_df['Gantry Speed (RPM)'] = sub.find_last_entry(node_df, node_df['Active Time'], gantry_speed)
+        GetInterlocks.UpdateProgress(2)
         
         # Clean up final kvct_df
         node_df['Date'] = [activetime.date() for activetime in node_df['Active Time']]
@@ -291,8 +312,8 @@ class GetInterlocks(threading.Thread):
         columns = ['Date', 'Active Time', 'Inactive Time', 'SW Version', 'Mode', 'Interlock Number', 'Time from Node Start (min)', 'Interlock Duration (min)', 
                'HV Status (before active)', 'HV Status (before inactive)', 'BEL Open', 'Machine State (before active)', 'Machine State (before inactive)', 
                'Node State (before active)', 'Node State (before inactive)', 'Last command received (before active)', 'Last command received (before inactive)', 
-               'Last user command received (before active)', 'Last user command received (before inactive)', 'Last user input', 'Sysnode State', 'Sysnode Restart', 
-               'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
+               'Last user command received (before active)', 'Last user command received (before inactive)', 'Last user input', 'Gantry Stopped',
+               'Gantry Speed (RPM)', 'Sysnode State', 'Sysnode Restart', 'Sysnode Relevant Interlock (before)', 'Sysnode Relevant Interlock (during)']
         
         node_df.sort_values('Active Time', ascending=True, inplace=True)
         node_df = node_df.reindex(columns= columns)
