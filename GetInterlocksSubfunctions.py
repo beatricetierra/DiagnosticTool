@@ -56,15 +56,10 @@ def ReadLogs(file, find_keys):
 def ReadNodeLogs(file, find_keys):
     system, endpoints, entries  = ([] for i in range(3))
     
-    # read whole file as one large string
+    # read logfile and split lines into rows
     with open(file) as log:
-        file = log.read().split('\n\n')
-        if len(file) > 1:
-            del file[1:]
-    
-    # break each line into another element of list
-    for f in file:
-        lines = [line for line in f.split('\n')]
+        file = log.read()    
+        lines = file.split('\n')
     
     #find software version
     swver, mode = '', ''

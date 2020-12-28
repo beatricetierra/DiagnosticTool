@@ -76,9 +76,9 @@ filenames = []
 
 for root, dirs, files in os.walk(folder):
     for file in files:
-        if '.log' in file:
+        if '-000.log' in file:
             for word in acceptable_files:
-                if word in file and '000' in file:   
+                if word in file:  
                     filenames.append(os.path.join(root, file))
 # Get Interlocks
 system_model, kvct_df, recon_df = idf.GetEntries(filenames)
