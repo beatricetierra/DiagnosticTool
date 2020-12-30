@@ -82,6 +82,27 @@ def filter_kvct(interlocks_df):
     except:
         pass
   
+    # filter interlocks based on time of other known events
+    # if time difference between BEL open and HVOnStatusMismatch interlock time is less than 0.1 seconds 
+    # if time difference between ExternalTriggerInvalid and DMS.DRB.BadViewCounterChanged or DMS.Status.RCB.CRC_Error is less than 10 seconds
+    externaltriggertimes = []
+    for idx, interlock in enumerate(df['Interlock Number']):
+        if 'ExternalTriggerInvalid' in interlock:
+            externaltriggertimes.append(datetime.datetime.combine(df['Date'][idx], df['Active Time'][idx]))
+            externaltriggertimes.append(datetime.datetime.combine(df['Date'][idx], df['Inactive Time'][idx]))
+    
+    for idx, (interlock, interlock_time, bel) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL Open'])):
+        if 'HvOnStatusMismatch' in interlock and type(bel) == pd._libs.tslibs.timestamps.Timestamp:
+            if interlock_time - bel < datetime.timedelta(seconds=.1):
+                filter_out_idx.append(idx)
+                interlock_type.append('BEL is open')
+        if 'BadViewCounterChanged' in interlock or 'DMS.Status.RCB.CRC_Error' in interlock:
+            difference = [interlock_time - externaltriggertime for externaltriggertime in externaltriggertimes]
+            difference = [abs(diff.total_seconds()) for diff in difference]
+            if any(diff < 10 for diff in difference):
+                filter_out_idx.append(idx)
+                interlock_type.append('DMS/ExternalTriggerInvalid')
+                
     # filter expected interlocks based on status of other events    
     for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip\
     (df['Interlock Number'], df['Machine State (before active)'], df['Sysnode Relevant Interlock (before)'], \
@@ -106,19 +127,6 @@ def filter_kvct(interlocks_df):
         if 'HVG.ContactorStatusMismatch' in interlock and 'ContactorOn' in machine:
             filter_out_idx.append(idx)
             interlock_type.append('ContactorOn')
-            
-    # filter interlocks based on time of other known events
-    # if time difference between BEL open and HVOnStatusMismatch interlock time is less than 0.1 seconds 
-    # if time difference between gantry stopped and DMS.DRB.BadViewCounterChanged or DMS.Status.RCB.CRC_Error is less than 5 seconds
-    for idx, (interlock, interlock_time, bel, gantry) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL Open'], df['Gantry Stopped'])):
-        if 'HvOnStatusMismatch' in interlock and type(bel) == pd._libs.tslibs.timestamps.Timestamp:
-            if interlock_time - bel < datetime.timedelta(seconds=.1):
-                filter_out_idx.append(idx)
-                interlock_type.append('BEL is open')
-        if ('BadViewCounterChanged' or 'DMS.Status.RCB.CRC_Error' in interlock) and type(gantry) == pd._libs.tslibs.timestamps.Timestamp:
-            if interlock_time - gantry < datetime.timedelta(seconds=5):
-                filter_out_idx.append(idx)
-                interlock_type.append('Gantry Stopped')
            
     # Combine index and interlock type to sort values by index 
     expected_interlocks = pd.DataFrame({'IDX': filter_out_idx, 'Type':interlock_type})
