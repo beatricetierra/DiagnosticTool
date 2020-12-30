@@ -12,7 +12,8 @@ import InterlockDataframesSubfunctions as sub
 def GetEntries(filenames):    
     # Find entries of interest
     find_keys = ['is active', 'is inactive', 'Set HV ', 'State machine', 'State set', 'received command', 
-                 'State transition', 'Top relevant interlock', 'BEL is open', 'Success sending command id = 4642', 'Updating gantry speed RPM']
+                 'State transition', 'Top relevant interlock', 'BEL is open', 
+                 'Success sending command id = 4642, to node = gantry', 'Updating gantry speed RPM']
 
     # Read log files.
     system, endpoints, entries  = ([] for i in range(3))

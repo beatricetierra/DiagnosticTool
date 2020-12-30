@@ -26,7 +26,8 @@ class GetInterlocks(threading.Thread):
         # Find entries of interest
         acceptable_files = ['kvct','pet','sysnode']
         find_keys = ['is active', 'is inactive', 'Set HV ', 'State machine', 'State set', 'received command', 
-                     'State transition', 'Top relevant interlock', 'BEL is open', 'Success sending command id = 4642', 'Updating gantry speed RPM']
+                     'State transition', 'Top relevant interlock', 'BEL is open', 'Success sending command id = 4642, to node = gantry', 
+                     'Updating gantry speed RPM']
         
         files = []
         # filter out log files
@@ -135,7 +136,7 @@ class GetInterlocks(threading.Thread):
     
         # Group node (KV/PR) entries and endpoints
         find_keys = ['Set HV ', 'State machine', 'State set', 'received command', 'Received command', 'BEL is open', 
-                     'State transition', 'Top relevant interlock','Success sending command id = 4642','Updating gantry speed RPM']
+                     'State transition', 'Top relevant interlock','Success sending command id = 4642, to node = gantry','Updating gantry speed RPM']
         
         machine_state = pd.DataFrame(columns=columns)
         node_state = pd.DataFrame(columns=columns)
