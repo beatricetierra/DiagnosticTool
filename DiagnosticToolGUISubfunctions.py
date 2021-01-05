@@ -37,13 +37,13 @@ def FindEntries(Page2, Page3, MainView, files):
        system, kvct_df, recon_df = get.GetEntries(files)
        # Get dates 
        if kvct_df.empty == False:
-           start_date = kvct_df['Date'][0]
-           end_date = kvct_df['Date'][len(kvct_df)-1]
-           dates = str(start_date)+' - '+str(end_date)
+           start_date = str(kvct_df['Date'][0]).replace('-', '')
+           end_date = str(kvct_df['Date'][len(kvct_df)-1]).replace('-', '')
+           dates = start_date + '-' + end_date
        elif kvct_df.empty == True and recon_df.empty == False:
-           start_date = recon_df['Date'][0]
-           end_date = recon_df['Date'][len(recon_df)-1]
-           dates = str(start_date)+' - '+str(end_date)
+           start_date = str(recon_df['Date'][0]).replace('-','')
+           end_date = str(recon_df['Date'][len(recon_df)-1]).replace('-','')
+           dates = start_date + '-' + end_date
        else:
            dates = 'NA'
    except:
@@ -185,14 +185,9 @@ def SummarizeResults():
         
 def exportExcel():  
    directory = filedialog.askdirectory()
-   try:
-       # Dates to save file under new name each time
-       start_date = ('').join(dates.split('-')[1:3])
-       end_date = ('').join(dates.split('-')[4:])
-       filedate = ('-').join([start_date, end_date]).replace(' ','')
-       
+   try:       
        # KVCT Interlocks
-       kvct_writer = pd.ExcelWriter(directory + '\KvctInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
+       kvct_writer = pd.ExcelWriter(directory + '\KvctInterlocks_' + system + '_' + dates + '.xlsx', engine='xlsxwriter')
        sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Filtered)']
        dataframes = [kvct_unfiltered, kvct_filtered]
        for df,sheetname in zip(dataframes,sheetnames):
@@ -210,7 +205,7 @@ def exportExcel():
        kvct_writer.save()
        
        # Recon Interlocks
-       recon_writer = pd.ExcelWriter(directory + '\ReconInterlocks_' + system + '_' + filedate + '.xlsx', engine='xlsxwriter')
+       recon_writer = pd.ExcelWriter(directory + '\ReconInterlocks_' + system + '_' + dates + '.xlsx', engine='xlsxwriter')
        sheetnames = ['Recon Interlocks (All)' , 'Recon Interlocks (Filtered)']
        dataframes = [recon_unfiltered, recon_filtered]
        for df,sheetname in zip(dataframes,sheetnames):
