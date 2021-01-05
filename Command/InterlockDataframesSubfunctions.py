@@ -54,49 +54,54 @@ def ReadLogs(file, find_keys):
 
 # read node log files (sysnode, kvct, and pet_recon)
 def ReadNodeLogs(file, find_keys):
+    # First find software version and operating mode of file
+    swver, mode = '', ''
+    with open(file) as log:
+        while True:
+            line = log.readline().strip()
+            if not line:
+                break
+            elif '* current branch: ' in line:
+                swver = line.split('* current branch: ')[-1]
+            elif 'Operating mode' in line:
+                mode = line.split('-')[-1]
+                
+    # Find entries of interest
     system, endpoints, entries  = ([] for i in range(3))
+    parse_idx = [0,1,4,7] #only keep date, time, node, and desciption per line
     
     with open(file) as log:
-        file = log.read()    
-        lines = file.split('\n')
-    
-    #find software version
-    swver, mode = '', ''
-    for line in lines:
-        if '* current branch: ' in line:
-            swver = line.split('* current branch: ')[-1]
-        if 'Operating mode' in line:
-            mode = line.split('-')[-1]
-
-    # find entries of interest
-    parse_idx = [0,1,4,7] #only keep date, time, node, and desciption
-    for i, line in enumerate(lines):
-        if i == 0 or 'Operating mode' in line or 'command: set to load_config' in line or 'Signal 15' in line:
-            entry = line.split(" ", 7)
-            endpoints.append([swver] + [mode] + [entry[i] for i in parse_idx]) 
-        if 'Initialising Guardian' in line:
-            system.append(line.split(" ")[-1])
-        if '***' in line:
-            if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
+        while True:
+            line = log.readline()
+            if not line:
+                break
+            elif 'Configuring log file' in line or 'Operating mode' in line or 'command: set to load_config' in line or 'Signal 15' in line:
                 entry = line.split(" ", 7)
-                entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
-        if 'Received command' in line:
-            if 'set_state' in line:
-                next_entries = lines[i+1:i+10]
-                possible_entries = []
-                for next_entry in next_entries:
-                    if 'Got command set state' in next_entry:
-                        possible_entries.append(next_entry)
-                        entry = possible_entries[0].split(" ", 7)
-                        entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
-            else:
-                entry = line.split(" ", 7)
-                entries.append([swver] + [mode] + [entry[i] for i in parse_idx])        
-        else:
-            for word in find_keys:
-                if word in line:
+                endpoints.append([swver] + [mode] + [entry[i] for i in parse_idx])
+            elif 'Initialising Guardian' in line:
+                system.append(line.split("Initialising Guardian for ")[-1].split(' ')[0])
+            elif '***' in line:
+                if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
                     entry = line.split(" ", 7)
-                    entries.append([swver] + [mode] + [entry[i] for i in parse_idx])
+                    entries.append([swver] + [mode] +[entry[i] for i in parse_idx])   
+            elif 'Received command' in line:
+                if 'set_state' in line:
+                    two_next_entries = [log.readline() for i in range(2)]
+                    if any('Got command set state' in next_entry for next_entry in two_next_entries):
+                        state = [next_entry for next_entry in two_next_entries if 'Got command set state' in next_entry][0]
+                        entry = state.split(" ", 7)
+                        entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
+                    else:
+                        entry = line.split(" ", 7)
+                        entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
+                else:
+                    entry = line.split(" ", 7)
+                    entries.append([swver] + [mode] +[entry[i] for i in parse_idx]) 
+            else:
+                for word in find_keys:
+                    if word in line:
+                        entry = line.split(" ", 7)
+                        entries.append([swver] + [mode] +[entry[i] for i in parse_idx]) 
     return(system, endpoints, entries)
 
 #Format Time Differences (values of datetime.timedelta formats)
