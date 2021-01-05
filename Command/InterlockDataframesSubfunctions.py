@@ -187,30 +187,15 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
     
     # Find log times 
     logstart_times = interlock_df[interlock_df['Interlock Number'].str.contains("LOG START")]['Active Time']
-    
-    # Find last entry before interlock active/ inactive
+
+    # Find last entry before interlock active/ inactive    
     last_entries = []
     for idx, time in enumerate(interlock_times):
-        limits = []
+        # find closest logstart entry
         try:
-            for logstart in logstart_times:
-                if time >= logstart:
-                    limits.append(logstart)
-            limit = limits[-1]
-            try: 
-                possible_entries = []
-                try:
-                    for status_time, description in zip(entries['Datetime'], entries['Description']):
-                        if status_time > limit and status_time < time:
-                            possible_entries.append(description)
-                    try:
-                        last_entries.append(possible_entries[-1])
-                    except:
-                        last_entries.append('')
-                except:
-                    last_entries.append('')
-            except:
-                last_entries.append('')
+            lowerlimit = min([logstart for logstart in logstart_times if logstart < time], key=lambda x: abs(x - time))
+            possible_entries = entries.loc[(entries['Datetime'] > lowerlimit) & (entries['Datetime'] < time)]
+            last_entries.append(possible_entries['Description'].iloc[-1])
         except:
             last_entries.append('')
     return(last_entries)
