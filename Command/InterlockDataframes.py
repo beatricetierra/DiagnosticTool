@@ -7,6 +7,7 @@ Created on Tue Oct 20 13:42:34 2020
 import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 import datetime
+import json
 import InterlockDataframesSubfunctions as sub
 
 def GetEntries(filenames):    
@@ -278,6 +279,7 @@ def find_interlocks(node_interlocks):
     interlocks_set = []
     swver = []
     mode = []
+
     interlock_active_name = [] 
     interlock_active_time = [] 
     interlock_inactive_name =[]
@@ -285,9 +287,14 @@ def find_interlocks(node_interlocks):
     
     #find all unique interlocks 
     for interlock in node_interlocks['Description']:
-        interlock = interlock.split(" priority")[0].split(" ", 1)[1]
-        interlocks_set.append(interlock)
-        
+        if 'Interlock' in interlock:
+            interlock = interlock.split(" priority")[0].split(" ", 1)[1]
+            interlocks_set.append(interlock)
+        elif 'KV.Error' in interlock:
+            parsed = interlock.split("=> ")[1]
+            dictionary = json.loads(parsed)
+            interlock = dictionary['obj']['code']
+            interlocks_set.append(interlock)
     interlocks_set = list(set(interlocks_set))
     
     #sepearte active vs inactive interlock entries (sepearate interlock name and time)
@@ -298,12 +305,18 @@ def find_interlocks(node_interlocks):
                     swver.append(node_interlocks['SW Version'][idx])
                     mode.append(node_interlocks['Mode'][idx])
                     interlock_active_name.append(interlock)
-                    interlock_active_time.append(datetime.datetime.combine(node_interlocks['Date'][idx],\
-                                                                           node_interlocks['Time'][idx]))
+                    interlock_active_time.append(datetime.datetime.combine(node_interlocks['Date'][idx], node_interlocks['Time'][idx]))
+                elif 'KV.Error' in interlock_desc:
+                    swver.append(node_interlocks['SW Version'][idx])
+                    mode.append(node_interlocks['Mode'][idx])
+                    info = interlock_desc.split("=> ")[1]
+                    dictionary = json.loads(info)
+                    info = str(dictionary['obj']['result'])
+                    interlock_active_name.append(interlock + ', result:' + str(dictionary['obj']['result']))
+                    interlock_active_time.append(datetime.datetime.combine(node_interlocks['Date'][idx], node_interlocks['Time'][idx]))
                 elif 'is inactive' in interlock_desc or 'is clear' in interlock_desc:
                     interlock_inactive_name.append(interlock)
-                    interlock_inactive_time.append(datetime.datetime.combine(node_interlocks['Date'][idx],\
-                                                                             node_interlocks['Time'][idx]))
+                    interlock_inactive_time.append(datetime.datetime.combine(node_interlocks['Date'][idx], node_interlocks['Time'][idx]))
     
     interlocks_df = pd.DataFrame({'SW Version': swver, 'Mode': mode, 'Interlock Number': interlock_active_name, 'Active Time': interlock_active_time})
     inactive_df = pd.DataFrame({'Interlock Number': interlock_inactive_name, 'Inactive Time': interlock_inactive_time})
@@ -321,7 +334,10 @@ def find_interlocks(node_interlocks):
             nearest_time = sub.nearest(instances, active_time)
             interlocks_df.loc[i,'Inactive Time'] = instances[nearest_time]
         except:
-            interlocks_df.loc[i,'Inactive Time'] = "Still Active"
-            
+            if 'Interlock' in active_interlock:
+                interlocks_df.loc[i,'Inactive Time'] = "Still Active"
+            elif 'KV.Error' in active_interlock:
+                interlocks_df.loc[i,'Inactive Time'] = ""
+                
     interlocks_df.sort_values('Active Time', ascending=True, inplace=True)
     return(interlocks_df)
