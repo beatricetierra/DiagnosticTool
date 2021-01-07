@@ -112,20 +112,6 @@ def ReadNodeLogs(file, find_keys):
                         
     return(system, endpoints, entries)
 
-#Format Time Differences (values of datetime.timedelta formats)
-def timedelta_format(timedelta):
-    sec = timedelta.total_seconds()
-    timedelta = '{:.0f}:{:.0f}:{:.0f}:{:.4f}'.format(int(sec // 86400), int(sec // 3600), int(sec % 3600 // 60), sec % 60)
-    if timedelta.split(":", 1)[0] == '0':
-        timedelta = timedelta.split(":", 1)[1]
-    else: 
-        timedelta = timedelta + ' days'
-    return(timedelta)
-    
-# gets the index of the closest time in items after pivot time
-def nearest(items, pivot_time):  
-    return items.index(min(item for item in items if item > pivot_time))
-    
 def find_endpoints(interlocks_df, node_endpoints):
     endpoints_time = [datetime.datetime.combine(date, time) for date,time in zip(node_endpoints['Date'], node_endpoints['Time'])]
     endpoints_df = pd.DataFrame({'SW Version': node_endpoints['SW Version'], 'Mode': node_endpoints['Mode'], 
@@ -141,24 +127,16 @@ def find_endpoints(interlocks_df, node_endpoints):
 # Time since start of node
 def node_start_delta(interlocks_df):
     interlocks_df['Time from Node Start (min)'] = ''*len(interlocks_df)
-    restart_times = []
-    restart_times_idx = []
-    endpoint_times_idx = []
-    for idx, entry in enumerate(interlocks_df['Interlock Number']):
-        if 'NODE START' in entry or 'Maintenance' in entry:
-            restart_times.append(interlocks_df.loc[idx,'Active Time'])
-            restart_times_idx.append(idx)
-        elif '-----' in entry:
-            endpoint_times_idx.append(idx)
+    
+    restart_times = interlocks_df.loc[interlocks_df['Interlock Number'].str.contains('NODE START|Maintancence')]['Active Time'].reset_index(drop=True)
+    endpoints_idx = interlocks_df.loc[interlocks_df['Interlock Number'].str.contains('-----')].index.values
 
     for idx, active_time in enumerate(interlocks_df['Active Time']):
-        if idx not in restart_times_idx and idx not in endpoint_times_idx:
-            restart = [] 
-            for start_time in restart_times:
-                if start_time < active_time:
-                    restart.append(start_time)            
+        if idx not in endpoints_idx:  
             try:
-                interlocks_df.loc[idx, 'Time from Node Start (min)'] = round(datetime.timedelta.total_seconds(active_time - restart[-1])/60,6)
+                restart = restart_times[restart_times < active_time].iloc[-1] 
+                difference = active_time - restart
+                interlocks_df.loc[idx, 'Time from Node Start (min)'] = round(difference.total_seconds()/60,6)
             except:
                 pass
     return(interlocks_df)
@@ -183,7 +161,7 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
     #combine date and time columns for entries_df
     entries = entries_df.copy()
     datetimes = []
-    for idx in range(0,len(entries)):
+    for idx in range(len(entries)):
         date = entries.loc[idx, 'Date']
         time = entries.loc[idx, 'Time']
         datetimes.append(datetime.datetime.combine(date,time))
@@ -197,46 +175,45 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
 
     # Find last entry before interlock active/ inactive    
     last_entries = []
-    for idx, time in enumerate(interlock_times):
-        # find closest logstart entry
+    for time in interlock_times:
         try:
-            lowerlimit = min([logstart for logstart in logstart_times if logstart < time], key=lambda x: abs(x - time))
+            lowerlimit = min([logstart for logstart in logstart_times if logstart < time], key=lambda x: abs(x - time)) # find closest logstart entry
             possible_entries = entries.loc[(entries['Datetime'] > lowerlimit) & (entries['Datetime'] < time)]
             last_entries.append(possible_entries['Description'].iloc[-1])
         except:
             last_entries.append('')
     return(last_entries)
 
-# Add column "Sysnode Relevant Interlocks (before)" to given dataframe
-# Finds top relevant interlocks that occur before kvct interlock
-def sys_interlocks_before(interlock_df, entries_df):
-    interlock_df['Sysnode Relevant Interlock (before)'] = ''*len(interlock_df)
+# Finds top relevant interlocks that occur before and during kvct interlocks
+def sysnode_relevant_interlocks(interlock_df, sys_relevant_interlocks):
     interlock_times = interlock_df['Active Time'].tolist()
-        
-    for idx in range(0,len(entries_df)):
-        try:
-            sys_interlock_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
-            nearest_times_idx = nearest(interlock_times, sys_interlock_time)
-            previous = interlock_df['Sysnode Relevant Interlock (before)'][nearest_times_idx]
-            interlock_df.loc[nearest_times_idx,'Sysnode Relevant Interlock (before)'] = previous + \
-            str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
-        except:
-            pass
-    return(interlock_df)
-
-# Add column "Sysnode Relevant Interlocks (during)" to given dataframe
-# Finds top relevant interlocks that occur while kvct interlock is active
-def sys_interlocks_during(interlock_df, entries_df):
+    interlock_df['Sysnode Relevant Interlock (before)'] = ''*len(interlock_df)
     interlock_df['Sysnode Relevant Interlock (during)'] = ''*len(interlock_df)
     
-    for idx in range(0,len(entries_df)):
-        sys_interlock_time = datetime.datetime.combine(entries_df['Date'][idx], entries_df['Time'][idx])
+    datetimes = []
+    for idx in range(len(sys_relevant_interlocks)):
+        date = sys_relevant_interlocks.loc[idx, 'Date']
+        time = sys_relevant_interlocks.loc[idx, 'Time']
+        datetimes.append(datetime.datetime.combine(date,time))
+    sys_relevant_interlocks.insert(0, 'Datetime', datetimes)
+    sys_relevant_interlocks.drop('Date', axis=1, inplace=True)
+    sys_relevant_interlocks.drop('Time', axis=1, inplace=True)
+    sys_relevant_interlocks.sort_values('Datetime', ascending=True, inplace=True)
+    
+    for idx, sys_relevant_interlock in enumerate(sys_relevant_interlocks['Datetime']):
         for row, (active_time, inactive_time) in enumerate(zip(interlock_df['Active Time'], interlock_df['Inactive Time'])):
             try:
-                if active_time < sys_interlock_time < inactive_time:
+                if active_time < sys_relevant_interlock < inactive_time:
                     previous = interlock_df['Sysnode Relevant Interlock (during)'][row]
                     interlock_df.loc[row,'Sysnode Relevant Interlock (during)'] = previous + \
-                    str(entries_df['Time'][idx]) + ': ' + str(entries_df['Description'][idx])
+                    str(sys_relevant_interlock) + ': ' + str(sys_relevant_interlocks['Description'][idx])
             except:
                 pass
+        try:
+            nearest_times_idx = interlock_times.index(min(interlock_time for interlock_time in interlock_times if interlock_time > sys_relevant_interlock))
+            previous = interlock_df['Sysnode Relevant Interlock (before)'][nearest_times_idx]
+            interlock_df.loc[nearest_times_idx,'Sysnode Relevant Interlock (before)'] = previous + \
+            str(sys_relevant_interlock) + ': ' + str(sys_relevant_interlocks['Description'][idx])
+        except:
+            pass
     return(interlock_df)
