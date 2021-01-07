@@ -20,7 +20,7 @@ class GetInterlocks(threading.Thread):
         
     def UpdateProgress(perc):
         GetInterlocks.progress['value'] += perc
-        time.sleep(0.1)
+        time.sleep(0.01)
         GetInterlocks.root.update_idletasks()
 
     def GetEntries(filenames):
@@ -119,85 +119,44 @@ class GetInterlocks(threading.Thread):
         return(system_model, kvct_df, recon_df)
        
     def NodeInterlocks(node_log, sys_log, endpoints):
-    
-         # Find node interlocks
-        columns = ['SW Version', 'Mode', 'Date', 'Time', 'Node', 'Description']
-        node_interlocks = pd.DataFrame(columns=columns)
+        # Get all Interlocks 
+        node_interlocks = node_log.loc[(node_log['Description'].str.contains('Interlock |KV.Error'))].reset_index(drop=True)
         
-        for idx, entry in enumerate(node_log['Description']):
-            if 'Interlock' in entry or 'KV.Error' in entry:
-                node_interlocks = node_interlocks.append(node_log.iloc[idx], ignore_index=True)
-    
         # Group node (KV/PR) entries and endpoints
-        find_keys = ['Set HV ', 'State machine', 'State set', 'received command', 'Received command', 'BEL is open', 
-                     'State transition', 'Top relevant interlock', 'Updating gantry speed RPM']
-        
-        machine_state = pd.DataFrame(columns=columns)
-        node_state = pd.DataFrame(columns=columns)
-        received_command = pd.DataFrame(columns=columns) 
-        user_command = pd.DataFrame(columns=columns) 
-        
         if node_log.name == 'kvct_log':
             global kvct_HV_status, BEL_open
             
-            kvct_HV_status = pd.DataFrame(columns=columns)
-            BEL_open = pd.DataFrame(columns=columns)
+            kvct_HV_status = node_log.loc[(node_log['Description'].str.contains('Set HV '))].reset_index(drop=True)
+            BEL_open = node_log.loc[(node_log['Description'].str.contains('BEL is open'))].reset_index(drop=True)
+            machine_state = node_log.loc[(node_log['Description'].str.contains('State machine'))].reset_index(drop=True)
+            node_state = node_log.loc[(node_log['Description'].str.contains('State set'))].reset_index(drop=True)
+            received_command =  node_log.loc[(node_log['Description'].str.contains('received command'))].reset_index(drop=True)
+            user_command = node_log.loc[(node_log['Description'].str.contains('Received command|Got command'))].reset_index(drop=True)
             
-            for idx, entry in enumerate(node_log['Description']):
-                if find_keys[0] in entry:
-                    kvct_HV_status = kvct_HV_status.append(node_log.iloc[idx], ignore_index=True)
-                if find_keys[1] in entry and 'KVCTControl' in entry:
-                    machine_state = machine_state.append(node_log.iloc[idx], ignore_index=True)
-                if find_keys[2] in entry:
-                    node_state = node_state.append(node_log.iloc[idx], ignore_index=True)
-                if find_keys[3] in entry:
-                    received_command = received_command.append(node_log.iloc[idx], ignore_index=True)
-                if find_keys[4] in entry or 'Got command' in entry:
-                    user_command = user_command.append(node_log.iloc[idx], ignore_index=True)
-                if find_keys[5] in entry:
-                    BEL_open = BEL_open.append(node_log.iloc[idx], ignore_index=True)
-                    
             node_endpoints = endpoints[endpoints['Node'] == 'KV']
             node_endpoints.drop(columns='Node', inplace = True)
         
-        if node_log.name == 'recon_log':
-            for idx, entry in enumerate(node_log['Description']):
-                if find_keys[1] in entry:
-                    machine_state = machine_state.append(node_log.iloc[idx], ignore_index=True)
-                if find_keys[2] in entry:
-                   node_state = node_state.append(node_log.iloc[idx], ignore_index=True)
-                if find_keys[3] in entry:
-                    received_command = received_command.append(node_log.iloc[idx], ignore_index=True)
-                    
+        elif node_log.name == 'recon_log':
+            machine_state = node_log.loc[(node_log['Description'].str.contains('State machine'))].reset_index(drop=True)
+            node_state = node_log.loc[(node_log['Description'].str.contains('State set'))].reset_index(drop=True)
+            received_command =  node_log.loc[(node_log['Description'].str.contains('received command'))].reset_index(drop=True)
+            user_command =node_log.loc[(node_log['Description'].str.contains('Received command'))].reset_index(drop=True)
+            
             node_endpoints = endpoints[endpoints['Node'] == 'PR']
             node_endpoints.drop(columns='Node', inplace = True)
-                
-        #Group sysnode entries and endpoints
-        sys_user_action = pd.DataFrame(columns=columns)
-        sys_received_command = pd.DataFrame(columns=columns)
-        sys_state_transition = pd.DataFrame(columns=columns)
-        sys_relevant_interlock = pd.DataFrame(columns=columns)
-        gantry_speed = pd.DataFrame(columns=columns)
         
         if sys_log.empty == False:
-            for idx, entry in enumerate(sys_log['Description']):
-                if "***" in entry:
-                    sys_user_action = sys_user_action.append(sys_log.iloc[idx], ignore_index=True)
-                if find_keys[3] in entry or find_keys[2] in entry:
-                    sys_received_command = sys_received_command.append(sys_log.iloc[idx], ignore_index=True)
-                if find_keys[6] in entry:
-                    sys_state_transition = sys_state_transition.append(sys_log.iloc[idx], ignore_index=True)
-                if find_keys[7] in entry:
-                    sys_relevant_interlock = sys_relevant_interlock.append(sys_log.iloc[idx], ignore_index=True)
-                if find_keys[8] in entry:
-                    gantry_speed = gantry_speed.append(sys_log.iloc[idx], ignore_index=True)
-                    
+            sys_user_action = sys_log.loc[sys_log['Description'].str.contains('\*\*\*')].reset_index(drop=True)
+            sys_state_transition = sys_log.loc[sys_log['Description'].str.contains('State transition')].reset_index(drop=True)
+            sys_relevant_interlock = sys_log.loc[sys_log['Description'].str.contains('Top relevant interlock')].reset_index(drop=True)
+            gantry_speed = sys_log.loc[sys_log['Description'].str.contains('Updating gantry speed RPM')].reset_index(drop=True)
+            
             sys_endpoints = endpoints[(endpoints['Node'] == 'SY') & (endpoints['Description'] == '------ NODE START ------')]
             sys_endpoints.drop(columns='Node', inplace = True)
             sys_endpoints.reset_index(drop=True, inplace=True)
         else:
-            sys_endpoints = pd.DataFrame()
-            
+            sys_endpoints = pd.DataFrame()     
+
         # Construct node_df 
         # Get node interlocks active vs inactive
         node_df = GetInterlocks.find_interlocks(node_interlocks)
@@ -277,13 +236,9 @@ class GetInterlocks(threading.Thread):
         node_df['Sysnode State'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_state_transition)
         GetInterlocks.UpdateProgress(2)
         
-        # add all relevant sys interlocks that occur right before kvct interlock is active
-        node_df = sub.sys_interlocks_before(node_df, sys_relevant_interlock)
-        GetInterlocks.UpdateProgress(2)
-        
-        # add relevant sys interlocks that occur while kvct interlock is active 
-        node_df = sub.sys_interlocks_during(node_df, sys_relevant_interlock)
-        GetInterlocks.UpdateProgress(2)
+        # add all relevant sys interlocks that occur before and during interlocks
+        node_df = sub.sysnode_relevant_interlocks(node_df, sys_relevant_interlock)
+        GetInterlocks.UpdateProgress(4)
         
         # Gantry speed
         gantry_speed['Description'] = [descr.split("=")[-1] for descr in gantry_speed['Description']]
@@ -318,70 +273,56 @@ class GetInterlocks(threading.Thread):
         return(node_df)
         
     def find_interlocks(node_interlocks):
-        interlocks_set = []
-        swver = []
-        mode = []
-    
-        interlock_active_name = [] 
-        interlock_active_time = [] 
-        interlock_inactive_name =[]
-        interlock_inactive_time =[]
+        #combine date and time columns
+        all_interlocks = node_interlocks.copy()
+        datetimes = []
+        for idx in range(len(all_interlocks)):
+            date = all_interlocks.loc[idx, 'Date']
+            interlock_time = all_interlocks.loc[idx, 'Time']
+            datetimes.append(datetime.datetime.combine(date,interlock_time))
+        all_interlocks.insert(0, 'Datetime', datetimes)
+        all_interlocks.drop('Date', axis=1, inplace=True)
+        all_interlocks.drop('Time', axis=1, inplace=True)
+        all_interlocks.sort_values('Datetime', ascending=True, inplace=True)
+            
+        active_interlocks = all_interlocks.loc[(all_interlocks['Description'].str.contains('is active|KV.Error'))]
+        active_interlocks.reset_index(drop=True, inplace=True)
+        inactive_interlocks = all_interlocks.loc[(all_interlocks['Description'].str.contains('is inactive|is clear'))]
+        inactive_interlocks.reset_index(drop=True, inplace=True)
         
-        #find all unique interlocks 
-        for interlock in node_interlocks['Description']:
-            if 'Interlock' in interlock:
-                interlock = interlock.split(" priority")[0].split(" ", 1)[1]
-                interlocks_set.append(interlock)
-            elif 'KV.Error' in interlock:
-                parsed = interlock.split("=> ")[1]
-                dictionary = json.loads(parsed)
-                interlock = dictionary['obj']['code']
-                interlocks_set.append(interlock)
-        interlocks_set = list(set(interlocks_set))
-        
-        #sepearte active vs inactive interlock entries (sepearate interlock name and time)
-        for idx, interlock_desc in enumerate(node_interlocks['Description']):
-            for interlock in interlocks_set:
-                if interlock in interlock_desc:
-                    if 'is active' in interlock_desc:
-                        swver.append(node_interlocks['SW Version'][idx])
-                        mode.append(node_interlocks['Mode'][idx])
-                        interlock_active_name.append(interlock)
-                        interlock_active_time.append(datetime.datetime.combine(node_interlocks['Date'][idx], node_interlocks['Time'][idx]))
-                    elif 'KV.Error' in interlock_desc:
-                        swver.append(node_interlocks['SW Version'][idx])
-                        mode.append(node_interlocks['Mode'][idx])
-                        info = interlock_desc.split("=> ")[1]
-                        dictionary = json.loads(info)
-                        info = str(dictionary['obj']['result'])
-                        interlock_active_name.append(interlock + ', result:' + str(dictionary['obj']['result']))
-                        interlock_active_time.append(datetime.datetime.combine(node_interlocks['Date'][idx], node_interlocks['Time'][idx]))
-                    elif 'is inactive' in interlock_desc or 'is clear' in interlock_desc:
-                        interlock_inactive_name.append(interlock)
-                        interlock_inactive_time.append(datetime.datetime.combine(node_interlocks['Date'][idx], node_interlocks['Time'][idx]))
-        GetInterlocks.UpdateProgress(5)
-        
-        interlocks_df = pd.DataFrame({'SW Version': swver, 'Mode': mode, 'Interlock Number': interlock_active_name, 'Active Time': interlock_active_time})
-        inactive_df = pd.DataFrame({'Interlock Number': interlock_inactive_name, 'Inactive Time': interlock_inactive_time})
-        
-        #find closest inactive time to each active time
-        interlocks_df['Inactive Time'] = ''*len(interlocks_df)
-        
-        for i, active_interlock in enumerate(interlocks_df['Interlock Number']):
-            instances = []
-            active_time = interlocks_df['Active Time'][i]
-            for j, inactive_interlock in enumerate(inactive_df['Interlock Number']):
-                if active_interlock == inactive_interlock:
-                    instances.append(inactive_df['Inactive Time'][j])
-            try: 
-                nearest_time = sub.nearest(instances, active_time)
-                interlocks_df.loc[i,'Inactive Time'] = instances[nearest_time]
-            except:
-                if 'Interlock' in active_interlock:
-                    interlocks_df.loc[i,'Inactive Time'] = "Still Active"
-                elif 'KV.Error' in active_interlock:
-                    interlocks_df.loc[i,'Inactive Time'] = ""
+        swver, mode = [], []
+        interlock_names, active_times, inactive_times = [], [], [] 
+        for idx, active_interlock in enumerate(active_interlocks['Description']):
+            if 'is active' in active_interlock:
+                swver.append(active_interlocks['SW Version'].iloc[idx])
+                mode.append(active_interlocks['Mode'].iloc[idx])
+                interlock_name = active_interlock.split(" priority")[0].replace('- ','')
+                interlock_names.append(interlock_name)
                 
-        GetInterlocks.UpdateProgress(10)
+                interlock_active_time = active_interlocks['Datetime'].iloc[idx]
+                active_times.append(interlock_active_time)
+                interlock_inactive_times = inactive_interlocks.loc[inactive_interlocks['Description'].str.contains(interlock_name.split(':')[0])]['Datetime']
+                try:
+                    nearest_time = min(interlock_inactive_time for interlock_inactive_time in interlock_inactive_times if interlock_inactive_time > interlock_active_time)
+                    inactive_times.append(nearest_time)
+                except:
+                    inactive_times.append('Still active')
+            elif 'KV.Error' in active_interlock:
+                info = active_interlock.split("=> ")[1]
+                dictionary = json.loads(info)
+                interlock_name = dictionary['obj']['code']
+                info = str(dictionary['obj']['result'])
+                interlock_names.append(interlock_name + ', result:' + info)
+                
+                active_times.append(active_interlocks['Datetime'].iloc[idx])
+                inactive_times.append('')
+                swver.append(active_interlocks['SW Version'].iloc[idx])
+                mode.append(active_interlocks['Mode'].iloc[idx])
+                
+            GetInterlocks.UpdateProgress(15/len(active_interlocks))
+        
+        # Create new dataframe
+        interlocks_df = pd.DataFrame({'SW Version':swver, 'Mode':mode, 'Interlock Number':interlock_names,
+                                'Active Time':active_times, 'Inactive Time':inactive_times})
         interlocks_df.sort_values('Active Time', ascending=True, inplace=True)
         return(interlocks_df)
