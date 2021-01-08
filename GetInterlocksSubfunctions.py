@@ -75,7 +75,7 @@ def ReadNodeLogs(file, find_keys):
             line = log.readline()
             if not line:
                 break
-            elif 'Configuring log file' in line or 'Operating mode' in line or 'command: set to load_config' in line or 'Signal 15' in line:
+            elif 'Configuring log file' in line or 'command: set to load_config' in line or 'Signal 15' in line:
                 entry = line.split(" ", 7)
                 endpoints.append([swver] + [mode] + [entry[i] for i in parse_idx])
             elif 'Initialising Guardian' in line:
@@ -113,9 +113,8 @@ def ReadNodeLogs(file, find_keys):
     return(system, endpoints, entries)
 
 def find_endpoints(interlocks_df, node_endpoints):
-    endpoints_time = [datetime.datetime.combine(date, time) for date,time in zip(node_endpoints['Date'], node_endpoints['Time'])]
     endpoints_df = pd.DataFrame({'SW Version': node_endpoints['SW Version'], 'Mode': node_endpoints['Mode'], 
-                                 'Interlock Number': node_endpoints['Description'], 'Active Time': endpoints_time, 'Inactive Time': ''})
+                                 'Interlock Number': node_endpoints['Description'], 'Active Time': node_endpoints['Datetime'], 'Inactive Time': ''})
     
     result = pd.concat([interlocks_df, endpoints_df], sort=False)
     result.reset_index(drop=True, inplace=True)
@@ -157,19 +156,7 @@ def interlock_duration(interlock_df):
 #find the the last entry of given entry dataframe prior to given interlock (active or inactive) time
 #given entry dataframe should already be (1) filtered based on entries of interest, (2) include entry times (active or inactive column), 
                                         #(3) include entry description 
-def find_last_entry(interlock_df, interlock_times, entries_df):
-    #combine date and time columns for entries_df
-    entries = entries_df.copy()
-    datetimes = []
-    for idx in range(len(entries)):
-        date = entries.loc[idx, 'Date']
-        time = entries.loc[idx, 'Time']
-        datetimes.append(datetime.datetime.combine(date,time))
-    entries.insert(0, 'Datetime', datetimes)
-    entries.drop('Date', axis=1, inplace=True)
-    entries.drop('Time', axis=1, inplace=True)
-    entries.sort_values('Datetime', ascending=True, inplace=True)
-    
+def find_last_entry(interlock_df, interlock_times, entries_df):    
     # Find log times 
     logstart_times = interlock_df[interlock_df['Interlock Number'].str.contains("LOG START")]['Active Time']
 
@@ -178,7 +165,7 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
     for time in interlock_times:
         try:
             lowerlimit = min([logstart for logstart in logstart_times if logstart < time], key=lambda x: abs(x - time)) # find closest logstart entry
-            possible_entries = entries.loc[(entries['Datetime'] > lowerlimit) & (entries['Datetime'] < time)]
+            possible_entries = entries_df.loc[(entries_df['Datetime'] > lowerlimit) & (entries_df['Datetime'] < time)]
             last_entries.append(possible_entries['Description'].iloc[-1])
         except:
             last_entries.append('')
@@ -189,16 +176,6 @@ def sysnode_relevant_interlocks(interlock_df, sys_relevant_interlocks):
     interlock_times = interlock_df['Active Time'].tolist()
     interlock_df['Sysnode Relevant Interlock (before)'] = ''*len(interlock_df)
     interlock_df['Sysnode Relevant Interlock (during)'] = ''*len(interlock_df)
-    
-    datetimes = []
-    for idx in range(len(sys_relevant_interlocks)):
-        date = sys_relevant_interlocks.loc[idx, 'Date']
-        time = sys_relevant_interlocks.loc[idx, 'Time']
-        datetimes.append(datetime.datetime.combine(date,time))
-    sys_relevant_interlocks.insert(0, 'Datetime', datetimes)
-    sys_relevant_interlocks.drop('Date', axis=1, inplace=True)
-    sys_relevant_interlocks.drop('Time', axis=1, inplace=True)
-    sys_relevant_interlocks.sort_values('Datetime', ascending=True, inplace=True)
     
     for idx, sys_relevant_interlock in enumerate(sys_relevant_interlocks['Datetime']):
         for row, (active_time, inactive_time) in enumerate(zip(interlock_df['Active Time'], interlock_df['Inactive Time'])):
