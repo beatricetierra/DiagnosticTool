@@ -10,6 +10,18 @@ import datetime
 # Read -log- log files (compiled log file of all node log files)
 def ReadLogs(file, find_keys):
     system, endpoints, entries  = ([] for i in range(3))
+    # First find software version and operating mode of file
+    swver, mode = '', ''
+    with open(file) as log:
+        while True:
+            line = log.readline().strip()
+            if not line:
+                break
+            elif '* current branch: ' in line:
+                swver = line.split('* current branch: ')[-1]
+            elif 'Operating mode' in line:
+                mode = line.split('-')[-1]
+                
     # read whole file as one large string
     lines = []
     with open(file) as log:
@@ -26,13 +38,13 @@ def ReadLogs(file, find_keys):
     # find entries of interest
     parse_idx = [3,4,7,10] #only keep date, time, node, and desciption
     for i, line in enumerate(lines):
-        if 'Configuring log file:' in line or 'Operating mode' in line or 'set to load_config' in line or 'Signal 15' in line:
+        if 'Configuring log file:' in line or 'set to load_config' in line or 'Signal 15' in line:
             entry = line.split(" ", 10)
-            endpoints.append([entry[i] for i in parse_idx]) 
+            endpoints.append([swver] + [mode] + [entry[i] for i in parse_idx])
         if '***' in line:
             if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
                 entry = line.split(" ", 10)
-                entries.append([entry[i] for i in parse_idx])
+                entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
         if 'Received command' in line:
             if 'set_state' in line:
                 next_entries = lines[i+1:i+10]
@@ -41,15 +53,15 @@ def ReadLogs(file, find_keys):
                     if 'Got command set state' in next_entry:
                         possible_entries.append(next_entry)
                         entry = possible_entries[0].split(" ", 10)
-                        entries.append([entry[i] for i in parse_idx])
+                        entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
             else:
                 entry = line.split(" ", 10)
-                entries.append([entry[i] for i in parse_idx])        
+                entries.append([swver] + [mode] +[entry[i] for i in parse_idx])       
         else:
             for word in find_keys:
                 if word in line:
                     entry = line.split(" ", 10)
-                    entries.append([entry[i] for i in parse_idx])
+                    entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
     return(system, endpoints, entries)
 
 # read node log files (sysnode, kvct, and pet_recon)
