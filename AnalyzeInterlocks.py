@@ -24,7 +24,7 @@ def total_seconds(column):
 def unexpected(filtered_df):
 
     if filtered_df.empty == False:  
-        filtered_df = filtered_df[~filtered_df['Interlock Number'].str.contains("------")]  # remove endpoints
+        filtered_df = filtered_df[~filtered_df['Interlock Number'].str.contains('NODE|LOG')]  # remove endpoints
         if filtered_df.empty == False:  # if filtered_df is not empty and contains unexpected interlocks
             dummies = pd.get_dummies(filtered_df['Date'])
             filtered_df = pd.concat([filtered_df['Interlock Number'], dummies], axis=1)
@@ -38,52 +38,39 @@ def unexpected(filtered_df):
     return(analysis_df)
     
 # Analyzes expected interlocks (startup/shutdown interlocks, ViewAvgTooHigh, TriggerInvalid)
-def expected(filtered_out):
+def expected(unfiltered_df):
+    # Extract filtered out interlock rows
+    filtered_out = unfiltered_df.loc[(unfiltered_df['Expected Interlock Type'] != '') | (unfiltered_df['Interlock Number'].str.contains('NODE START'))]
+    filtered_out.reset_index(inplace=True, drop=True)
     # Extract columns needed for analysis 
     columns = ['Date', 'Active Time', 'Interlock Number', 'Time from Node Start (min)', 'Interlock Duration (min)']
     filtered_out = filtered_out.reindex(columns= columns)
     
-    # Find indices where node restarts
-    restart_indices = filtered_out.loc[filtered_out['Interlock Number'] == '------ NODE START ------'].index.values.tolist()
-    restart_indices = sorted(list(set(restart_indices)))
-
     # Divide into different sessions 
-    session_num = [None] * len(filtered_out)
+    node_start_idx = filtered_out[filtered_out['Interlock Number'].str.contains('NODE START')].index.values
     
-    for session, restart_idx in enumerate(restart_indices):
-        if session == 0 and restart_idx!= 0:
-            start = 0
+    session = []
+    for idx, node_start in enumerate(node_start_idx):
+        if idx == len(node_start_idx)-1:
+            limit = len(filtered_out)
         else:
-            start = restart_idx
-        try:
-            end = restart_indices[session + 1]
-        except:
-            end = len(filtered_out)
-        for idx in range(start, end):
-            session_num[idx] = session+1
+            limit = node_start_idx[idx+1]
+        array_len = len(range(node_start, limit))
+        session_num = [idx+1]*array_len
+        session.extend(session_num)
     
-    filtered_out.insert(0, 'Session', session_num) 
-    filtered_out.replace('', np.nan, inplace=True)
-    
-    # Count total sessions
-    if 'START' in filtered_out['Interlock Number'][len(filtered_out)-1]:
-        total_sessions = filtered_out['Session'][len(filtered_out)-1] - 1 
-    else:
-        total_sessions = filtered_out['Session'][len(filtered_out)-1]
-
-    filtered_out = filtered_out[~filtered_out['Interlock Number'].str.contains('START')]
-    filtered_out = filtered_out[~filtered_out['Interlock Number'].str.contains('END')]
+    filtered_out.insert(0, 'Session', session) 
     
     # Analyze per session
-    # Count
     df_count = pd.DataFrame({'Session': filtered_out['Session'], 'Interlock Number': filtered_out['Interlock Number']})
+    df_count = df_count[~df_count['Interlock Number'].str.contains('NODE START')]
+    total_sessions = session[-1] 
 
-    # Create dummies table
     dummies = pd.get_dummies(df_count['Session'])
-    df = pd.concat([df_count['Interlock Number'], dummies], axis=1)
-    df = df.groupby('Interlock Number').sum()
-    df.reset_index(inplace=True)
-    df.insert(1, 'Total in ' + str(total_sessions) + ' Sessions', df.sum(axis=1))
-    df.iloc[:,1:] = df.iloc[:,1:].astype(int)
+    analysis_df = pd.concat([df_count['Interlock Number'], dummies], axis=1)
+    analysis_df = analysis_df.groupby('Interlock Number').sum()
+    analysis_df.reset_index(inplace=True)
+    analysis_df.insert(1, 'Total in ' + str(total_sessions) + ' Sessions', analysis_df.sum(axis=1))
+    analysis_df.iloc[:,1:] = analysis_df.iloc[:,1:].astype(int)
 
-    return(df)
+    return(analysis_df)
