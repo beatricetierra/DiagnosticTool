@@ -15,6 +15,29 @@ from GetInterlocks import GetInterlocks as get
 import FilterInterlocks as filt
 import AnalyzeInterlocks as analyze 
 
+def ConnectServer(ipaddress, username, password, output, startdate, enddate):
+    # Create log folder to store logs
+    local_folder = output + '\log'
+    try:
+        os.makedirs(local_folder)
+    except FileExistsError:
+        pass # directory already exists
+        
+    # Collect all log files in gateway 
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    ssh.connect(ipaddress, 22, username, password)
+    command = '(cd /home/rxm/; source .GetKvctLogs.sh {startdate} {enddate})'.format(startdate = startdate, enddate = enddate)
+    stdin, stdout, stderr = ssh.exec_command(command)
+    
+    # SCP to local folder
+    files = stdout.readlines()
+    for file in files:
+        with SCPClient(ssh.get_transport(), sanitize=lambda x: x) as scp:
+            scp.get(remote_path=file, local_path=local_folder)
+    ssh.close()
+
 def GetFiles(folderpath):
     acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
     filenames = []  

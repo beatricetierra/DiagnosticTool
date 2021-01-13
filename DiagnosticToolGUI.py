@@ -327,7 +327,57 @@ class MainView(tk.Frame):
         elif page == MainView.p3:
             MainView.b1.config(relief='raised')
             MainView.b2.config(relief='raised')
-            MainView.b3.config(relief='sunken')        
+            MainView.b3.config(relief='sunken')       
+            
+    def ConnectWindow():
+        window = tk.Toplevel(root)
+        window.geometry('500x200')  
+        window.wm_title('Connect')
+        
+        #IP Address label and text entry box
+        ipLabel = tk.Label(window, text="IP Address")
+        ipLabel.grid(row=0, column=0)
+        ipaddress = tk.StringVar()
+        ipEntry = tk.Entry(window, textvariable=ipaddress)
+        ipEntry.grid(row=0, column=1)  
+        
+        #username label and text entry box
+        usernameLabel = tk.Label(window, text="User Name")
+        usernameLabel.grid(row=1, column=0)
+        username = tk.StringVar()
+        usernameEntry = tk.Entry(window, textvariable=username)
+        usernameEntry.grid(row=1, column=1)  
+        
+        #password label and password entry box
+        passwordLabel = tk.Label(window,text="Password")
+        passwordLabel.grid(row=2, column=0)  
+        password = tk.StringVar()
+        passwordEntry = tk.Entry(window, textvariable=password, show='*')
+        passwordEntry.grid(row=2, column=1) 
+        
+        #Output folder to store logs and reports
+        outputLabel = tk.Label(window,text="Output")
+        outputLabel.grid(row=3, column=0)  
+        output = tk.StringVar()
+        outputEntry = tk.Entry(window, textvariable=output)
+        outputEntry.grid(row=3, column=1)   
+        
+        #Date range input
+        startdateLabel = tk.Label(window,text="Start Date")
+        startdateLabel.grid(row=2, column=2)  
+        startdate = tk.StringVar()
+        startdateEntry = tk.Entry(window, textvariable=startdate)
+        startdateEntry.grid(row=2, column=3)  
+        
+        enddateLabel = tk.Label(window,text="End Date")
+        enddateLabel.grid(row=3, column=2)  
+        enddate = tk.StringVar()
+        enddateEntry = tk.Entry(window, textvariable=enddate)
+        enddateEntry.grid(row=3, column=3)  
+        
+        #Buttons
+        ConnectServerButton = tk.Button(window, text="Get Logs", command=lambda : Subfunctions.ConnectServer(ipaddress.get(), username.get(), password.get(), output.get(), startdate.get(), enddate.get()))
+        ConnectServerButton.grid(row=4, column=2) 
 
 if __name__ == "__main__":
     root = tk.Tk()
