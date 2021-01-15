@@ -69,14 +69,14 @@ def GetFiles(folderpath):
                         filenames.append(os.path.join(root, file))
     return(filenames)
     
-def FindEntries(Page2, Page3, MainView, files):        
+def FindEntries(Page2, Page3, MainView, files, node):        
    global kvct_df, kvct_filtered, kvct_unfiltered
    global recon_df, recon_filtered, recon_unfiltered
    global system, dates
    
    # Find interlocks and dates from given log files
    try:
-       system, kvct_df, recon_df = get.GetEntries(files)
+       system, kvct_df, recon_df = get.GetEntries(files, node)
        # Get dates 
        if kvct_df.empty == False:
            start_date = str(kvct_df['Date'][0]).replace('-', '')

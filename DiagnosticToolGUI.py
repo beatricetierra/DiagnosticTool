@@ -22,7 +22,7 @@ class Page1(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
       
-        Frame = tk.Frame(self)
+       Frame = tk.Frame(self)
        Frame.place(relx=0.5, relwidth=0.95, relheight=1, anchor='n')
        
        ##### Scrollbox to list details of chosen log files #####
@@ -113,6 +113,17 @@ class Page1(Page):
        button_add = tk.Button(self.localFrame , text='Add File', height=1, width=8, font=10, command=self.addFile)
        button_add.place(relx=0.01, rely=0.42, relwidth=0.25, relheight=0.15)
        
+       # Buttons to choose between reading LogNode or Kvct/Pet_Recon/SysNode files
+       chooseLabel = tk.Label(self.localFrame, text='Choose node:', font='Helvetica 10')
+       chooseLabel.place(relx=0.01, rely=0.62, relwidth=0.35, relheight=0.15)
+       
+       self.node = tk.IntVar()
+       self.node.set(2)
+       lognodeButton = tk.Radiobutton(self.localFrame, text='LogNode', variable=self.node, value=1, command=lambda: self.node.set(1))
+       lognodeButton.place(relx=0.3, rely=0.62, relwidth=0.15, relheight=0.15)
+       nodesButton = tk.Radiobutton(self.localFrame, text='KVCT, Pet Recon, Sysnode', variable=self.node, value=2, command=lambda:  self.node.set(2))
+       nodesButton.place(relx=0.45, rely=0.62, relwidth=0.3, relheight=0.15) 
+       
        ######  Edit List Box ###### 
        editFrame = tk.Frame(Frame, bd=1)
        editFrame.place(relx=0.93, rely=0.28, relwidth=0.14, relheight=0.7, anchor='n')
@@ -163,6 +174,9 @@ class Page1(Page):
        [widget.destroy() for widget in Page3.Frame.winfo_children()]
        MainView.progress['value'] = 0
        
+       # Find logs option from radio buttons
+       node = self.node.get()
+       
        # store all files listed in window and find interlocks
        files=[]
        if not self.tree.get_children():
@@ -171,7 +185,7 @@ class Page1(Page):
            for child in self.tree.get_children():
               files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
            kvct_df, kvct_filtered, kvct_unfiltered, recon_df, recon_filtered, recon_unfiltered, system, dates = \
-             Subfunctions.FindEntries(Page2, Page3, MainView, files)
+             Subfunctions.FindEntries(Page2, Page3, MainView, files, node)
       
 class Page2(Page):
     def __init__(self, *args, **kwargs):

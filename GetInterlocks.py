@@ -9,6 +9,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 import threading
 import time
 import json
+from tkinter import messagebox
 import GetInterlocksSubfunctions as sub
 
 class GetInterlocks(threading.Thread):
@@ -19,10 +20,25 @@ class GetInterlocks(threading.Thread):
         
     def UpdateProgress(perc):
         GetInterlocks.progress['value'] += perc
-        time.sleep(0.01)
+        time.sleep(0.005)
         GetInterlocks.root.update_idletasks()
+        return
 
-    def GetEntries(filenames):
+    def GetEntries(filenames, node):
+         # Check if given files and node match
+        if node == 1:
+            if any(['-log-' in file for file in filenames]):
+                pass
+            else:
+                messagebox.showinfo(title='Warning', message='No LogNode files found.')
+                return
+        elif node == 2:
+            if any(['-kvct-' in file or '-pet_recon-' in file or '-sysnode-' in file for file in filenames]):
+                pass
+            else:
+                messagebox.showinfo(title='Warning', message='KVCT, Pet_Recon, and/or Sysnode files were not found.')
+                return
+            
         # Find entries of interest
         acceptable_files = ['kvct','pet','sysnode']
         find_keys = ['is active', 'is inactive', 'is clear', 'Set HV ', 'State machine', 'State set', 'received command', 
@@ -62,7 +78,7 @@ class GetInterlocks(threading.Thread):
             
         # Create dataframe of all entries and endpoints
         columns = ['SW Version', 'Mode', 'Date', 'Time', 'Node', 'Description']
-        
+
         entries_df = pd.DataFrame(entries, columns=columns)
         entries_df.insert(0,'Datetime', pd.to_datetime(entries_df['Date'] + ' ' + entries_df['Time']))
         entries_df.drop(columns=['Date', 'Time'], inplace=True)
