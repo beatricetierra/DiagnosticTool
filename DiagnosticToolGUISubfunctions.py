@@ -9,34 +9,53 @@ import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
+import paramiko
+from scp import SCPClient
 
 # import script dependencies 
 from GetInterlocks import GetInterlocks as get
 import FilterInterlocks as filt
 import AnalyzeInterlocks as analyze 
 
-def ConnectServer(ipaddress, username, password, output, startdate, enddate):
-    # Create log folder to store logs
-    local_folder = output + '\log'
-    try:
-        os.makedirs(local_folder)
-    except FileExistsError:
-        pass # directory already exists
-        
-    # Collect all log files in gateway 
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+def ConnectServer(Page1, ipaddress, username, password, start, end, output):
+    ipaddress, username, password, output = ipaddress.get(), username.get(), password.get(), output.get()
+    # Check if all arguments are filled
+    if not ipaddress or not username or not password:
+        messagebox.showerror(title='Error', message='Enter ipaddress, username, and/or password.')
+        return
+    if os.path.exists(output)  == False:
+        messagebox.showerror(title='Error', message='Invalid output folder.')
+        return
+    else:
+        try:
+            # Collect all log files in gateway 
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(ipaddress , 22, username , password)
+        except:
+            messagebox.showerror(title='Error', message='Permission denied')
+            return
+            
+        start = start.get_date().strftime("%Y-%m-%d")
+        end = end.get_date().strftime("%Y-%m-%d")
+        command = '(cd /home/rxm/; source .GetKvctLogs.sh {startdate} {enddate})'.format(startdate = start , enddate = end)
+        stdin, stdout, stderr = ssh.exec_command(command)
+        filepaths = stdout.readlines()
     
-    ssh.connect(ipaddress, 22, username, password)
-    command = '(cd /home/rxm/; source .GetKvctLogs.sh {startdate} {enddate})'.format(startdate = startdate, enddate = enddate)
-    stdin, stdout, stderr = ssh.exec_command(command)
-    
-    # SCP to local folder
-    files = stdout.readlines()
-    for file in files:
+        # SCP to local folder
         with SCPClient(ssh.get_transport(), sanitize=lambda x: x) as scp:
-            scp.get(remote_path=file, local_path=local_folder)
-    ssh.close()
+            for filepath in filepaths:
+                scp.get(remote_path=filepath, local_path=output)
+                
+                filename = filepath.split('/')[-1].replace('\n','')
+                local_file = os.path.join(output, filename)
+                size = int((os.stat(local_file).st_size)/1000)
+                Page1.tree.insert('', 'end', values=[filename,size,output])
+                get.UpdateProgress(100/len(filepaths))
+    
+        ssh.close()
+        return
+    return
 
 def GetFiles(folderpath):
     acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
