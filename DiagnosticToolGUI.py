@@ -8,6 +8,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import tkinter.font as font
+from tkcalendar import DateEntry
 import DiagnosticToolGUISubfunctions as Subfunctions
 from GetInterlocks import GetInterlocks as get
 
@@ -21,48 +22,109 @@ class Page1(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
       
-       Frame = tk.Frame(self)
-       Frame.place(relx=0.5, relwidth=0.95, relheight=0.95, anchor='n')
+        Frame = tk.Frame(self)
+       Frame.place(relx=0.5, relwidth=0.95, relheight=1, anchor='n')
        
-       # Scrollbox to list details of chosen log files
+       ##### Scrollbox to list details of chosen log files #####
        scrollFrame = tk.Frame(Frame, bd=1, relief='solid')
-       scrollFrame.place(relx=0.42, rely=0.1, relwidth=0.80, relheight=0.9, anchor='n')
+       scrollFrame.place(relx=0.43, rely=0.28, relwidth=0.86, relheight=0.7, anchor='n')
        
-       self.tree = ttk.Treeview(scrollFrame)
-       self.tree['show'] = 'headings'
+       Page1.tree = ttk.Treeview(scrollFrame)
+       Page1.tree['show'] = 'headings'
        
-       scrollbar_x = ttk.Scrollbar(scrollFrame, orient="horizontal", command=self.tree.xview)
-       scrollbar_y  = ttk.Scrollbar(scrollFrame, orient="vertical", command=self.tree.yview)
+       scrollbar_x = ttk.Scrollbar(scrollFrame, orient="horizontal", command=Page1.tree.xview)
+       scrollbar_y  = ttk.Scrollbar(scrollFrame, orient="vertical", command=Page1.tree.yview)
        
-       self.tree.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
-       self.tree.grid(column=0, row=0, sticky='nsew', in_=scrollFrame)
+       Page1.tree.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
+       Page1.tree.grid(column=0, row=0, sticky='nsew', in_=scrollFrame)
        scrollbar_y.grid(column=1, row=0, sticky='ns', in_=scrollFrame)
        scrollbar_x.grid(column=0, row=1, sticky='ew', in_=scrollFrame)
        scrollFrame.grid_columnconfigure(0, weight=1)
        scrollFrame.grid_rowconfigure(0, weight=1)
        
        columns = ['File', 'Size', 'Path']
-       self.tree["columns"] = columns
-       [self.tree.heading(col, text=col, anchor='w', command=lambda c=col: Subfunctions.sortby(self.tree, c, 0, True)) for col in columns]
-       self.tree.column('File', width=300, stretch='no')
-       self.tree.column('Size', width=100, stretch='no')
-       self.tree.column('Path', width=500, stretch='no')
+       Page1.tree["columns"] = columns
+       [Page1.tree.heading(col, text=col, anchor='w', command=lambda c=col: Subfunctions.sortby(Page1.tree, c, 0, True)) for col in columns]
+       Page1.tree.column('File', width=250, stretch='no')
+       Page1.tree.column('Size', width=100, stretch='no')
+       Page1.tree.column('Path', width=400, stretch='no')
+       
+       ###### Import remote machine ######      
+       remoteFrame = tk.Frame(Frame, bd=1, relief="groove")
+       remoteFrame.place(relx=0.25,rely=0.02, relwidth=0.5, relheight=0.25, anchor='n')
+       remoteLabel = tk.Label(remoteFrame, text="Import from remote machine: ", font='Helvetica 12 bold')
+       remoteLabel.grid(row=0, column=0, columnspan=2, sticky='w')
+       
+       remoteLabel.rowconfigure(1, pad=10)
+       
+       #IP Address label and text entry box
+       ipLabel = tk.Label(remoteFrame, text="IP Address:", font='Helvetica 10')
+       ipLabel.grid(row=1, column=0, sticky='e', pady=(5,0))
+       ipaddress = tk.StringVar()
+       ipEntry = tk.Entry(remoteFrame, textvariable=ipaddress, width = 55)
+       ipEntry.grid(row=1, column=1, columnspan=2)
+       
+       #username label and text entry box
+       usernameLabel = tk.Label(remoteFrame, text="User:", font='Helvetica 10')
+       usernameLabel.grid(row=2, column=0, sticky='e', pady=(5,0))
+       username = tk.StringVar()
+       usernameEntry = tk.Entry(remoteFrame, textvariable=username, width = 55)
+       usernameEntry.grid(row=2, column=1, columnspan=2) 
+      
+       #password label and password entry box
+       passwordLabel = tk.Label(remoteFrame,text="Password:", font='Helvetica 10')
+       passwordLabel.grid(row=3, column=0, sticky='e', pady=(5,0)) 
+       password = tk.StringVar()
+       passwordEntry = tk.Entry(remoteFrame, textvariable=password, show='*', width = 55)
+       passwordEntry.grid(row=3, column=1, columnspan=2, sticky='e')
+       
+       #Date range input
+       daterangeLabel = tk.Label(remoteFrame, text="Date Range:", font='Helvetica 10')
+       daterangeLabel.grid(row=4, column=0, sticky='e', pady=(5,0))
+       toLabel = tk.Label(remoteFrame, text="to", font='Helvetica 10')
+       toLabel.grid(row=4, column=1, sticky='e')
+       
+       start = DateEntry(remoteFrame,width=9,bg="darkblue",fg="white",year=2021)
+       start.grid(row=4, column=1)
+       end = DateEntry(remoteFrame,width=9,bg="darkblue",fg="white",year=2021)
+       end.grid(row=4, column=2)
+              
+       #Output folder to store logs and reports
+       outputLabel = tk.Label(remoteFrame,text="Output:", font='Helvetica 10')
+       outputLabel.grid(row=5, column=0, sticky='e',pady=(5,0))  
+       output = tk.StringVar()
+       outputEntry = tk.Entry(remoteFrame, textvariable=output, width = 55)
+       outputEntry.grid(row=5, column=1, columnspan=2)   
+       
+       #Buttons
+       ConnectServerButton = tk.Button(remoteFrame, text="Get Logs", font=30, command=lambda: Subfunctions.ConnectServer(Page1, ipaddress, username, password, start, end, output))
+       ConnectServerButton.grid(row=1, column=3, sticky='e', padx=(30,0))
+       
+       ######  Import local drive ###### 
+       self.localFrame = tk.Frame(Frame, bd=1, relief="groove")
+       self.localFrame.place(relx=0.75, rely=0.02, relwidth=0.5, relheight=0.25, anchor='n')
+       localLabel = tk.Label(self.localFrame, text="Import from local drive: ", font='Helvetica 12 bold', anchor='w')
+       localLabel.place(relx=0.01, rely=0.01, relwidth=0.4, relheight=0.15)
 
        # Buttons for List of Files
-       button_selectfolder = tk.Button(Frame, text='Select Folder', font=30, command=self.addFolder)
-       button_selectfolder.place(relx=0.85, rely=0.1, relwidth=0.1, relheight=0.05)
+       button_selectfolder = tk.Button(self.localFrame , text='Add Folder', font=10, command=self.addFolder)
+       button_selectfolder.place(relx=0.01, rely=0.2, relwidth=0.25, relheight=0.15)
           
-       button_add = tk.Button(Frame, text='Add', font=15, command=self.addFile)
-       button_add.place(relx=0.85, rely=0.4, relwidth=0.1, relheight=0.05)
+       button_add = tk.Button(self.localFrame , text='Add File', height=1, width=8, font=10, command=self.addFile)
+       button_add.place(relx=0.01, rely=0.42, relwidth=0.25, relheight=0.15)
        
-       button_delete_select = tk.Button(Frame, text='Delete', font=15, command=self.deleteFile_selected)
-       button_delete_select.place(relx=0.85, rely=0.45, relwidth=0.1, relheight=0.05)
+       ######  Edit List Box ###### 
+       editFrame = tk.Frame(Frame, bd=1)
+       editFrame.place(relx=0.93, rely=0.28, relwidth=0.14, relheight=0.7, anchor='n')
+       
+       button_delete_select = tk.Button(editFrame , text='Delete', font=15, command=self.deleteFile_selected)
+       button_delete_select.place(relx=0.01, rely=0.35, relwidth=0.99, relheight=0.1)
           
-       button_delete = tk.Button(Frame, text='Delete All', font=15, command=self.deleteFile_all)
-       button_delete.place(relx=0.85, rely=0.5, relwidth=0.1, relheight=0.05)
+       button_delete = tk.Button(editFrame, text='Delete All', font=15, command=self.deleteFile_all)
+       button_delete.place(relx=0.01, rely=0.45, relwidth=0.99,relheight=0.1)
        
-       button_find = tk.Button(Frame, text='Find Interlocks', font=15, command=self.findInterlocks)
-       button_find.place(relx=0.85, rely=0.9, relwidth=0.1, relheight=0.05)
+       button_find = tk.Button(editFrame, text='Find Interlocks', font=15, command=self.findInterlocks)
+       button_find.place(relx=0.01, rely=0.9, relwidth=0.99, relheight=0.1)
 
    def addFolder(self):
        folder = filedialog.askdirectory()
@@ -329,55 +391,6 @@ class MainView(tk.Frame):
             MainView.b2.config(relief='raised')
             MainView.b3.config(relief='sunken')       
             
-    def ConnectWindow():
-        window = tk.Toplevel(root)
-        window.geometry('500x200')  
-        window.wm_title('Connect')
-        
-        #IP Address label and text entry box
-        ipLabel = tk.Label(window, text="IP Address")
-        ipLabel.grid(row=0, column=0)
-        ipaddress = tk.StringVar()
-        ipEntry = tk.Entry(window, textvariable=ipaddress)
-        ipEntry.grid(row=0, column=1)  
-        
-        #username label and text entry box
-        usernameLabel = tk.Label(window, text="User Name")
-        usernameLabel.grid(row=1, column=0)
-        username = tk.StringVar()
-        usernameEntry = tk.Entry(window, textvariable=username)
-        usernameEntry.grid(row=1, column=1)  
-        
-        #password label and password entry box
-        passwordLabel = tk.Label(window,text="Password")
-        passwordLabel.grid(row=2, column=0)  
-        password = tk.StringVar()
-        passwordEntry = tk.Entry(window, textvariable=password, show='*')
-        passwordEntry.grid(row=2, column=1) 
-        
-        #Output folder to store logs and reports
-        outputLabel = tk.Label(window,text="Output")
-        outputLabel.grid(row=3, column=0)  
-        output = tk.StringVar()
-        outputEntry = tk.Entry(window, textvariable=output)
-        outputEntry.grid(row=3, column=1)   
-        
-        #Date range input
-        startdateLabel = tk.Label(window,text="Start Date")
-        startdateLabel.grid(row=2, column=2)  
-        startdate = tk.StringVar()
-        startdateEntry = tk.Entry(window, textvariable=startdate)
-        startdateEntry.grid(row=2, column=3)  
-        
-        enddateLabel = tk.Label(window,text="End Date")
-        enddateLabel.grid(row=3, column=2)  
-        enddate = tk.StringVar()
-        enddateEntry = tk.Entry(window, textvariable=enddate)
-        enddateEntry.grid(row=3, column=3)  
-        
-        #Buttons
-        ConnectServerButton = tk.Button(window, text="Get Logs", command=lambda : Subfunctions.ConnectServer(ipaddress.get(), username.get(), password.get(), output.get(), startdate.get(), enddate.get()))
-        ConnectServerButton.grid(row=4, column=2) 
 
 if __name__ == "__main__":
     root = tk.Tk()
