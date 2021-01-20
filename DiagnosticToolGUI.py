@@ -79,15 +79,21 @@ class Page1(Page):
        passwordEntry.grid(row=3, column=1, columnspan=2, sticky='e')
        
        #Date range input
+       times = [str(hour) + ':00' for hour in list(range(0,24))]
        daterangeLabel = tk.Label(remoteFrame, text="Date Range:", font='Helvetica 10')
        daterangeLabel.grid(row=4, column=0, sticky='e', pady=(5,0))
        toLabel = tk.Label(remoteFrame, text="to", font='Helvetica 10')
        toLabel.grid(row=4, column=1, sticky='e')
        
-       start = DateEntry(remoteFrame,width=9,bg="darkblue",fg="white",year=2021)
-       start.grid(row=4, column=1)
-       end = DateEntry(remoteFrame,width=9,bg="darkblue",fg="white",year=2021)
-       end.grid(row=4, column=2)
+       startdate = DateEntry(remoteFrame,width=9,bg="darkblue",fg="white",year=2021)
+       startdate.grid(row=4, column=1, sticky='w', padx=(10,0))
+       starttime = tk.Spinbox(remoteFrame, values=times+['23:59'], width=7)
+       starttime.grid(row=4, column=1, sticky='e', padx=(0,20))
+       
+       enddate = DateEntry(remoteFrame,width=9,bg="darkblue",fg="white",year=2021)
+       enddate.grid(row=4, column=2, sticky='w', padx=(10,0))
+       endtime = tk.Spinbox(remoteFrame, values=['23:59']+times, width=7)
+       endtime.grid(row=4, column=2, sticky='e', padx=(0,20))
               
        #Output folder to store logs and reports
        outputLabel = tk.Label(remoteFrame,text="Output:", font='Helvetica 10')
@@ -97,7 +103,8 @@ class Page1(Page):
        outputEntry.grid(row=5, column=1, columnspan=2)   
        
        #Buttons
-       ConnectServerButton = tk.Button(remoteFrame, text="Get Logs", font=30, command=lambda: Subfunctions.ConnectServer(Page1, ipaddress, username, password, start, end, output))
+       ConnectServerButton = tk.Button(remoteFrame, text="Get Logs", font=30, command=lambda: \
+                                       Subfunctions.ConnectServer(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, output))
        ConnectServerButton.grid(row=1, column=3, sticky='e', padx=(30,0))
        
        ######  Import local drive ###### 
@@ -165,7 +172,7 @@ class Page1(Page):
        
    def findInterlocks(self):
        global files
-       global kvct_df, kvct_filtered, kvct_unfiltered
+       global kvct_df, kvct_filtered, kvct_unfiltered, filtered_couchinterlocks
        global recon_df, recon_filtered, recon_unfiltered
        global system, dates
        
@@ -184,7 +191,7 @@ class Page1(Page):
        else:
            for child in self.tree.get_children():
               files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
-           kvct_df, kvct_filtered, kvct_unfiltered, recon_df, recon_filtered, recon_unfiltered, system, dates = \
+           kvct_df, kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_df, recon_filtered, recon_unfiltered, system, dates = \
              Subfunctions.FindEntries(Page2, Page3, MainView, files, node)
       
 class Page2(Page):
@@ -411,4 +418,5 @@ if __name__ == "__main__":
     main = MainView(root)
     main.pack(side="top", fill="both", expand=True)
     root.wm_geometry("1300x800")
+    root.title('KVCT Diagnostic Tool')
     root.mainloop()           

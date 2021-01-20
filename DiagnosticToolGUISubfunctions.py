@@ -9,6 +9,7 @@ import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
+import datetime
 import paramiko
 from scp import SCPClient
 
@@ -17,8 +18,11 @@ from GetInterlocks import GetInterlocks as get
 import FilterInterlocks as filt
 import AnalyzeInterlocks as analyze 
 
-def ConnectServer(Page1, ipaddress, username, password, start, end, output):
+def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, output):
+    #  Restart loading bar and get all parameter values
+    get.UpdateProgress('reset')
     ipaddress, username, password, output = ipaddress.get(), username.get(), password.get(), output.get()
+    
     # Check if all arguments are filled
     if not ipaddress or not username or not password:
         messagebox.showerror(title='Error', message='Enter ipaddress, username, and/or password.')
@@ -36,21 +40,33 @@ def ConnectServer(Page1, ipaddress, username, password, start, end, output):
             messagebox.showerror(title='Error', message='Permission denied')
             return
             
-        start = start.get_date().strftime("%Y-%m-%d")
-        end = end.get_date().strftime("%Y-%m-%d")
-        command = '(cd /home/rxm/; source .GetKvctLogs.sh {startdate} {enddate})'.format(startdate = start , enddate = end)
+        startdate_str = startdate.get_date().strftime("%Y-%m-%d")
+        enddate_str = enddate.get_date().strftime("%Y-%m-%d")
+        command = '(cd /home/rxm/; source .GetKvctLogs.sh {startdate} {enddate})'.format(startdate = startdate_str , enddate = enddate_str)
         stdin, stdout, stderr = ssh.exec_command(command)
         filepaths = stdout.readlines()
+        print(filepaths)
     
         # SCP to local folder
+        starttime = datetime.datetime.strptime(starttime.get(), '%H:%M').time()
+        endtime = datetime.datetime.strptime(endtime.get(), '%H:%M').time()
+        
+        startdatetime = datetime.datetime.combine(startdate.get_date(), starttime)
+        enddatetime = datetime.datetime.combine(enddate.get_date(), endtime)
+        
         with SCPClient(ssh.get_transport(), sanitize=lambda x: x) as scp:
             for filepath in filepaths:
-                scp.get(remote_path=filepath, local_path=output)
-                
                 filename = filepath.split('/')[-1].replace('\n','')
-                local_file = os.path.join(output, filename)
-                size = int((os.stat(local_file).st_size)/1000)
-                Page1.tree.insert('', 'end', values=[filename,size,output])
+                filedatetime = '-'.join(filename.split('-')[:4])
+                filedatetime  = datetime.datetime.strptime(filedatetime, '%Y-%m-%d-%H%M%S')
+                
+                if startdatetime < filedatetime < enddatetime:
+                    scp.get(remote_path=filepath, local_path=output)
+                    
+                    filename = filepath.split('/')[-1].replace('\n','')
+                    local_file = os.path.join(output, filename)
+                    size = int((os.stat(local_file).st_size)/1000)
+                    Page1.tree.insert('', 'end', values=[filename,size,output])
                 get.UpdateProgress(100/len(filepaths))
     
         ssh.close()
@@ -70,7 +86,7 @@ def GetFiles(folderpath):
     return(filenames)
     
 def FindEntries(Page2, Page3, MainView, files, node):        
-   global kvct_df, kvct_filtered, kvct_unfiltered
+   global kvct_df, kvct_filtered, kvct_unfiltered, filtered_couchinterlocks
    global recon_df, recon_filtered, recon_unfiltered
    global system, dates
    
@@ -94,7 +110,7 @@ def FindEntries(Page2, Page3, MainView, files, node):
    # Filter interlocks
    try:
        if kvct_df.empty == False:
-           kvct_filtered, kvct_unfiltered = filt.filter_kvct(kvct_df)
+           kvct_filtered, kvct_unfiltered, filtered_couchinterlocks = filt.filter_kvct(kvct_df)
        else:
            kvct_filtered, kvct_unfiltered = kvct_df, kvct_df
            messagebox.showinfo(title=None, message='No kVCT interlocks to filter')
@@ -131,7 +147,7 @@ def FindEntries(Page2, Page3, MainView, files, node):
        MainView.SwitchPage(MainView.p2)
        messagebox.showinfo(title=None, message='No interlocks found')
        
-   return(kvct_df, kvct_filtered, kvct_unfiltered, recon_df, recon_filtered, recon_unfiltered, system, dates)
+   return(kvct_df, kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_df, recon_filtered, recon_unfiltered, system, dates)
 
 def df_tree(df, frame):
    # Scrollbars
@@ -230,8 +246,8 @@ def exportExcel():
    try:       
        # KVCT Interlocks
        kvct_writer = pd.ExcelWriter(directory + '\KvctInterlocks_' + system + '_' + dates + '.xlsx', engine='xlsxwriter')
-       sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Filtered)']
-       dataframes = [kvct_unfiltered, kvct_filtered]
+       sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Filtered)', 'KVCT Interlocks (No Couch)']
+       dataframes = [kvct_unfiltered, kvct_filtered, filtered_couchinterlocks]
        for df,sheetname in zip(dataframes,sheetnames):
            df.to_excel(kvct_writer,sheetname, index=False)
            
