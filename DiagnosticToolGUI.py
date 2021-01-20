@@ -53,59 +53,57 @@ class Page1(Page):
        remoteFrame = tk.Frame(Frame, bd=1, relief="groove")
        remoteFrame.place(relx=0.25,rely=0.02, relwidth=0.5, relheight=0.25, anchor='n')
        remoteLabel = tk.Label(remoteFrame, text="Import from remote machine: ", font='Helvetica 12 bold')
-       remoteLabel.grid(row=0, column=0, columnspan=2, sticky='w')
-       
-       remoteLabel.rowconfigure(1, pad=10)
+       remoteLabel.place(relx=0.01, rely=0.01, relwidth=0.48, relheight=0.15)
        
        #IP Address label and text entry box
        ipLabel = tk.Label(remoteFrame, text="IP Address:", font='Helvetica 10')
-       ipLabel.grid(row=1, column=0, sticky='e', pady=(5,0))
+       ipLabel.place(relx=0.16, rely=0.25, relwidth=0.15, relheight=0.15, anchor='e')
        ipaddress = tk.StringVar()
-       ipEntry = tk.Entry(remoteFrame, textvariable=ipaddress, width = 55)
-       ipEntry.grid(row=1, column=1, columnspan=2)
+       ipEntry = tk.Entry(remoteFrame, textvariable=ipaddress, width = 50)
+       ipEntry.place(relx=0.17, rely=0.25, relwidth=0.6, relheight=0.12, anchor='w')
        
        #username label and text entry box
        usernameLabel = tk.Label(remoteFrame, text="User:", font='Helvetica 10')
-       usernameLabel.grid(row=2, column=0, sticky='e', pady=(5,0))
+       usernameLabel.place(relx=0.19, rely=0.4, relwidth=0.15, relheight=0.15, anchor='e')
        username = tk.StringVar()
-       usernameEntry = tk.Entry(remoteFrame, textvariable=username, width = 55)
-       usernameEntry.grid(row=2, column=1, columnspan=2) 
+       usernameEntry = tk.Entry(remoteFrame, textvariable=username, width = 50)
+       usernameEntry.place(relx=0.17, rely=0.4, relwidth=0.6, relheight=0.12, anchor='w')
       
        #password label and password entry box
        passwordLabel = tk.Label(remoteFrame,text="Password:", font='Helvetica 10')
-       passwordLabel.grid(row=3, column=0, sticky='e', pady=(5,0)) 
+       passwordLabel.place(relx=0.16, rely=0.55, relwidth=0.15, relheight=0.15, anchor='e')
        password = tk.StringVar()
-       passwordEntry = tk.Entry(remoteFrame, textvariable=password, show='*', width = 55)
-       passwordEntry.grid(row=3, column=1, columnspan=2, sticky='e')
+       passwordEntry = tk.Entry(remoteFrame, textvariable=password, show='*', width = 50)
+       passwordEntry.place(relx=0.17, rely=0.55, relwidth=0.6, relheight=0.12, anchor='w')
        
        #Date range input
        times = [str(hour) + ':00' for hour in list(range(0,24))]
        daterangeLabel = tk.Label(remoteFrame, text="Date Range:", font='Helvetica 10')
-       daterangeLabel.grid(row=4, column=0, sticky='e', pady=(5,0))
+       daterangeLabel.place(relx=0.16, rely=0.7, relwidth=0.15, relheight=0.15, anchor='e')
        toLabel = tk.Label(remoteFrame, text="to", font='Helvetica 10')
-       toLabel.grid(row=4, column=1, sticky='e')
+       toLabel.place(relx=0.42, rely=0.7, relwidth=0.1, relheight=0.15, anchor='w')
        
-       startdate = DateEntry(remoteFrame,width=9,bg="darkblue",fg="white",year=2021)
-       startdate.grid(row=4, column=1, sticky='w', padx=(10,0))
-       starttime = tk.Spinbox(remoteFrame, values=times+['23:59'], width=7)
-       starttime.grid(row=4, column=1, sticky='e', padx=(0,20))
+       startdate = DateEntry(remoteFrame,width=7,bg="darkblue",fg="white",year=2021)
+       startdate.place(relx=0.17, rely=0.7, relwidth=0.15, relheight=0.12, anchor='w')
+       starttime = tk.Spinbox(remoteFrame, values=times+['23:59'], width=6)
+       starttime.place(relx=0.33, rely=0.7, relwidth=0.1, relheight=0.12, anchor='w')
        
-       enddate = DateEntry(remoteFrame,width=9,bg="darkblue",fg="white",year=2021)
-       enddate.grid(row=4, column=2, sticky='w', padx=(10,0))
-       endtime = tk.Spinbox(remoteFrame, values=['23:59']+times, width=7)
-       endtime.grid(row=4, column=2, sticky='e', padx=(0,20))
+       enddate = DateEntry(remoteFrame,width=7,bg="darkblue",fg="white",year=2021)
+       enddate.place(relx=0.51, rely=0.7, relwidth=0.15, relheight=0.12, anchor='w')
+       endtime = tk.Spinbox(remoteFrame, values=['23:59']+times, width=6)
+       endtime.place(relx=0.67, rely=0.7, relwidth=0.1, relheight=0.12, anchor='w')
               
        #Output folder to store logs and reports
        outputLabel = tk.Label(remoteFrame,text="Output:", font='Helvetica 10')
-       outputLabel.grid(row=5, column=0, sticky='e',pady=(5,0))  
+       outputLabel.place(relx=0.16, rely=0.85, relwidth=0.15, relheight=0.15, anchor='e')
        output = tk.StringVar()
-       outputEntry = tk.Entry(remoteFrame, textvariable=output, width = 55)
-       outputEntry.grid(row=5, column=1, columnspan=2)   
+       outputEntry = tk.Entry(remoteFrame, textvariable=output, width = 45)
+       outputEntry.place(relx=0.17, rely=0.85, relwidth=0.6, relheight=0.12, anchor='w') 
        
        #Buttons
        ConnectServerButton = tk.Button(remoteFrame, text="Get Logs", font=30, command=lambda: \
                                        Subfunctions.ConnectServer(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, output))
-       ConnectServerButton.grid(row=1, column=3, sticky='e', padx=(30,0))
+       ConnectServerButton.place(relx=0.8, rely=0.2, relwidth=0.15, relheight=0.15)
        
        ######  Import local drive ###### 
        self.localFrame = tk.Frame(Frame, bd=1, relief="groove")
@@ -206,18 +204,18 @@ class Page2(Page):
            
        # Add filtering menubars
        FilterButtons = tk.Frame(self)
-       FilterButtons.place(relx=0.7, relwidth=0.3, relheight=0.08, anchor='nw')
+       FilterButtons.place(relx=0.65, relwidth=0.35, relheight=0.08, anchor='nw')
        
-       Page2.menubar = tk.Menubutton(FilterButtons, text='Filter KVCT Interlocks \u25BE', font=20, relief='raised')
-       Page2.menubar.place(rely=0.5, relwidth=0.53, relheight=0.45)
+       Page2.menubar = tk.Menubutton(FilterButtons, text='Filter KVCT Interlocks \u25BE', font=12, relief='raised')
+       Page2.menubar.place(rely=0.5, relwidth=0.55, relheight=0.45)
        
        button_filter = tk.Button(FilterButtons, text="Filter", font=20, command = Page2.filter_by_interlock)
-       button_filter.place(relx=0.6,rely=0.3, relwidth=0.3, relheight=0.4)
+       button_filter.place(relx=0.6, rely=0.5, relwidth=0.2, relheight=0.45)
        
-       button_selectall = tk.Button(FilterButtons, text="Select All", font=20, command=Page2.selectall)
+       button_selectall = tk.Button(FilterButtons, text="Select All", font=12, command=Page2.selectall)
        button_selectall.place(relwidth= 0.22, relheight=0.45)
        
-       button_selectnone = tk.Button(FilterButtons, text="Select None", font=20, command=Page2.selectnone)
+       button_selectnone = tk.Button(FilterButtons, text="Select None", font=12, command=Page2.selectnone)
        button_selectnone.place(relx=0.25,relwidth=0.28, relheight=0.45)
     
     def toggle():
@@ -285,13 +283,13 @@ class Page3(Page):
            
        # Add filtering menubars
        FilterButtons = tk.Frame(self)
-       FilterButtons.place(relx=0.7, relwidth=0.3, relheight=0.08, anchor='nw')
+       FilterButtons.place(relx=0.65, relwidth=0.35, relheight=0.08, anchor='nw')
        
        Page3.menubar = tk.Menubutton(FilterButtons, text='Filter Recon Interlocks \u25BE', font=20, relief='raised')
-       Page3.menubar.place(rely=0.5, relwidth=0.53, relheight=0.45)
+       Page3.menubar.place(rely=0.5, relwidth=0.55, relheight=0.45)
        
        button_filter = tk.Button(FilterButtons, text="Filter", font=20, command = Page3.filter_by_interlock)
-       button_filter.place(relx=0.6,rely=0.3, relwidth=0.3, relheight=0.4)
+       button_filter.place(relx=0.6, rely=0.5, relwidth=0.2, relheight=0.45)
        
        button_selectall = tk.Button(FilterButtons, text="Select All", font=20, command=Page3.selectall)
        button_selectall.place(relwidth= 0.22, relheight=0.45)
@@ -417,6 +415,6 @@ if __name__ == "__main__":
     root = tk.Tk()
     main = MainView(root)
     main.pack(side="top", fill="both", expand=True)
-    root.wm_geometry("1300x800")
+    root.wm_geometry("1000x700")
     root.title('KVCT Diagnostic Tool')
     root.mainloop()           
