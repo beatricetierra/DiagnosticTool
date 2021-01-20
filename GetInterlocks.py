@@ -19,9 +19,12 @@ class GetInterlocks(threading.Thread):
         GetInterlocks.root = root 
         
     def UpdateProgress(perc):
-        GetInterlocks.progress['value'] += perc
-        time.sleep(0.005)
-        GetInterlocks.root.update_idletasks()
+        if perc == 'reset':
+            GetInterlocks.progress['value'] = 0
+        else:
+            GetInterlocks.progress['value'] += perc
+            time.sleep(0.005)
+            GetInterlocks.root.update_idletasks()
         return
 
     def GetEntries(filenames, node):
@@ -247,7 +250,7 @@ class GetInterlocks(threading.Thread):
         GetInterlocks.UpdateProgress(4)
         
         # Gantry speed
-        gantry_speed['Description'] = [descr.split("=")[-1] for descr in gantry_speed['Description']]
+        gantry_speed['Description'] = [str(time) +': Speed ='+ descr.split("=")[-1] for time, descr in zip(gantry_speed['Datetime'], gantry_speed['Description'])]
         node_df['Gantry Speed (RPM)'] = sub.find_last_entry(node_df, node_df['Active Time'], gantry_speed)
         GetInterlocks.UpdateProgress(2)
         
