@@ -11,6 +11,7 @@ import tkinter.font as font
 from tkcalendar import DateEntry
 import DiagnosticToolGUISubfunctions as Subfunctions
 from GetInterlocks import GetInterlocks as get
+from threading import Thread
 
 class Page(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -101,8 +102,8 @@ class Page1(Page):
        outputEntry.place(relx=0.17, rely=0.85, relwidth=0.6, relheight=0.12, anchor='w') 
        
        #Buttons
-       ConnectServerButton = tk.Button(remoteFrame, text="Get Logs", font=30, command=lambda: \
-                                       Subfunctions.ConnectServer(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, output))
+       ConnectServerButton = tk.Button(remoteFrame, text="Get Logs", font=30, command=lambda: Thread(target=
+                                       Subfunctions.ConnectServer, args=(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, output)).start())
        ConnectServerButton.place(relx=0.8, rely=0.2, relwidth=0.15, relheight=0.15)
        
        ######  Import local drive ###### 
@@ -127,7 +128,7 @@ class Page1(Page):
        lognodeButton = tk.Radiobutton(self.localFrame, text='LogNode', variable=self.node, value=1, command=lambda: self.node.set(1))
        lognodeButton.place(relx=0.3, rely=0.62, relwidth=0.15, relheight=0.15)
        nodesButton = tk.Radiobutton(self.localFrame, text='KVCT, Pet Recon, Sysnode', variable=self.node, value=2, command=lambda:  self.node.set(2))
-       nodesButton.place(relx=0.45, rely=0.62, relwidth=0.3, relheight=0.15) 
+       nodesButton.place(relx=0.45, rely=0.62, relwidth=0.4, relheight=0.15) 
        
        ######  Edit List Box ###### 
        editFrame = tk.Frame(Frame, bd=1)
@@ -139,7 +140,7 @@ class Page1(Page):
        button_delete = tk.Button(editFrame, text='Delete All', font=15, command=self.deleteFile_all)
        button_delete.place(relx=0.01, rely=0.45, relwidth=0.99,relheight=0.1)
        
-       button_find = tk.Button(editFrame, text='Find Interlocks', font=15, command=self.findInterlocks)
+       button_find = tk.Button(editFrame, text='Find Interlocks', font=15, command=lambda: Thread(target=self.findInterlocks).start())
        button_find.place(relx=0.01, rely=0.9, relwidth=0.99, relheight=0.1)
 
    def addFolder(self):
@@ -206,7 +207,7 @@ class Page2(Page):
        FilterButtons = tk.Frame(self)
        FilterButtons.place(relx=0.65, relwidth=0.35, relheight=0.08, anchor='nw')
        
-       Page2.menubar = tk.Menubutton(FilterButtons, text='Filter KVCT Interlocks \u25BE', font=12, relief='raised')
+       Page2.menubar = tk.Menubutton(FilterButtons, text='Filter KVCT Interlocks \u25BE', font=14, relief='raised')
        Page2.menubar.place(rely=0.5, relwidth=0.55, relheight=0.45)
        
        button_filter = tk.Button(FilterButtons, text="Filter", font=20, command = Page2.filter_by_interlock)
@@ -415,6 +416,6 @@ if __name__ == "__main__":
     root = tk.Tk()
     main = MainView(root)
     main.pack(side="top", fill="both", expand=True)
-    root.wm_geometry("1000x700")
+    root.wm_geometry("1000x800")
     root.title('KVCT Diagnostic Tool')
     root.mainloop()           

@@ -45,33 +45,35 @@ def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, en
         command = '(cd /home/rxm/; source .GetKvctLogs.sh {startdate} {enddate})'.format(startdate = startdate_str , enddate = enddate_str)
         stdin, stdout, stderr = ssh.exec_command(command)
         filepaths = stdout.readlines()
-        print(filepaths)
     
         # SCP to local folder
-        starttime = datetime.datetime.strptime(starttime.get(), '%H:%M').time()
-        endtime = datetime.datetime.strptime(endtime.get(), '%H:%M').time()
+        try:
+            starttime = datetime.datetime.strptime(starttime.get(), '%H:%M').time()
+            endtime = datetime.datetime.strptime(endtime.get(), '%H:%M').time()
+        except:
+            messagebox.showerror(title='Error', message='Invalid time format ("H:mm")')
         
         startdatetime = datetime.datetime.combine(startdate.get_date(), starttime)
         enddatetime = datetime.datetime.combine(enddate.get_date(), endtime)
-        
+    
         with SCPClient(ssh.get_transport(), sanitize=lambda x: x) as scp:
             for filepath in filepaths:
                 filename = filepath.split('/')[-1].replace('\n','')
                 filedatetime = '-'.join(filename.split('-')[:4])
                 filedatetime  = datetime.datetime.strptime(filedatetime, '%Y-%m-%d-%H%M%S')
-                
+        
                 if startdatetime < filedatetime < enddatetime:
                     scp.get(remote_path=filepath, local_path=output)
-                    
                     filename = filepath.split('/')[-1].replace('\n','')
                     local_file = os.path.join(output, filename)
                     size = int((os.stat(local_file).st_size)/1000)
                     Page1.tree.insert('', 'end', values=[filename,size,output])
                 get.UpdateProgress(100/len(filepaths))
-    
-        ssh.close()
+        
+        ssh.close
         return
     return
+
 
 def GetFiles(folderpath):
     acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
