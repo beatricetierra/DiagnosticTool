@@ -77,7 +77,7 @@ def filter_kvct(interlocks_df):
     # if time difference between Gantry Speed = 0 and DMS.DRB.BadViewCounterChanged or DMS.Status.RCB.CRC_Error is less than 10 seconds
     externaltrigger = df.loc[df['Interlock Number'].str.contains('ExternalTriggerInvalid')]
     externaltriggertimes = [datetime.datetime.combine(date,time) for date,time in zip(externaltrigger['Date'], externaltrigger['Active Time'])]
-    externaltriggertimes.extend([datetime.datetime.combine(date,time) for date,time in zip(externaltrigger['Date'], externaltrigger['Inactive Time'])])
+    externaltriggertimes.extend([datetime.datetime.combine(date,time) for date,time in zip(externaltrigger['Date'], externaltrigger['Inactive Time']) if isinstance(time, datetime.time)])
     
     for idx, (interlock, interlock_time, bel, gantry) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL Open'], df['Gantry Speed (RPM)'])):
         if 'HvOnStatusMismatch' in interlock and type(bel) == pd._libs.tslibs.timestamps.Timestamp:
