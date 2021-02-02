@@ -6,6 +6,7 @@ Created on Mon May 18 19:32:01 2020
 """
 import pandas as pd
 import datetime
+import GetInterlocks as get
 
 # Read -log- log files (compiled log file of all node log files)
 def ReadLogs(file, find_keys):
@@ -35,6 +36,7 @@ def ReadLogs(file, find_keys):
                     lines.append(line)
             except:
                 pass
+            
     # find entries of interest
     parse_idx = [3,4,7,10] #only keep date, time, node, and desciption
     for i, line in enumerate(lines):
@@ -150,6 +152,7 @@ def node_start_delta(interlocks_df):
                 interlocks_df.loc[idx, 'Time from Node Start (min)'] = round(difference.total_seconds()/60,6)
             except:
                 pass
+    get.GetInterlocks.UpdateProgress(1.25)
     return(interlocks_df)
     
 # Time duration of interlock
@@ -163,6 +166,7 @@ def interlock_duration(interlock_df):
                 pass
             else:
                 interlock_df.loc[idx, 'Interlock Duration (min)'] = 'Still Active'
+    get.GetInterlocks.UpdateProgress(1.25)
     return(interlock_df)
 
 #find the the last entry of given entry dataframe prior to given interlock (active or inactive) time
@@ -181,6 +185,7 @@ def find_last_entry(interlock_df, interlock_times, entries_df):
             last_entries.append(possible_entries['Description'].iloc[-1])
         except:
             last_entries.append('')
+    get.GetInterlocks.UpdateProgress(2)
     return(last_entries)
 
 # Finds top relevant interlocks that occur before and during kvct interlocks
@@ -205,4 +210,5 @@ def sysnode_relevant_interlocks(interlock_df, sys_relevant_interlocks):
             str(sys_relevant_interlock) + ': ' + str(sys_relevant_interlocks['Description'][idx])
         except:
             pass
+    get.GetInterlocks.UpdateProgress(2)
     return(interlock_df)
