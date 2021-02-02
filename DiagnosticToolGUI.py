@@ -53,8 +53,8 @@ class Page1(Page):
        ###### Import remote machine ######      
        remoteFrame = tk.Frame(Frame, bd=1, relief="groove")
        remoteFrame.place(relx=0.25,rely=0.02, relwidth=0.5, relheight=0.25, anchor='n')
-       remoteLabel = tk.Label(remoteFrame, text="Import from remote machine: ", font='Helvetica 12 bold')
-       remoteLabel.place(relx=0.01, rely=0.01, relwidth=0.48, relheight=0.15)
+       remoteLabel = tk.Label(remoteFrame, text="Import from remote machine: ", font='Helvetica 12 bold', anchor='w')
+       remoteLabel.place(relx=0.01, rely=0.01, relwidth=0.4, relheight=0.15)
        
        #IP Address label and text entry box
        ipLabel = tk.Label(remoteFrame, text="IP Address:", font='Helvetica 10')
@@ -78,32 +78,40 @@ class Page1(Page):
        passwordEntry.place(relx=0.17, rely=0.55, relwidth=0.6, relheight=0.12, anchor='w')
        
        #Date range input
-       times = [str(hour) + ':00' for hour in list(range(0,24))]
+       times = [str(hour) + ':00' for hour in list(range(0,24))] + ['23:59']
        daterangeLabel = tk.Label(remoteFrame, text="Date Range:", font='Helvetica 10')
        daterangeLabel.place(relx=0.16, rely=0.7, relwidth=0.15, relheight=0.15, anchor='e')
        toLabel = tk.Label(remoteFrame, text="to", font='Helvetica 10')
        toLabel.place(relx=0.42, rely=0.7, relwidth=0.1, relheight=0.15, anchor='w')
        
-       startdate = DateEntry(remoteFrame,width=7,bg="darkblue",fg="white",year=2021)
-       startdate.place(relx=0.17, rely=0.7, relwidth=0.15, relheight=0.12, anchor='w')
-       starttime = tk.Spinbox(remoteFrame, values=times+['23:59'], width=6)
-       starttime.place(relx=0.33, rely=0.7, relwidth=0.1, relheight=0.12, anchor='w')
+       startdate = DateEntry(remoteFrame,width=7,bg="darkblue",fg="white")
+       startdate.place(relx=0.17, rely=0.7, relwidth=0.15, relheight=0.15, anchor='w')
+       startdate._top_cal.overrideredirect(False)
+       starttime = tk.Spinbox(remoteFrame, values=times, width=6)
+       starttime.place(relx=0.33, rely=0.7, relwidth=0.1, relheight=0.15, anchor='w')
        
-       enddate = DateEntry(remoteFrame,width=7,bg="darkblue",fg="white",year=2021)
-       enddate.place(relx=0.51, rely=0.7, relwidth=0.15, relheight=0.12, anchor='w')
-       endtime = tk.Spinbox(remoteFrame, values=['23:59']+times, width=6)
-       endtime.place(relx=0.67, rely=0.7, relwidth=0.1, relheight=0.12, anchor='w')
+       enddate = DateEntry(remoteFrame,width=7,bg="darkblue",fg="white")
+       enddate.place(relx=0.51, rely=0.7, relwidth=0.15, relheight=0.15, anchor='w')
+       enddate._top_cal.overrideredirect(False)
+       timevar = tk.IntVar()
+       endtime = tk.Spinbox(remoteFrame, values=times, textvariable = timevar, width=6)
+       timevar.set(times[-1])
+       endtime.place(relx=0.67, rely=0.7, relwidth=0.1, relheight=0.15, anchor='w')
               
        #Output folder to store logs and reports
        outputLabel = tk.Label(remoteFrame,text="Output:", font='Helvetica 10')
        outputLabel.place(relx=0.16, rely=0.85, relwidth=0.15, relheight=0.15, anchor='e')
-       output = tk.StringVar()
-       outputEntry = tk.Entry(remoteFrame, textvariable=output, width = 45)
-       outputEntry.place(relx=0.17, rely=0.85, relwidth=0.6, relheight=0.12, anchor='w') 
+       button_output = tk.Button(remoteFrame , text='Select', font='Helvetica 10', command=lambda: self.addFolder('folderpath'))
+       button_output.place(relx=0.67, rely=0.8, relwidth=0.1, relheight=0.12)
+
+       self.output = tk.StringVar()
+       self.outputEntry = tk.Entry(remoteFrame, textvariable=self.output, width = 45)
+       self.outputEntry.place(relx=0.17, rely=0.85, relwidth=0.5, relheight=0.12, anchor='w') 
        
        #Buttons
-       ConnectServerButton = tk.Button(remoteFrame, text="Get Logs", font=30, command=lambda: Thread(target=
-                                       Subfunctions.ConnectServer, args=(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, output)).start())
+       ConnectServerButton = tk.Button(remoteFrame, text="Get Logs", font=30, relief='raised', 
+                                       command=lambda: Thread(target=Subfunctions.ConnectServer, daemon=True,
+                  args=(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, self.output, ConnectServerButton)).start())
        ConnectServerButton.place(relx=0.8, rely=0.2, relwidth=0.15, relheight=0.15)
        
        ######  Import local drive ###### 
@@ -113,7 +121,7 @@ class Page1(Page):
        localLabel.place(relx=0.01, rely=0.01, relwidth=0.4, relheight=0.15)
 
        # Buttons for List of Files
-       button_selectfolder = tk.Button(self.localFrame , text='Add Folder', font=10, command=self.addFolder)
+       button_selectfolder = tk.Button(self.localFrame , text='Add Folder', font=10, command=lambda: self.addFolder('files'))
        button_selectfolder.place(relx=0.01, rely=0.2, relwidth=0.25, relheight=0.15)
           
        button_add = tk.Button(self.localFrame , text='Add File', height=1, width=8, font=10, command=self.addFile)
@@ -127,7 +135,7 @@ class Page1(Page):
        self.node.set(2)
        lognodeButton = tk.Radiobutton(self.localFrame, text='LogNode', variable=self.node, value=1, command=lambda: self.node.set(1))
        lognodeButton.place(relx=0.3, rely=0.62, relwidth=0.15, relheight=0.15)
-       nodesButton = tk.Radiobutton(self.localFrame, text='KVCT, Pet Recon, Sysnode', variable=self.node, value=2, command=lambda:  self.node.set(2))
+       nodesButton = tk.Radiobutton(self.localFrame, text='KVCT, Pet Recon, Sysnode', variable=self.node, value=2, command=lambda: self.node.set(2))
        nodesButton.place(relx=0.45, rely=0.62, relwidth=0.4, relheight=0.15) 
        
        ######  Edit List Box ###### 
@@ -140,13 +148,23 @@ class Page1(Page):
        button_delete = tk.Button(editFrame, text='Delete All', font=15, command=self.deleteFile_all)
        button_delete.place(relx=0.01, rely=0.45, relwidth=0.99,relheight=0.1)
        
-       button_find = tk.Button(editFrame, text='Find Interlocks', font=15, command=lambda: Thread(target=self.findInterlocks).start())
+       button_view = tk.Button(editFrame, text='View Results', command=lambda: Subfunctions.DisplayEntries(
+               Page2, Page3, MainView))
+       button_view.place(relwidth=0, relheight=0, anchor='n')
+       
+       button_find = tk.Button(editFrame, text='Find Interlocks', command=lambda: Thread(
+               target=self.findInterlocks, args=(button_view,), daemon=True).start(), font='Calibri 15 bold', borderwidth = '4')
        button_find.place(relx=0.01, rely=0.9, relwidth=0.99, relheight=0.1)
-
-   def addFolder(self):
+       
+   def addFolder(self, output):
        folder = filedialog.askdirectory()
-       files = Subfunctions.GetFiles(folder)
-       Page1.addFileDetails(self.tree, files)
+       
+       if output == 'files':
+           files = Subfunctions.GetFiles(folder)
+           Page1.addFileDetails(self.tree, files)
+       elif output == 'folderpath':
+           self.outputEntry.delete(0, 'end')
+           self.outputEntry.insert('end', folder)
       
    def addFile(self):
        content = filedialog.askopenfilenames(title='Choose files', filetypes=[('Text Document', '*.log')])
@@ -169,16 +187,22 @@ class Page1(Page):
        selected_item = self.tree.selection()[0]
        self.tree.delete(selected_item)
        
-   def findInterlocks(self):
+   def findInterlocks(self,button_view):
        global files
        global kvct_df, kvct_filtered, kvct_unfiltered, filtered_couchinterlocks
        global recon_df, recon_filtered, recon_unfiltered
        global system, dates
        
-       # Clear old entries and restart progress bar
+       # Clear old entries, restart progress bar, and reset toggled buttons
        [widget.destroy() for widget in Page2.Frame.winfo_children()]
        [widget.destroy() for widget in Page3.Frame.winfo_children()]
+       
+       Page2.toggleButton.config(relief="raised")
+       Page3.toggleButton.config(relief="raised")
+       
        MainView.progress['value'] = 0
+       MainView.progress_style.configure('text.Horizontal.TProgressbar', 
+                    text='Reading log files...')
        
        # Find logs option from radio buttons
        node = self.node.get()
@@ -187,12 +211,15 @@ class Page1(Page):
        files=[]
        if not self.tree.get_children():
            messagebox.showerror("Error", "No files found.")
+           return
        else:
            for child in self.tree.get_children():
               files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
-           kvct_df, kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_df, recon_filtered, recon_unfiltered, system, dates = \
-             Subfunctions.FindEntries(Page2, Page3, MainView, files, node)
-      
+
+       system, kvct_df, recon_df, dates = Subfunctions.FindEntries(files, node)
+       kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_filtered, recon_unfiltered = Subfunctions.FilterEntries(kvct_df, recon_df)
+       button_view.invoke()
+
 class Page2(Page):
     def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
@@ -393,9 +420,18 @@ class MainView(tk.Frame):
         MainView.p1.show()
 
         # Progress Bar
-        MainView.progress = ttk.Progressbar(self, orient='horizontal', mode='determinate')
+        MainView.progress_style = ttk.Style(root)
+        # add label in the layout
+        MainView.progress_style.layout('text.Horizontal.TProgressbar', 
+                     [('Horizontal.Progressbar.trough',
+                       {'children': [('Horizontal.Progressbar.pbar',
+                                      {'side': 'left', 'sticky': 'ns'})],
+                        'sticky': 'nswe'}), 
+                      ('Horizontal.Progressbar.label', {'sticky': ''})])
+        MainView.progress = ttk.Progressbar(self, style='text.Horizontal.TProgressbar', orient='horizontal', mode='determinate')
         MainView.progress.pack(side='bottom', fill='x')
-        get(MainView.progress, root)
+        get(MainView.progress, MainView.progress_style, root)
+        
     def SwitchPage(page):
         page.lift()
         if page == MainView.p1:
@@ -409,13 +445,13 @@ class MainView(tk.Frame):
         elif page == MainView.p3:
             MainView.b1.config(relief='raised')
             MainView.b2.config(relief='raised')
-            MainView.b3.config(relief='sunken')       
-            
-
+            MainView.b3.config(relief='sunken')     
+    
 if __name__ == "__main__":
     root = tk.Tk()
     main = MainView(root)
     main.pack(side="top", fill="both", expand=True)
-    root.wm_geometry("1000x800")
+    root.wm_geometry("1200x800")
     root.title('KVCT Diagnostic Tool')
-    root.mainloop()           
+    root.mainloop()
+
