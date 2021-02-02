@@ -13,16 +13,22 @@ from tkinter import messagebox
 import GetInterlocksSubfunctions as sub
 
 class GetInterlocks(threading.Thread):
-    def __init__(self, progress, root):
+    def __init__(self, progress, progress_style, root):
         threading.Thread.__init__(self)
         GetInterlocks.progress = progress
+        GetInterlocks.setDaemon(self, daemonic=True)
+        GetInterlocks.progress_style = progress_style
         GetInterlocks.root = root 
-        
+                    
     def UpdateProgress(perc):
         if perc == 'reset':
             GetInterlocks.progress['value'] = 0
+            GetInterlocks.progress_style.configure('text.Horizontal.TProgressbar', 
+                    text='Fetching log files...')
         else:
             GetInterlocks.progress['value'] += perc
+            GetInterlocks.progress_style.configure('text.Horizontal.TProgressbar', 
+                    text='{:.2f} %'.format(GetInterlocks.progress['value']))
             time.sleep(0.005)
             GetInterlocks.root.update_idletasks()
         return
@@ -43,7 +49,6 @@ class GetInterlocks(threading.Thread):
                 return
             
         # Find entries of interest
-        acceptable_files = ['kvct','pet','sysnode']
         find_keys = ['is active', 'is inactive', 'is clear', 'Set HV ', 'State machine', 'State set', 'received command', 
                      'State transition', 'Top relevant interlock', 'BEL is open', 'Updating gantry speed RPM']
         
@@ -52,24 +57,24 @@ class GetInterlocks(threading.Thread):
         # accepts all -log- files and only kvct, pet_recon, and sysnode files ending in '000'
         for file in filenames:
             if '.log' in file:
-                if '-log-' in file:
-                    files.append(file)
-                for word in acceptable_files:
-                    if word in file and '-000' in file:
+                if node == 1:
+                    if '-log-' in file:
                         files.append(file)
-
+                elif node == 2:
+                    if 'kvct-000' in file or 'pet_recon-000' in file or 'sysnode-000' in file:
+                        files.append(file)
+                        
         # Read log files.
         system, endpoints, entries  = ([] for i in range(3))
         for file in files:
-            if '-log-' in file: # read compiled log file from gateway
+            if node == 1: # read compiled log file from gateway
                 system_tmp, endpoints_tmp, entries_tmp = sub.ReadLogs(file, find_keys)
-            else:
+            elif node == 2:
                 system_tmp, endpoints_tmp, entries_tmp = sub.ReadNodeLogs(file, find_keys)
             [system.append(system_tmp[i]) for i in range(0, len(system_tmp))]
             [endpoints.append(endpoints_tmp[i]) for i in range(0, len(endpoints_tmp))]
             [entries.append(entries_tmp[i]) for i in range(0, len(entries_tmp))]
-
-        GetInterlocks.UpdateProgress(4)
+            GetInterlocks.UpdateProgress(5/len(files))
         
         # Find system model
         if all(i == system[0] for i in system): # checks all log files are from the same system
@@ -78,10 +83,12 @@ class GetInterlocks(threading.Thread):
                 system_model = system_model.replace('-a', '').replace('alpha','A')
             except:
                 system_model = 'Unknown' # if no system are found 
+        else:
+            system_model = 'Unknown' # if no system are found 
             
         # Create dataframe of all entries and endpoints
         columns = ['SW Version', 'Mode', 'Date', 'Time', 'Node', 'Description']
-
+    
         entries_df = pd.DataFrame(entries, columns=columns)
         entries_df.insert(0,'Datetime', pd.to_datetime(entries_df['Date'] + ' ' + entries_df['Time']))
         entries_df.drop(columns=['Date', 'Time'], inplace=True)
@@ -100,44 +107,41 @@ class GetInterlocks(threading.Thread):
         endpoints_df['Description'][log_start] = '----- LOG START -----'
         endpoints_df['Description'][node_start] = '----- NODE START -----'
         endpoints_df['Description'][node_end] = '----- NODE END -----'
-
+    
         # Seperate entries by nodes
         if any(entries_df['Node'] == 'SY') == True:
             sys_log = entries_df.loc[entries_df['Node'] == 'SY']
             sys_log.drop(columns='Node', inplace = True)
         else:
             sys_log = pd.DataFrame()
-            
+    
         if any(entries_df['Node'] == 'KV') == True:
             kvct_log = entries_df.loc[entries_df['Node'] == 'KV']
-            kvct_log.drop(columns='Node', inplace = True)
-            kvct_log.name = 'kvct_log'
-            
             kvct_df = GetInterlocks.NodeInterlocks(kvct_log, sys_log, endpoints_df)
         else:
-            GetInterlocks.UpdateProgress(48)
+            GetInterlocks.UpdateProgress(45)
             kvct_df = pd.DataFrame()
         
         if any(entries_df['Node'] == 'PR') == True:
             recon_log = entries_df.loc[entries_df['Node'] == 'PR']
-            recon_log.drop(columns='Node', inplace = True)
-            recon_log.name = 'recon_log'
-            
             recon_df = GetInterlocks.NodeInterlocks(recon_log, sys_log, endpoints_df)
         else:
             recon_df = pd.DataFrame()
-            GetInterlocks.UpdateProgress(48)
-            
+            GetInterlocks.UpdateProgress(45)
+        
         return(system_model, kvct_df, recon_df)
        
     def NodeInterlocks(node_log, sys_log, endpoints):
+        node_log.reset_index(inplace=True, drop=True)
+        node = node_log.loc[0,'Node']
+        
         # Get all Interlocks 
         node_interlocks = node_log.loc[(node_log['Description'].str.contains('Interlock |KV.Error'))].reset_index(drop=True)
         
         # Group node (KV/PR) entries and endpoints
-        if node_log.name == 'kvct_log':
+        if node == 'KV':
             global kvct_HV_status, BEL_open
-            
+                
             kvct_HV_status = node_log.loc[(node_log['Description'].str.contains('Set HV '))].reset_index(drop=True)
             BEL_open = node_log.loc[(node_log['Description'].str.contains('BEL is open'))].reset_index(drop=True)
             machine_state = node_log.loc[(node_log['Description'].str.contains('State machine'))].reset_index(drop=True)
@@ -148,7 +152,7 @@ class GetInterlocks(threading.Thread):
             node_endpoints = endpoints[endpoints['Node'] == 'KV']
             node_endpoints.drop(columns='Node', inplace = True)
         
-        elif node_log.name == 'recon_log':
+        elif node == 'PR':
             machine_state = node_log.loc[(node_log['Description'].str.contains('State machine'))].reset_index(drop=True)
             node_state = node_log.loc[(node_log['Description'].str.contains('State set'))].reset_index(drop=True)
             received_command =  node_log.loc[(node_log['Description'].str.contains('received command'))].reset_index(drop=True)
@@ -168,7 +172,7 @@ class GetInterlocks(threading.Thread):
             sys_endpoints.reset_index(drop=True, inplace=True)
         else:
             sys_endpoints = pd.DataFrame()     
-
+    
         # Construct node_df 
         # Get node interlocks active vs inactive
         node_df = GetInterlocks.find_interlocks(node_interlocks)
@@ -178,11 +182,9 @@ class GetInterlocks(threading.Thread):
     
         # Time since start/restart of node
         node_df = sub.node_start_delta(node_df)
-        GetInterlocks.UpdateProgress(4.5)
-         
+
         # Duration of node interlocks
         node_df = sub.interlock_duration(node_df)
-        GetInterlocks.UpdateProgress(4.5)
     
         # HV status before active/ inactive interlock
         if 'kvct_HV_status' in globals():
@@ -192,36 +194,30 @@ class GetInterlocks(threading.Thread):
         else:
             node_df['HV Status (before active)'] = ''
             node_df['HV Status (before inactive)'] = ''
-        GetInterlocks.UpdateProgress(2)
         
         # Machine state before active/ inactive interlock
         machine_state['Description'] = [descr.split(": ")[-1].split("\n")[0] for descr in machine_state['Description']]
         node_df['Machine State (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], machine_state)
         node_df['Machine State (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], machine_state)
-        GetInterlocks.UpdateProgress(2)
         
         # Node (kvct/pet) state
         node_state['Description'] = [descr.split(" ")[-1] for descr in node_state['Description']]
         node_df['Node State (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], node_state)
         node_df['Node State (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], node_state)
-        GetInterlocks.UpdateProgress(2)
         
         # last command received before active/ inactive interlock
         received_command['Description'] = [descr.split(':')[0].replace('- ','') for descr in received_command['Description']]
         node_df['Last command received (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], received_command)
         node_df['Last command received (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], received_command)
-        GetInterlocks.UpdateProgress(2)
         
         # Last user command recerived before activer interlock
         user_command['Description'] = [descr.split("command")[-1] for descr in user_command['Description']]
         node_df['Last user command received (before active)'] = sub.find_last_entry(node_df, node_df['Active Time'], user_command)
         node_df['Last user command received (before inactive)'] = sub.find_last_entry(node_df, node_df['Inactive Time'], user_command)
-        GetInterlocks.UpdateProgress(2)
         
         # last user action 
         sys_user_action['Description'] = ["***" + description.split(" = ")[1].split(" ")[0] for description in sys_user_action['Description']]
         node_df['Last user input'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_user_action)
-        GetInterlocks.UpdateProgress(2)
         
         # BEL open 
         # check if in globals in case no kvctlogs in files
@@ -230,7 +226,6 @@ class GetInterlocks(threading.Thread):
             node_df['BEL Open'] = sub.find_last_entry(node_df, node_df['Active Time'], BEL_open)
         else:
             node_df['BEL Open'] = ''
-        GetInterlocks.UpdateProgress(2)
         
         # Sysnode start time before active interlock
         if sys_endpoints.empty == False: 
@@ -238,21 +233,17 @@ class GetInterlocks(threading.Thread):
              node_df['Sysnode Restart'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_endpoints)
         else:
             node_df['Sysnode Restart'] = '' 
-        GetInterlocks.UpdateProgress(2)
-        
+
         # sysnode state (transition state)
         sys_state_transition['Description'] = [descr.split(" to ")[1].split(" ")[0] for descr in sys_state_transition['Description']]
         node_df['Sysnode State'] = sub.find_last_entry(node_df, node_df['Active Time'], sys_state_transition)
-        GetInterlocks.UpdateProgress(2)
-        
+
         # add all relevant sys interlocks that occur before and during interlocks
         node_df = sub.sysnode_relevant_interlocks(node_df, sys_relevant_interlock)
-        GetInterlocks.UpdateProgress(4)
         
         # Gantry speed
-        gantry_speed['Description'] = [str(time) +': Speed ='+ descr.split("=")[-1] for time, descr in zip(gantry_speed['Datetime'], gantry_speed['Description'])]
+        gantry_speed['Description'] = [str(gantry_time) +': Speed ='+ descr.split("=")[-1] for gantry_time, descr in zip(gantry_speed['Datetime'], gantry_speed['Description'])]
         node_df['Gantry Speed (RPM)'] = sub.find_last_entry(node_df, node_df['Active Time'], gantry_speed)
-        GetInterlocks.UpdateProgress(2)
         
         # Clean up final kvct_df
         node_df['Date'] = [activetime.date() for activetime in node_df['Active Time']]
@@ -276,7 +267,7 @@ class GetInterlocks(threading.Thread):
                 
         # Remove all column values for log start, node start, and node end entries
         endpoints_idx  = node_df.loc[node_df['Interlock Number'].str.contains('LOG|NODE')].index.values
-        node_df.loc[endpoints_idx , 6:] = ''        
+        node_df.loc[endpoints_idx , 6:] = ''   
         return(node_df)
         
     def find_interlocks(node_interlocks):         
