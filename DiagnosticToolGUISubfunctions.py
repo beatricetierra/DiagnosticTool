@@ -18,17 +18,23 @@ from GetInterlocks import GetInterlocks as get
 import FilterInterlocks as filt
 import AnalyzeInterlocks as analyze 
 
-def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, output):
+def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, output, button):
     #  Restart loading bar and get all parameter values
+    button['relief'] = 'sunken'
+    button['state'] = 'disabled'
     get.UpdateProgress('reset')
     ipaddress, username, password, output = ipaddress.get(), username.get(), password.get(), output.get()
     
     # Check if all arguments are filled
     if not ipaddress or not username or not password:
         messagebox.showerror(title='Error', message='Enter ipaddress, username, and/or password.')
+        button['state'] = 'normal'
+        button['relief'] = 'raised'
         return
     if os.path.exists(output)  == False:
         messagebox.showerror(title='Error', message='Invalid output folder.')
+        button['state'] = 'normal'
+        button['relief'] = 'raised'
         return
     else:
         try:
@@ -38,6 +44,8 @@ def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, en
             ssh.connect(ipaddress , 22, username , password)
         except:
             messagebox.showerror(title='Error', message='Permission denied')
+            button['state'] = 'normal'
+            button['relief'] = 'raised'
             return
             
         startdate_str = startdate.get_date().strftime("%Y-%m-%d")
@@ -45,24 +53,29 @@ def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, en
         command = '(cd /home/rxm/; source .GetKvctLogs.sh {startdate} {enddate})'.format(startdate = startdate_str , enddate = enddate_str)
         stdin, stdout, stderr = ssh.exec_command(command)
         filepaths = stdout.readlines()
+        filepaths.sort()
     
         # SCP to local folder
+        ## Get times entered
         try:
             starttime = datetime.datetime.strptime(starttime.get(), '%H:%M').time()
             endtime = datetime.datetime.strptime(endtime.get(), '%H:%M').time()
         except:
             messagebox.showerror(title='Error', message='Invalid time format ("H:mm")')
+            button['state'] = 'normal'
+            button['relief'] = 'raised'
         
+        ## Filter by times given
         startdatetime = datetime.datetime.combine(startdate.get_date(), starttime)
         enddatetime = datetime.datetime.combine(enddate.get_date(), endtime)
-    
+     
         with SCPClient(ssh.get_transport(), sanitize=lambda x: x) as scp:
             for filepath in filepaths:
                 filename = filepath.split('/')[-1].replace('\n','')
                 filedatetime = '-'.join(filename.split('-')[:4])
                 filedatetime  = datetime.datetime.strptime(filedatetime, '%Y-%m-%d-%H%M%S')
         
-                if startdatetime < filedatetime < enddatetime:
+                if startdatetime <= filedatetime <= enddatetime:
                     scp.get(remote_path=filepath, local_path=output)
                     filename = filepath.split('/')[-1].replace('\n','')
                     local_file = os.path.join(output, filename)
@@ -71,9 +84,11 @@ def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, en
                 get.UpdateProgress(100/len(filepaths))
         
         ssh.close
+        
+        button['state'] = 'normal'
+        button['relief'] = 'raised'
         return
     return
-
 
 def GetFiles(folderpath):
     acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
@@ -86,12 +101,9 @@ def GetFiles(folderpath):
                     if word in file:   
                         filenames.append(os.path.join(root, file))
     return(filenames)
-    
-def FindEntries(Page2, Page3, MainView, files, node):        
-   global kvct_df, kvct_filtered, kvct_unfiltered, filtered_couchinterlocks
-   global recon_df, recon_filtered, recon_unfiltered
-   global system, dates
-   
+
+def FindEntries(files, node):
+   global system, kvct_df, recon_df, dates
    # Find interlocks and dates from given log files
    try:
        system, kvct_df, recon_df = get.GetEntries(files, node)
@@ -108,8 +120,11 @@ def FindEntries(Page2, Page3, MainView, files, node):
            dates = 'NA'
    except:
        messagebox.showerror("Error", "Cannot find entries for listed files.")
-       
-   # Filter interlocks
+   return(system, kvct_df, recon_df, dates)
+   
+def FilterEntries(kvct_df, recon_df):
+   global kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_filtered, recon_unfiltered
+    # Filter interlocks
    try:
        if kvct_df.empty == False:
            kvct_filtered, kvct_unfiltered, filtered_couchinterlocks = filt.filter_kvct(kvct_df)
@@ -122,16 +137,18 @@ def FindEntries(Page2, Page3, MainView, files, node):
            recon_filtered, recon_unfiltered = recon_df, recon_df
            messagebox.showinfo(title=None, message='No recon interlocks to filter')
    except:
-       kvct_filtered, kvct_unfiltered = pd.DataFrame(), pd.DataFrame()
+       kvct_filtered, kvct_unfiltered, filtered_couchinterlocks = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
        recon_filtered, recon_unfiltered = pd.DataFrame(), pd.DataFrame()
        messagebox.showerror("Error", "Cannot filter interlocks.")
-       
-    # Add dataframes to window
+   return(kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_filtered, recon_unfiltered)
+   
+def DisplayEntries(Page2, Page3, MainView):       
+   #Add dataframes to window
    if kvct_unfiltered.empty == False and recon_unfiltered.empty == False:
        df_tree(kvct_unfiltered, Page2.Frame)
        Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
        df_tree(recon_unfiltered, Page3.Frame)
-       Page3.menubar_filter(recon_unfiltered, Page3.menubar)
+       Page3.menubar_filter(recon_unfiltered, Page3.menubar)     
        MainView.SwitchPage(MainView.p2)
    elif kvct_unfiltered.empty == False and recon_unfiltered.empty == True:
        df_tree(kvct_unfiltered, Page2.Frame)
@@ -148,8 +165,6 @@ def FindEntries(Page2, Page3, MainView, files, node):
        Page3.menubar_filter(recon_df, Page3.menubar)
        MainView.SwitchPage(MainView.p2)
        messagebox.showinfo(title=None, message='No interlocks found')
-       
-   return(kvct_df, kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_df, recon_filtered, recon_unfiltered, system, dates)
 
 def df_tree(df, frame):
    # Scrollbars
@@ -170,7 +185,7 @@ def df_tree(df, frame):
         
    for index, row in df.iterrows():
        frame.tree.insert("",tk.END,text=index,values=list(row))
-
+       
    # Configure scrollbars to the Treeview
    treeScroll_y.configure(command=frame.tree.yview)
    frame.tree.configure(yscrollcommand=treeScroll_y.set)
