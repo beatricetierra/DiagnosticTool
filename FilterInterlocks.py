@@ -72,31 +72,36 @@ def filter_kvct(interlocks_df):
             pass
       
     # filter interlocks based on time of other known events
-    # if time difference between BEL open and HVOnStatusMismatch interlock time is less than 0.1 seconds 
-    # if time difference between ExternalTriggerInvalid and DMS.DRB.BadViewCounterChanged or DMS.Status.RCB.CRC_Error is less than 10 seconds
-    # if time difference between Gantry Speed = 0 and DMS.DRB.BadViewCounterChanged or DMS.Status.RCB.CRC_Error is less than 10 seconds
     externaltrigger = df.loc[df['Interlock Number'].str.contains('ExternalTriggerInvalid')]
     externaltriggertimes = [datetime.datetime.combine(date,time) for date,time in zip(externaltrigger['Date'], externaltrigger['Active Time'])]
     externaltriggertimes.extend([datetime.datetime.combine(date,time) for date,time in zip(externaltrigger['Date'], externaltrigger['Inactive Time']) if isinstance(time, datetime.time)])
     
     for idx, (interlock, interlock_time, bel, gantry) in enumerate(zip(df['Interlock Number'], df['Datetime'], df['BEL Open'], df['Gantry Speed (RPM)'])):
+        # if time difference between BEL open and HVOnStatusMismatch interlock time is less than 0.1 seconds 
         if 'HvOnStatusMismatch' in interlock and type(bel) == pd._libs.tslibs.timestamps.Timestamp:
             if interlock_time - bel < datetime.timedelta(seconds=.1):
                 filter_out_idx.append(idx)
                 interlock_type.append('BEL is open')
         if 'BadViewCounterChanged' in interlock or 'DMS.Status.RCB.CRC_Error' in interlock:
+            # if time difference between ExternalTriggerInvalid and DMS.DRB.BadViewCounterChanged or DMS.Status.RCB.CRC_Error is less than 10 seconds
             external_diff = [interlock_time - externaltriggertime for externaltriggertime in externaltriggertimes]
             external_diff = [abs(diff.total_seconds()) for diff in external_diff]
             if any(diff < 10 for diff in external_diff):
                 filter_out_idx.append(idx)
                 interlock_type.append('DMS/ExternalTriggerInvalid')
-            if 'Speed = 0' in gantry:
-                gantry_time = datetime.datetime.strptime(gantry.split(': ')[0], '%Y-%m-%d %H:%M:%S.%f')
+                
+            # if time difference between gantry stopping and DMS.DRB.BadViewCounterChanged or DMS.Status.RCB.CRC_Error is less than 10 seconds
+            # if time difference between gantry starting and DMS.DRB.BadViewCounterChanged or DMS.Status.RCB.CRC_Error is less than 70 seconds
+            gantry_time = datetime.datetime.strptime(gantry.split(': ')[0], '%Y-%m-%d %H:%M:%S.%f')
+            if "Speed = 0" in gantry:
                 if interlock_time - gantry_time < datetime.timedelta(seconds=10):
                     filter_out_idx.append(idx)
                     interlock_type.append('Gantry Stop')
-                
-                
+            if "Speed = 60" in gantry:
+                if interlock_time - gantry_time < datetime.timedelta(seconds=70):
+                    filter_out_idx.append(idx)
+                    interlock_type.append('Gantry Start')
+
     # filter expected interlocks based on status of other events    
     for idx, (interlock, machine, sys_before, sys_during, node_state) in enumerate(zip\
     (df['Interlock Number'], df['Machine State (before active)'], df['Sysnode Relevant Interlock (before)'], \
