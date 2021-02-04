@@ -9,8 +9,7 @@ import datetime
 import GetInterlocks as get
 
 # Read -log- log files (compiled log file of all node log files)
-def ReadLogs(file, find_keys):
-    system, endpoints, entries  = ([] for i in range(3))
+def ReadLogs(file, find_keys, logtype):
     # First find software version and operating mode of file
     swver, mode = '', ''
     with open(file) as log:
@@ -25,7 +24,12 @@ def ReadLogs(file, find_keys):
                 
     # Find entries of interest
     system, endpoints, entries  = ([] for i in range(3))
-    parse_idx = [3,4,7,10] #only keep date, time, node, and desciption per line
+    if logtype == 'LogNode':
+        parse_idx = [3,4,7,10] #only keep date, time, node, and desciption per line
+        max_split = 10
+    elif logtype == 'SeparateNodes':
+        parse_idx = [0,1,4,7]
+        max_split = 7
     
     with open(file) as log:
         while True:
@@ -33,16 +37,16 @@ def ReadLogs(file, find_keys):
             if not line:
                 break
             elif 'Configuring log file:' in line or 'set to load_config' in line or 'Signal 15' in line:
-                entry = line.split(" ", 10)
+                entry = line.split(" ", max_split)
                 endpoints.append([swver] + [mode] + [entry[i] for i in parse_idx])
             elif 'Initialising Guardian' in line:
                 system.append(line.split("Initialising Guardian for ")[-1].split(' ')[0])
             elif '***' in line:
                 if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
-                    entry = line.split(" ", 10)
+                    entry = line.split(" ", max_split)
                     entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
             elif 'Event sent to sysnode' in line and 'code' in line:
-                entry = line.split(" ", 10)
+                entry = line.split(" ", max_split)
                 entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
             elif 'Received command' in line:
                 original_position = log.tell()
@@ -51,94 +55,39 @@ def ReadLogs(file, find_keys):
                     state = [next_entry for next_entry in ten_next_entries if 'Got command set state' in next_entry]
                     if not state:
                         log.seek(original_position)
-                        entry = line.split(" ", 10)
+                        entry = line.split(" ", max_split)
                         entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
                     else:
                         state = state[0]
-                        entry = state.split(" ", 10)
+                        entry = state.split(" ", max_split)
                         entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
                         log.seek(original_position)
                 else:
-                    entry = line.split(" ", 10)
+                    entry = line.split(" ", max_split)
                     entries.append([swver] + [mode] +[entry[i] for i in parse_idx]) 
             else:
                 for word in find_keys:
                     if word in line:
-                        entry = line.split(" ", 10)
+                        entry = line.split(" ", max_split)
                         entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
-    # Filter endpoints
-    endpoints_filtered = []
-    for endpoint in endpoints:
-        if 'KV' in endpoint[4] or 'PR' in endpoint[4] or 'SY' in endpoint[4]:
-            endpoints_filtered.append(endpoint)
-            
-    # Filter entries
-    entries_filtered = []
-    for entry in entries:
-        if 'KV' in entry[4] or 'PR' in entry[4] or 'SY' in entry[4]:
-            entries_filtered.append(entry)
+                        
+    if logtype == 'LogNode':
+        # Filter endpoints
+        endpoints_filtered = []
+        for endpoint in endpoints:
+            if 'KV' in endpoint[4] or 'PR' in endpoint[4] or 'SY' in endpoint[4]:
+                endpoints_filtered.append(endpoint)        
+        # Filter entries
+        entries_filtered = []
+        for entry in entries:
+            if 'KV' in entry[4] or 'PR' in entry[4] or 'SY' in entry[4]:
+                entries_filtered.append(entry)
+    elif logtype == 'SeparateNodes':
+        endpoints_filtered = endpoints
+        entries_filtered = entries
+        pass
     
     return(system, endpoints_filtered, entries_filtered)
-
-# read node log files (sysnode, kvct, and pet_recon)
-def ReadNodeLogs(file, find_keys):            
-    # First find software version and operating mode of file
-    swver, mode = '', ''
-    with open(file) as log:
-        while True:
-            line = log.readline().strip()
-            if not line:
-                break
-            elif '* current branch: ' in line:
-                swver = line.split('* current branch: ')[-1]
-            elif 'Operating mode' in line:
-                mode = line.split('-')[-1]
-                
-    # Find entries of interest
-    system, endpoints, entries  = ([] for i in range(3))
-    parse_idx = [0,1,4,7] #only keep date, time, node, and desciption per line
-    
-    with open(file) as log:
-        while True:
-            line = log.readline()
-            if not line:
-                break
-            elif 'Configuring log file' in line or 'command: set to load_config' in line or 'Signal 15' in line:
-                entry = line.split(" ", 7)
-                endpoints.append([swver] + [mode] + [entry[i] for i in parse_idx])
-            elif 'Initialising Guardian' in line:
-                system.append(line.split("Initialising Guardian for ")[-1].split(' ')[0])
-            elif '***' in line:
-                if ('TCP' in line or 'CCP' in line) and 'MV' not in line:
-                    entry = line.split(" ", 7)
-                    entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
-            elif 'Event sent to sysnode' in line and 'code' in line:
-                entry = line.split(" ", 7)
-                entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
-            elif 'Received command' in line:
-                original_position = log.tell()
-                if 'set_state' in line:
-                    ten_next_entries = [log.readline() for i in range(10)]
-                    state = [next_entry for next_entry in ten_next_entries if 'Got command set state' in next_entry]
-                    if not state:
-                        log.seek(original_position)
-                        entry = line.split(" ", 7)
-                        entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
-                    else:
-                        state = state[0]
-                        entry = state.split(" ", 7)
-                        entries.append([swver] + [mode] +[entry[i] for i in parse_idx])
-                        log.seek(original_position)
-                else:
-                    entry = line.split(" ", 7)
-                    entries.append([swver] + [mode] +[entry[i] for i in parse_idx]) 
-            else:
-                for word in find_keys:
-                    if word in line:
-                        entry = line.split(" ", 7)
-                        entries.append([swver] + [mode] +[entry[i] for i in parse_idx])    
-                        
-    return(system, endpoints, entries)
 
 def find_endpoints(interlocks_df, node_endpoints):
     endpoints_df = pd.DataFrame({'SW Version': node_endpoints['SW Version'], 'Mode': node_endpoints['Mode'], 
