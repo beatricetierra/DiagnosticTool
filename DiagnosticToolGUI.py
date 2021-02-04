@@ -201,8 +201,6 @@ class Page1(Page):
        Page3.toggleButton.config(relief="raised")
        
        MainView.progress['value'] = 0
-       MainView.progress_style.configure('text.Horizontal.TProgressbar', 
-                    text='Reading log files...')
        
        # Find logs option from radio buttons
        node = self.node.get()

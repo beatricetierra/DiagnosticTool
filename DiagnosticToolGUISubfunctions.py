@@ -22,7 +22,6 @@ def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, en
     #  Restart loading bar and get all parameter values
     button['relief'] = 'sunken'
     button['state'] = 'disabled'
-    get.UpdateProgress('reset')
     ipaddress, username, password, output = ipaddress.get(), username.get(), password.get(), output.get()
     
     # Check if all arguments are filled
@@ -42,6 +41,7 @@ def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, en
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh.connect(ipaddress , 22, username , password)
+            get.UpdateProgress('reset import')
         except:
             messagebox.showerror(title='Error', message='Permission denied')
             button['state'] = 'normal'

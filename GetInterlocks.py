@@ -21,10 +21,14 @@ class GetInterlocks(threading.Thread):
         GetInterlocks.root = root 
                     
     def UpdateProgress(perc):
-        if perc == 'reset':
+        if perc == 'reset import':
             GetInterlocks.progress['value'] = 0
             GetInterlocks.progress_style.configure('text.Horizontal.TProgressbar', 
                     text='Fetching log files...')
+        elif perc == 'reset reading':
+            GetInterlocks.progress['value'] = 0
+            GetInterlocks.progress_style.configure('text.Horizontal.TProgressbar', 
+                    text='Reading log files...')
         else:
             GetInterlocks.progress['value'] += perc
             GetInterlocks.progress_style.configure('text.Horizontal.TProgressbar', 
@@ -65,12 +69,13 @@ class GetInterlocks(threading.Thread):
                         files.append(file)
                         
         # Read log files.
+        GetInterlocks.UpdateProgress('reset reading')
         system, endpoints, entries  = ([] for i in range(3))
         for file in files:
             if node == 1: # read compiled log file from gateway
-                system_tmp, endpoints_tmp, entries_tmp = sub.ReadLogs(file, find_keys)
+                system_tmp, endpoints_tmp, entries_tmp = sub.ReadLogs(file, find_keys, 'LogNode')
             elif node == 2:
-                system_tmp, endpoints_tmp, entries_tmp = sub.ReadNodeLogs(file, find_keys)
+                system_tmp, endpoints_tmp, entries_tmp = sub.ReadLogs(file, find_keys, 'SeparateNodes')
             [system.append(system_tmp[i]) for i in range(0, len(system_tmp))]
             [endpoints.append(endpoints_tmp[i]) for i in range(0, len(endpoints_tmp))]
             [entries.append(entries_tmp[i]) for i in range(0, len(entries_tmp))]
@@ -119,7 +124,7 @@ class GetInterlocks(threading.Thread):
             kvct_log = entries_df.loc[entries_df['Node'] == 'KV']
             kvct_df = GetInterlocks.NodeInterlocks(kvct_log, sys_log, endpoints_df)
         else:
-            GetInterlocks.UpdateProgress(45)
+            GetInterlocks.UpdateProgress(47.5)
             kvct_df = pd.DataFrame()
         
         if any(entries_df['Node'] == 'PR') == True:
@@ -127,7 +132,7 @@ class GetInterlocks(threading.Thread):
             recon_df = GetInterlocks.NodeInterlocks(recon_log, sys_log, endpoints_df)
         else:
             recon_df = pd.DataFrame()
-            GetInterlocks.UpdateProgress(45)
+            GetInterlocks.UpdateProgress(47.5)
         
         return(system_model, kvct_df, recon_df)
        
