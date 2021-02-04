@@ -148,9 +148,8 @@ class Page1(Page):
        button_delete = tk.Button(editFrame, text='Delete All', font=15, command=self.deleteFile_all)
        button_delete.place(relx=0.01, rely=0.45, relwidth=0.99,relheight=0.1)
        
-       button_view = tk.Button(editFrame, text='View Results', command=lambda: Subfunctions.DisplayEntries(
-               Page2, Page3, MainView))
-       button_view.place(relwidth=0, relheight=0, anchor='n')
+       button_view = tk.Button(editFrame, text='View Results', command=lambda: Subfunctions.DisplayEntries(Page2, Page3, MainView))
+       button_view.place()
        
        button_find = tk.Button(editFrame, text='Find Interlocks', command=lambda: Thread(
                target=self.findInterlocks, args=(button_view,), daemon=True).start(), font='Calibri 15 bold', borderwidth = '4')
@@ -195,15 +194,10 @@ class Page1(Page):
        
        # Clear old entries, restart progress bar, and reset toggled buttons
        [widget.destroy() for widget in Page2.Frame.winfo_children()]
-       [widget.destroy() for widget in Page3.Frame.winfo_children()]
-       
+       [widget.destroy() for widget in Page3.Frame.winfo_children()]    
        Page2.toggleButton.config(relief="raised")
        Page3.toggleButton.config(relief="raised")
-       
        MainView.progress['value'] = 0
-       
-       # Find logs option from radio buttons
-       node = self.node.get()
        
        # store all files listed in window and find interlocks
        files=[]
@@ -213,10 +207,38 @@ class Page1(Page):
        else:
            for child in self.tree.get_children():
               files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
-
-       system, kvct_df, recon_df, dates = Subfunctions.FindEntries(files, node)
+              
+       # Check if given files and node selected match
+       node = self.node.get()
+       if node == 1:
+           if any(['-log-' in file for file in files]):
+               pass
+           else:
+               messagebox.showerror(message='No LogNode files found. Select \'KVCT , Pet_Recon, Sysnode\'.')
+               return
+       elif node == 2:
+           if any(['-kvct-' in file or '-pet_recon-' in file or '-sysnode-' in file for file in files]):
+               pass
+           else:
+               messagebox.showerror(message='KVCT, Pet_Recon, and/or Sysnode files were not found. Select \'LogNode\'.')
+               return
+      
+       # Find interlock dataframes
+       try:
+           system, kvct_df, recon_df, dates = Subfunctions.FindEntries(files, node)
+           if kvct_df.empty and recon_df.empty:         # Return if both dataframes are empty
+               messagebox.showerror("Error", "No KVCT or Recon interlocks found.")
+               return
+           else:
+               pass
+       except:
+           messagebox.showerror("Error", "Cannot find entries for listed files.")
+           return
+       # Filter interlock dataframes
        kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_filtered, recon_unfiltered = Subfunctions.FilterEntries(kvct_df, recon_df)
+       # View dataframes
        button_view.invoke()
+       return
 
 class Page2(Page):
     def __init__(self, *args, **kwargs):

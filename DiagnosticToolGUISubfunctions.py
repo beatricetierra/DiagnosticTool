@@ -104,42 +104,46 @@ def GetFiles(folderpath):
 
 def FindEntries(files, node):
    global system, kvct_df, recon_df, dates
+   
    # Find interlocks and dates from given log files
-   try:
-       system, kvct_df, recon_df = get.GetEntries(files, node)
-       # Get dates 
-       if kvct_df.empty == False:
-           start_date = str(kvct_df['Date'][0]).replace('-', '')
-           end_date = str(kvct_df['Date'][len(kvct_df)-1]).replace('-', '')
-           dates = start_date + '-' + end_date
-       elif kvct_df.empty == True and recon_df.empty == False:
-           start_date = str(recon_df['Date'][0]).replace('-','')
-           end_date = str(recon_df['Date'][len(recon_df)-1]).replace('-','')
-           dates = start_date + '-' + end_date
-       else:
-           dates = 'NA'
-   except:
-       messagebox.showerror("Error", "Cannot find entries for listed files.")
+   system, kvct_df, recon_df = get.GetEntries(files, node)
+   # Get dates 
+   if kvct_df.empty == False:
+       start_date = str(kvct_df['Date'][0]).replace('-', '')
+       end_date = str(kvct_df['Date'][len(kvct_df)-1]).replace('-', '')
+       dates = start_date + '-' + end_date
+   elif kvct_df.empty == True and recon_df.empty == False:
+       start_date = str(recon_df['Date'][0]).replace('-','')
+       end_date = str(recon_df['Date'][len(recon_df)-1]).replace('-','')
+       dates = start_date + '-' + end_date
+   else:
+       dates = 'NA'
+   
    return(system, kvct_df, recon_df, dates)
    
 def FilterEntries(kvct_df, recon_df):
    global kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_filtered, recon_unfiltered
-    # Filter interlocks
-   try:
-       if kvct_df.empty == False:
+    # Filter KVCT interlocks
+   if kvct_df.empty == False:
+       try: 
            kvct_filtered, kvct_unfiltered, filtered_couchinterlocks = filt.filter_kvct(kvct_df)
-       else:
-           kvct_filtered, kvct_unfiltered = kvct_df, kvct_df
-           messagebox.showinfo(title=None, message='No kVCT interlocks to filter')
-       if recon_df.empty == False:
-           recon_filtered, recon_unfiltered = filt.filter_recon(recon_df)
-       else:
-           recon_filtered, recon_unfiltered = recon_df, recon_df
-           messagebox.showinfo(title=None, message='No recon interlocks to filter')
-   except:
+       except:
+           kvct_filtered, kvct_unfiltered, filtered_couchinterlocks = kvct_df, kvct_df, kvct_df
+           messagebox.showinfo(title=None, message='Cannot filter KVCT interlocks. Displaying all KVCT interlocks.')
+   else: 
        kvct_filtered, kvct_unfiltered, filtered_couchinterlocks = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+       messagebox.showinfo(title=None, message='No kVCT interlocks.')
+
+   # Filter Recon interlocks 
+   if recon_df.empty == False:
+       try:
+           recon_filtered, recon_unfiltered = filt.filter_recon(recon_df)
+       except:
+           recon_filtered, recon_unfiltered = recon_df, recon_df, recon_df
+           messagebox.showinfo(title=None, message='Cannot filter Recon interlocks. Displaying all Recon interlocks.')
+   else:
        recon_filtered, recon_unfiltered = pd.DataFrame(), pd.DataFrame()
-       messagebox.showerror("Error", "Cannot filter interlocks.")
+       messagebox.showinfo(title=None, message='No Recon interlocks.')
    return(kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_filtered, recon_unfiltered)
    
 def DisplayEntries(Page2, Page3, MainView):       
@@ -158,13 +162,6 @@ def DisplayEntries(Page2, Page3, MainView):
        df_tree(recon_unfiltered, Page3.Frame)
        Page3.menubar_filter(recon_unfiltered, Page3.menubar)
        MainView.SwitchPage(MainView.p3)
-   elif kvct_unfiltered.empty == True and recon_unfiltered.empty == True:
-       df_tree(kvct_df, Page2.Frame)
-       Page2.menubar_filter(kvct_df, Page2.menubar)
-       df_tree(recon_df, Page3.Frame)
-       Page3.menubar_filter(recon_df, Page3.menubar)
-       MainView.SwitchPage(MainView.p2)
-       messagebox.showinfo(title=None, message='No interlocks found')
 
 def df_tree(df, frame):
    # Scrollbars

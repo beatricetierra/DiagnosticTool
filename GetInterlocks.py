@@ -37,21 +37,7 @@ class GetInterlocks(threading.Thread):
             GetInterlocks.root.update_idletasks()
         return
 
-    def GetEntries(filenames, node):
-         # Check if given files and node match
-        if node == 1:
-            if any(['-log-' in file for file in filenames]):
-                pass
-            else:
-                messagebox.showinfo(title='Warning', message='No LogNode files found.')
-                return
-        elif node == 2:
-            if any(['-kvct-' in file or '-pet_recon-' in file or '-sysnode-' in file for file in filenames]):
-                pass
-            else:
-                messagebox.showinfo(title='Warning', message='KVCT, Pet_Recon, and/or Sysnode files were not found.')
-                return
-            
+    def GetEntries(filenames, node):            
         # Find entries of interest
         find_keys = ['is active', 'is inactive', 'is clear', 'Set HV ', 'State machine', 'State set', 'received command', 
                      'State transition', 'Top relevant interlock', 'BEL is open', 'Updating gantry speed RPM']
@@ -272,7 +258,7 @@ class GetInterlocks(threading.Thread):
                 
         # Remove all column values for log start, node start, and node end entries
         endpoints_idx  = node_df.loc[node_df['Interlock Number'].str.contains('LOG|NODE')].index.values
-        node_df.loc[endpoints_idx , 6:] = ''   
+        node_df.loc[endpoints_idx , columns[6:]] = ''   
         return(node_df)
         
     def find_interlocks(node_interlocks):         
