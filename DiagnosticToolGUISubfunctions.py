@@ -50,7 +50,7 @@ def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, en
             
         startdate_str = startdate.get_date().strftime("%Y-%m-%d")
         enddate_str = enddate.get_date().strftime("%Y-%m-%d")
-        command = '(cd /home/rxm/; source .GetKvctLogs.sh {startdate} {enddate})'.format(startdate = startdate_str , enddate = enddate_str)
+        command = '(cd /home/rxm/kvct/scripts; source GetKvctLogs.sh {startdate} {enddate})'.format(startdate = startdate_str , enddate = enddate_str)
         stdin, stdout, stderr = ssh.exec_command(command)
         filepaths = stdout.readlines()
         filepaths.sort()
