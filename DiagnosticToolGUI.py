@@ -10,6 +10,7 @@ from tkinter import filedialog, ttk, messagebox
 import tkinter.font as font
 from tkcalendar import DateEntry
 import DiagnosticToolGUISubfunctions as Subfunctions
+from GetRemoteLogs import GetRemoteLogs 
 from GetInterlocks import GetInterlocks as get
 from threading import Thread
 
@@ -28,7 +29,7 @@ class Page1(Page):
        
        ##### Scrollbox to list details of chosen log files #####
        scrollFrame = tk.Frame(Frame, bd=1, relief='solid')
-       scrollFrame.place(relx=0.43, rely=0.28, relwidth=0.86, relheight=0.7, anchor='n')
+       scrollFrame.place(relx=0.4, rely=0.28, relwidth=0.8, relheight=0.7, anchor='n')
        
        Page1.tree = ttk.Treeview(scrollFrame)
        Page1.tree['show'] = 'headings'
@@ -52,7 +53,7 @@ class Page1(Page):
        
        ###### Import remote machine ######      
        remoteFrame = tk.Frame(Frame, bd=1, relief="groove")
-       remoteFrame.place(relx=0.25,rely=0.02, relwidth=0.5, relheight=0.25, anchor='n')
+       remoteFrame.place(relx=0.3,rely=0.02, relwidth=0.6, relheight=0.25, anchor='n')
        remoteLabel = tk.Label(remoteFrame, text="Import from remote machine: ", font='Helvetica 12 bold', anchor='w')
        remoteLabel.place(relx=0.01, rely=0.01, relwidth=0.4, relheight=0.15)
        
@@ -110,50 +111,54 @@ class Page1(Page):
        
        #Buttons
        ConnectServerButton = tk.Button(remoteFrame, text="Get Logs", font=30, relief='raised', 
-                                       command=lambda: Thread(target=Subfunctions.ConnectServer, daemon=True,
-                  args=(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, self.output, ConnectServerButton)).start())
+                                       command=lambda: Thread(target=GetRemoteLogs, daemon=True,
+                  args=(Page1, ipaddress, username, password, self.output, startdate, starttime, enddate, endtime, ConnectServerButton)).start())
        ConnectServerButton.place(relx=0.8, rely=0.2, relwidth=0.15, relheight=0.15)
        
        ######  Import local drive ###### 
        self.localFrame = tk.Frame(Frame, bd=1, relief="groove")
-       self.localFrame.place(relx=0.75, rely=0.02, relwidth=0.5, relheight=0.25, anchor='n')
+       self.localFrame.place(relx=0.7, rely=0.02, relwidth=0.2, relheight=0.25, anchor='n')
        localLabel = tk.Label(self.localFrame, text="Import from local drive: ", font='Helvetica 12 bold', anchor='w')
-       localLabel.place(relx=0.01, rely=0.01, relwidth=0.4, relheight=0.15)
+       localLabel.pack(anchor='nw')
 
        # Buttons for List of Files
        button_selectfolder = tk.Button(self.localFrame , text='Add Folder', font=10, command=lambda: self.addFolder('files'))
-       button_selectfolder.place(relx=0.01, rely=0.2, relwidth=0.25, relheight=0.15)
+       button_selectfolder.pack(anchor='nw', padx=10, pady=5)
+      
           
        button_add = tk.Button(self.localFrame , text='Add File', height=1, width=8, font=10, command=self.addFile)
-       button_add.place(relx=0.01, rely=0.42, relwidth=0.25, relheight=0.15)
+       button_add.pack(anchor='nw', padx=10, pady=5)
        
-       # Buttons to choose between reading LogNode or Kvct/Pet_Recon/SysNode files
-       chooseLabel = tk.Label(self.localFrame, text='Choose node:', font='Helvetica 10')
-       chooseLabel.place(relx=0.01, rely=0.62, relwidth=0.35, relheight=0.15)
+       ##### Chose log type #####
+       self.logtypeFrame = tk.Frame(Frame, bd=1, relief='sunken')
+       self.logtypeFrame.place(relx=0.91, rely=0.32, relwidth=0.18, relheight=0.2, anchor='n')
+       logtypeLabel = tk.Label(self.logtypeFrame, text="Choose log file type: ", font='Helvetica 12 bold', anchor='w')
+       logtypeLabel.pack(anchor='nw')
        
+       # Buttons to choose between reading LogNode or Kvct/Pet_Recon/SysNode files    
        self.node = tk.IntVar()
        self.node.set(2)
-       lognodeButton = tk.Radiobutton(self.localFrame, text='LogNode', variable=self.node, value=1, command=lambda: self.node.set(1))
-       lognodeButton.place(relx=0.3, rely=0.62, relwidth=0.15, relheight=0.15)
-       nodesButton = tk.Radiobutton(self.localFrame, text='KVCT, Pet Recon, Sysnode', variable=self.node, value=2, command=lambda: self.node.set(2))
-       nodesButton.place(relx=0.45, rely=0.62, relwidth=0.4, relheight=0.15) 
+       lognodeButton = tk.Radiobutton(self.logtypeFrame, text='LogNode', variable=self.node, value=1, command=lambda: self.node.set(1))
+       lognodeButton.pack(anchor='nw', pady=3)
+       nodesButton = tk.Radiobutton(self.logtypeFrame, text='KVCT, Pet Recon, Sysnode', variable=self.node, value=2, command=lambda: self.node.set(2))
+       nodesButton.pack(anchor='nw', pady=3)
        
        ######  Edit List Box ###### 
        editFrame = tk.Frame(Frame, bd=1)
-       editFrame.place(relx=0.93, rely=0.28, relwidth=0.14, relheight=0.7, anchor='n')
-       
+       editFrame.place(relx=0.91, rely=0.48, relwidth=0.18, relheight=0.5, anchor='n')
+     
        button_delete_select = tk.Button(editFrame , text='Delete', font=15, command=self.deleteFile_selected)
-       button_delete_select.place(relx=0.01, rely=0.35, relwidth=0.99, relheight=0.1)
+       button_delete_select.place(relx=0.01, rely=0.1, relwidth=0.99, relheight=0.2)
           
        button_delete = tk.Button(editFrame, text='Delete All', font=15, command=self.deleteFile_all)
-       button_delete.place(relx=0.01, rely=0.45, relwidth=0.99,relheight=0.1)
+       button_delete.place(relx=0.01, rely=0.3, relwidth=0.99,relheight=0.2)
        
        button_view = tk.Button(editFrame, text='View Results', command=lambda: Subfunctions.DisplayEntries(Page2, Page3, MainView))
        button_view.place()
        
        button_find = tk.Button(editFrame, text='Find Interlocks', command=lambda: Thread(
                target=self.findInterlocks, args=(button_view,), daemon=True).start(), font='Calibri 15 bold', borderwidth = '4')
-       button_find.place(relx=0.01, rely=0.9, relwidth=0.99, relheight=0.1)
+       button_find.place(relx=0.01, rely=0.8, relwidth=0.99, relheight=0.2)
        
    def addFolder(self, output):
        folder = filedialog.askdirectory()

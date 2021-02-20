@@ -18,78 +18,6 @@ from GetInterlocks import GetInterlocks as get
 import FilterInterlocks as filt
 import AnalyzeInterlocks as analyze 
 
-def ConnectServer(Page1, ipaddress, username, password, startdate, starttime, enddate, endtime, output, button):
-    #  Restart loading bar and get all parameter values
-    button['relief'] = 'sunken'
-    button['state'] = 'disabled'
-    ipaddress, username, password, output = ipaddress.get(), username.get(), password.get(), output.get()
-    
-    # Check if all arguments are filled
-    if not ipaddress or not username or not password:
-        messagebox.showerror(title='Error', message='Enter ipaddress, username, and/or password.')
-        button['state'] = 'normal'
-        button['relief'] = 'raised'
-        return
-    if os.path.exists(output)  == False:
-        messagebox.showerror(title='Error', message='Invalid output folder.')
-        button['state'] = 'normal'
-        button['relief'] = 'raised'
-        return
-    else:
-        try:
-            # Collect all log files in gateway 
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(ipaddress , 22, username , password)
-            get.UpdateProgress('reset import')
-        except:
-            messagebox.showerror(title='Error', message='Permission denied')
-            button['state'] = 'normal'
-            button['relief'] = 'raised'
-            return
-            
-        startdate_str = startdate.get_date().strftime("%Y-%m-%d")
-        enddate_str = enddate.get_date().strftime("%Y-%m-%d")
-        command = '(cd /home/rxm/kvct/scripts; source GetKvctLogs.sh {startdate} {enddate})'.format(startdate = startdate_str , enddate = enddate_str)
-        stdin, stdout, stderr = ssh.exec_command(command)
-        filepaths = stdout.readlines()
-        filepaths.sort()
-    
-        # SCP to local folder
-        ## Get times entered
-        try:
-            starttime = datetime.datetime.strptime(starttime.get(), '%H:%M').time()
-            endtime = datetime.datetime.strptime(endtime.get(), '%H:%M').time()
-        except:
-            messagebox.showerror(title='Error', message='Invalid time format ("H:mm")')
-            button['state'] = 'normal'
-            button['relief'] = 'raised'
-        
-        ## Filter by times given
-        startdatetime = datetime.datetime.combine(startdate.get_date(), starttime)
-        enddatetime = datetime.datetime.combine(enddate.get_date(), endtime)
-     
-        with SCPClient(ssh.get_transport(), sanitize=lambda x: x) as scp:
-            for filepath in filepaths:
-                filename = filepath.split('/')[-1].replace('\n','')
-                filedatetime = '-'.join(filename.split('-')[:4])
-                filedatetime  = datetime.datetime.strptime(filedatetime, '%Y-%m-%d-%H%M%S')
-        
-                if startdatetime <= filedatetime <= enddatetime:
-                    scp.get(remote_path=filepath, local_path=output)
-                    filename = filepath.split('/')[-1].replace('\n','')
-                    local_file = os.path.join(output, filename)
-                    size = int((os.stat(local_file).st_size)/1000)
-                    Page1.tree.insert('', 'end', values=[filename,size,output])
-                get.UpdateProgress(100/len(filepaths))
-        
-        ssh.close
-        
-        button['state'] = 'normal'
-        button['relief'] = 'raised'
-        return
-    return
-
 def GetFiles(folderpath):
     acceptable_files = ['-log-','-kvct-','-pet_recon-','-sysnode-']
     filenames = []  
@@ -259,7 +187,8 @@ def exportExcel():
    directory = filedialog.askdirectory()
    try:       
        # KVCT Interlocks
-       kvct_writer = pd.ExcelWriter(directory + '\KvctInterlocks_' + system + '_' + dates + '.xlsx', engine='xlsxwriter')
+       kvct_xlsxname = directory + '\KvctInterlocks_' + system + '_' + dates + '.xlsx'
+       kvct_writer = pd.ExcelWriter(kvct_xlsxname, engine='xlsxwriter')
        sheetnames = ['KVCT Interlocks (All)' , 'KVCT Interlocks (Filtered)', 'KVCT Interlocks (No Couch)']
        dataframes = [kvct_unfiltered, kvct_filtered, filtered_couchinterlocks]
        for df,sheetname in zip(dataframes,sheetnames):
@@ -277,7 +206,8 @@ def exportExcel():
        kvct_writer.save()
        
        # Recon Interlocks
-       recon_writer = pd.ExcelWriter(directory + '\ReconInterlocks_' + system + '_' + dates + '.xlsx', engine='xlsxwriter')
+       recon_xlsxname = directory + '\ReconInterlocks_' + system + '_' + dates + '.xlsx'
+       recon_writer = pd.ExcelWriter(recon_xlsxname, engine='xlsxwriter')
        sheetnames = ['Recon Interlocks (All)' , 'Recon Interlocks (Filtered)']
        dataframes = [recon_unfiltered, recon_filtered]
        for df,sheetname in zip(dataframes,sheetnames):
