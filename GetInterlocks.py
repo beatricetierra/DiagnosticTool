@@ -9,7 +9,6 @@ pd.options.mode.chained_assignment = None  # default='warn'
 import threading
 import time
 import json
-from tkinter import messagebox
 import GetInterlocksSubfunctions as sub
 
 class GetInterlocks(threading.Thread):
@@ -42,6 +41,8 @@ class GetInterlocks(threading.Thread):
         find_keys = ['is active', 'is inactive', 'is clear', 'Set HV ', 'State machine', 'State set', 'received command', 
                      'State transition', 'Top relevant interlock', 'BEL is open', 'Updating gantry speed RPM']
         
+        acceptable_files = ['kvct-000', 'pet_recon-000', 'sysnode-000']
+        
         files = []
         # filter out log files
         # accepts all -log- files and only kvct, pet_recon, and sysnode files ending in '000'
@@ -51,9 +52,10 @@ class GetInterlocks(threading.Thread):
                     if '-log-' in file:
                         files.append(file)
                 elif node == 2:
-                    if 'kvct-000' in file or 'pet_recon-000' in file or 'sysnode-000' in file:
-                        files.append(file)
-                        
+                    for acceptable_file in acceptable_files:
+                        if acceptable_file in file:
+                            files.append(file)
+                      
         # Read log files.
         GetInterlocks.UpdateProgress('reset reading')
         system, endpoints, entries  = ([] for i in range(3))
@@ -162,8 +164,12 @@ class GetInterlocks(threading.Thread):
             sys_endpoints.drop(columns='Node', inplace = True)
             sys_endpoints.reset_index(drop=True, inplace=True)
         else:
-            sys_endpoints = pd.DataFrame()     
-    
+            columns = ['SW Version', 'Mode', 'Datetime', 'Node', 'Description']
+            sys_endpoints = pd.DataFrame(columns=columns)     
+            sys_user_action = pd.DataFrame(columns=columns)  
+            sys_state_transition = pd.DataFrame(columns=columns)  
+            sys_relevant_interlock = pd.DataFrame(columns=columns)  
+            gantry_speed = pd.DataFrame(columns=columns)  
         # Construct node_df 
         # Get node interlocks active vs inactive
         node_df = GetInterlocks.find_interlocks(node_interlocks)

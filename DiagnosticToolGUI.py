@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import tkinter.font as font
 from tkcalendar import DateEntry
+
 import DiagnosticToolGUISubfunctions as Subfunctions
 from GetRemoteLogs import GetRemoteLogs 
 from GetInterlocks import GetInterlocks as get

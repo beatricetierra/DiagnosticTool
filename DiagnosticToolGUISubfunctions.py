@@ -9,9 +9,8 @@ import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
 import pandas as pd
-import datetime
-import paramiko
-from scp import SCPClient
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # import script dependencies 
 from GetInterlocks import GetInterlocks as get
@@ -155,7 +154,7 @@ def sortby(tree, col, descending, int_descending):
 def SummarizeResults():      
     win = tk.Toplevel()
     win.wm_title("Window")
-    win.wm_geometry("800x500")
+    win.wm_geometry("900x500")
     
     Frame = tk.Frame(win, bd=1, relief='solid')
     Frame.place(relx=0.5, relwidth=1, relheight=1, anchor='n')
@@ -173,16 +172,16 @@ def SummarizeResults():
     except:
         messagebox.showerror("Error", "Cannot analyze entries for listed files.")
     
-    # display dataframes in pop-up window
-    if kvct_filtered_analysis.empty == False:
-        df_tree(kvct_filtered_analysis, SummarizeResults.tab1)
-    else:
-        pass
-    if recon_filtered_analysis.empty == False:
-        df_tree(recon_filtered_analysis, SummarizeResults.tab2)
-    else:
-        pass
-        
+    DisplayPlots(kvct_filtered_analysis, SummarizeResults.tab1)
+    DisplayPlots(recon_filtered_analysis, SummarizeResults.tab2)
+
+
+def DisplayPlots(df, frame):
+    fig = analyze.BarGraph(df)
+    plot = FigureCanvasTkAgg(fig, master=frame)
+    plot.draw()
+    plot.get_tk_widget().pack(side='top')     
+    
 def exportExcel():  
    directory = filedialog.askdirectory()
    try:       
