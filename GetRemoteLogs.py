@@ -31,6 +31,7 @@ class GetRemoteLogs:
 
         # Check entries
         self.CheckValidCredentials()
+        self.CheckConnection()
         self.CheckOutputFolder()
         self.CheckTimes()
         
@@ -60,6 +61,17 @@ class GetRemoteLogs:
             datetime.datetime.strptime(self.endtime, '%H:%M')
         except ValueError as error: 
             messagebox.showerror(title='Error', message=error)
+            self.ResetButton()
+            raise
+            
+    def CheckConnection(self):
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(self.ipaddress , 22, self.username , self.password)
+            ssh.close()
+        except:
+            messagebox.showerror(title='Error', message='Permission denied.')
             self.ResetButton()
             raise
             
@@ -100,13 +112,12 @@ class GetRemoteLogs:
         
     def ConnectServer(self):
         try:
-            # Collect all log files in gateway 
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh.connect(self.ipaddress , 22, self.username , self.password)
             get.UpdateProgress('reset import')
         except:
-            messagebox.showerror(title='Error', message='Unsuccessful connection.')
+            messagebox.showerror(title='Error', message='Connection interrupted.')
             self.ResetButton()
             raise
         return ssh
