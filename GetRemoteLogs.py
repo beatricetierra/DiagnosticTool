@@ -9,7 +9,7 @@ import paramiko
 import datetime
 from tkinter import messagebox
 from scp import SCPClient
-from GetInterlocks import GetInterlocks as get
+from DiagnosticToolGUISubfunctions import Subfunctions as sub
 
 class GetRemoteLogs:
     def __init__(self, Page1, ipaddress, username, password, output, startdate, starttime, enddate, endtime, button):        
@@ -75,47 +75,93 @@ class GetRemoteLogs:
             self.ResetButton()
             raise
             
-    def GetRemoteLogFilepaths(self):
-        # Checks if day before should be included
-        get_daybefore_logs = self.LastLogsDayBefore()  
-        startdate_str, enddate_str = self.DateToStr()
+    def FindFiles(self):
+        global recon_files, kvct_files, sys_files
+        ssh = self.ConnectServer()
+        recon_files = self.SendFindFileCommand(ssh, 'recon')
+        kvct_files = self.SendFindFileCommand(ssh, 'kvct')
+        sys_files = self.SendFindFileCommand(ssh, 'sysnode')
+        ssh.close()
         
+        recon_files = self.FilterByTimes(recon_files)
+        kvct_files = self.FilterByTimes(kvct_files)
+        sys_files = self.FilterByTimes(sys_files)
+            
+    def SendFindFileCommand(self, ssh, node):
+        command = '(cd /home/rxm/kvct/scripts; source FindKvctLogs.sh "{node}")'.format(node=node)
+        stdin, stdout, stderr = ssh.exec_command(command)
+        return stdout.readlines()
+    
+    def FilterByTimes(self, files):
+        # Get times between startime and endtime + last logs right before startime
+        startdatetime, enddatetime = self.CombineDateAndTime()
+        
+        files_filtered_idx = []
+        for idx, filepath in enumerate(files):
+            try:
+                filename = filepath.split('/')[-1].strip()
+                filedatetime = '-'.join(filename.split('-')[:4])
+                filedatetime  = datetime.datetime.strptime(filedatetime, '%Y-%m-%d-%H%M%S')
+                if startdatetime <= filedatetime <= enddatetime:
+                    files_filtered_idx.append(idx)
+            except ValueError:
+                pass
+        
+        # Check if log files exist for given time period
+        self.LogsFound(files_filtered_idx)
+        
+        # Add the last log before given starttime
+        files_filtered_idx.insert(0,files_filtered_idx[0]-1)
+        
+        # Get filenames from idx list
+        files_filtered = [files[idx] for idx in files_filtered_idx]
+        return files_filtered 
+    
+    def LogsFound(self, filepaths_filtered_idx):
+        if not filepaths_filtered_idx:
+            messagebox.showinfo(message='No logs found in machine for given dates and times.')
+            self.ResetButton()
+            raise
+        return
+         
+    def GetRemoteLogFilepaths(self):
+        self.FindFiles()
+        startdate, enddate = self.FindNewStartAndEndDates()
+
         # Connect to gateway and run command
         ssh = self.ConnectServer()
-        command = '(cd /home/rxm/kvct/scripts; source GetKvctLogs.sh {startdate} {enddate})'.format(startdate = 
-                   startdate_str , enddate = enddate_str)
+        command = '(cd /home/rxm/kvct/scripts; source GetKvctLogs.sh {startdate} {enddate})'.format(
+                startdate = startdate, enddate = enddate)
         stdin, stdout, stderr = ssh.exec_command(command)
         results = stdout.readlines()
         
-        # Check if connection to kvct node is successful
-        GetLogNodeFiles = self.ConnectToKVCT(results)
-        
+        # get all log files in results
         filepaths = [result for result in results if '.log' in result]
         filepaths.sort()
-
-        if GetLogNodeFiles == True:
-            self.SCPLogs(ssh, filepaths)
-        elif GetLogNodeFiles == False: 
-            filepaths_filtered = self.FilterFilepaths(filepaths, get_daybefore_logs)
-            self.SCPLogs(ssh, filepaths_filtered)
+        
+        self.ConnectToKVCT(results) # Check if connection to kvct was successful
+        self.SCPLogs(ssh, filepaths)
         ssh.close()
         
-    def LastLogsDayBefore(self):    #If starttime is midnight (0:00) -> get last logs of day before
-        starttime = self.StrToTime()[0]
-        if starttime == datetime.time(0,0):
-            self.startdate = self.startdate - datetime.timedelta(days=1)
-            get_daybefore_logs = True
-        else:
-            self.startdate = self.startdate
-            get_daybefore_logs = False
-        return get_daybefore_logs
+    def FindNewStartAndEndDates(self):
+        start_dates, end_dates = [],[]
+        for file_list in [recon_files, kvct_files, sys_files]:
+            start = file_list[0].split('/')[-2]
+            end = file_list[-1].split('/')[-2]
+            
+            start_date = datetime.datetime.strptime(start, '%Y-%m-%d')
+            end_date = datetime.datetime.strptime(end, '%Y-%m-%d')
+            
+            start_dates.append(start_date)
+            end_dates.append(end_date)
+        return str(min(start_dates).date()), str(max(end_dates).date())
         
     def ConnectServer(self):
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh.connect(self.ipaddress , 22, self.username , self.password)
-            get.UpdateProgress('reset import')
+            sub.UpdateProgress('reset import')
         except:
             messagebox.showerror(title='Error', message='Connection interrupted.')
             self.ResetButton()
@@ -125,67 +171,30 @@ class GetRemoteLogs:
     def ConnectToKVCT(self, results):
         if 'Cannot connect' in results[0]:
             messagebox.showinfo(title='Warning', message='Cannot connect to kvct. Downloading LogNode files (may take a while).')
-            GetLogNodeFiles = True
         else:
-            GetLogNodeFiles = False
-        return GetLogNodeFiles
+            pass 
     
-    def SCPLogs(self, ssh, filepaths):        
+    def SCPLogs(self, ssh, filepaths):    
+        filtered_filenames = self.FilteredFilenames(filepaths)
         with SCPClient(ssh.get_transport(), sanitize=lambda x: x) as scp:
             for filepath in filepaths:
-                filename = filepath.split('/')[-1].replace('\n','')
-                scp.get(remote_path=filepath, local_path=self.output)
-                local_file = os.path.join(self.output, filename)
-                size = int((os.stat(local_file).st_size)/1000)
-                self.Page1.tree.insert('', 'end', values=[filename,size,self.output])
-                    
-                get.UpdateProgress(100/len(filepaths))
-        
-        return
-            
-    def FilterFilepaths(self, filepaths, get_daybefore_logs):
-        if get_daybefore_logs == True:
-            filepaths_filtered = self.GetLastLogsOfPrevDay(filepaths)
-        elif get_daybefore_logs == False:
-            filepaths_filtered = self.FilterByTimes(filepaths)
-        return filepaths_filtered 
-    
-    def GetLastLogsOfPrevDay(self, filepaths):            
-        # update startdatetime and enddatetime
-        self.startdate = self.startdate + datetime.timedelta(days=1)
-        filepaths_filtered = self.FilterByTimes(filepaths)
-        return filepaths_filtered      
-    
-    def FilterByTimes(self, filepaths):
-        # Get times between startime and endtime + last logs right before startime
-        startdatetime, enddatetime = self.CombineDateAndTime()
-        
-        filepaths_filtered_idx = []
-        for idx, filepath in enumerate(filepaths):
-            filename = filepath.split('/')[-1].replace('\n','')
-            filedatetime = '-'.join(filename.split('-')[:4])
-            filedatetime  = datetime.datetime.strptime(filedatetime, '%Y-%m-%d-%H%M%S')
-            if startdatetime <= filedatetime <= enddatetime:
-                filepaths_filtered_idx.append(idx)
-        
-        # Check if log files exist for given time period
-        self.LogsFound(filepaths_filtered_idx)
-        
-        # Get last log before startdatetime
-        first_log_idx = filepaths_filtered_idx[0]
-        prev_logs = list(range(first_log_idx-3, first_log_idx)) #get previous 3 logs (kvct, pet_recon, and sys)
-        [filepaths_filtered_idx.insert(0, log) for log in prev_logs]
-        
-        filepaths_filtered = [filepaths[idx] for idx in filepaths_filtered_idx]
-        return filepaths_filtered 
-    
-    def LogsFound(self, filepaths_filtered_idx):
-        if not filepaths_filtered_idx:
-            messagebox.showinfo(message='No logs found in machine for given dates and times.')
-            self.ResetButton()
-            raise
+                filename = filepath.split('/')[-1].strip()
+                if filename in filtered_filenames:
+                    scp.get(remote_path=filepath, local_path=self.output)
+                    local_file = os.path.join(self.output, filename)
+                    size = int((os.stat(local_file).st_size)/1000)
+                    self.Page1.tree.insert('', 'end', values=[filename,size,self.output])
+                    sub.UpdateProgress(100/len(filtered_filenames))
+                else:
+                    pass
         return
     
+    def FilteredFilenames(self, filename):
+        combined_filtered_files = sum([recon_files, kvct_files, sys_files], [])
+        filtered_filenames = [file.split('/')[-1].strip() for file
+                              in combined_filtered_files]
+        return filtered_filenames
+        
     def StrToTime(self):
         starttime = datetime.datetime.strptime(self.starttime, '%H:%M').time()
         endtime = datetime.datetime.strptime(self.endtime, '%H:%M').time()
@@ -195,7 +204,7 @@ class GetRemoteLogs:
         startdate_str = self.startdate.strftime("%Y-%m-%d")
         enddate_str = self.enddate.strftime("%Y-%m-%d")
         return startdate_str, enddate_str
-                
+        
     def CombineDateAndTime(self):
         starttime, endtime = self.StrToTime()
         startdatetime = datetime.datetime.combine(self.startdate, starttime)

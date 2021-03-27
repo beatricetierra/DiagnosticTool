@@ -1,0 +1,222 @@
+{
+	"acceptable_files": [ "-log-",
+						  "-kvct-",
+						  "-pet_recon-",
+						  "-sysnode-"
+	],
+	"node_acronyms": {"-kvct-": "KV",
+				   "-pet_recon-": "PR",
+				   "-sysnode-": "SY"
+	},
+	"node_find_keys": {"KV": ["Set HV", 
+							  "BEL is open",
+							  "State machine",
+							  "State set",
+							  "received command",
+							  "Received command",
+							  "State transition"
+							  ],
+					   "PR": ["State machine",
+						      "State set",
+							  "received command",
+							  "Received command",
+							  "State transition"
+							  ],
+					   "SY": [	["***","CCP|TCP"],
+								"State transition",
+								 "Top relevant interlock", 
+								 "Updating gantry speed RPM"
+						     ]
+	},
+	"machines": [
+				"alpha1",
+				"alpha2",
+				"alpha3",
+				"alpha4",
+				"beta1",
+				"commercial1"
+	], 
+	"modes": [
+			 "clinical",
+			 "service",
+			 "maintenance"
+	],
+	"detail_columns": {
+				"KV": [
+					["KV", "Set HV", "before", "active", "description"],
+					["KV", "Set HV", "before", "inactive", "description"],
+					["KV", "BEL is open", "before", "active", "time"],
+					["KV", "State machine", "before", "active", "description"],
+					["KV", "State machine", "before", "inactive", "description"],
+					["KV", "State set", "before", "active", "description"],
+					["KV", "State set", "before", "inactive", "description"],
+					["KV", "received command", "before", "active", "description"],
+					["KV", "received command", "before", "inactive", "description"],
+					["KV", "Received command", "before", "active", "description"],
+					["KV", "Received command", "before", "inactive", "description"],
+					["SY", "***+CCP|TCP", "before", "active", "description"],
+					["SY", "Updating gantry speed RPM", "before", "active", "both"],
+					["SY", "State transition", "before", "active", "time"],
+					["SY", "Top relevant interlock", "before", "active", "description"],
+					["SY", "Top relevant interlock", "during", "both", "description"]
+					
+				],
+				"PR": [
+					["KV", "Set HV", "before", "active", "description"],
+					["KV", "Set HV", "before", "inactive", "description"],
+					["KV", "BEL is open", "before", "active", "time"],
+					["PR", "State machine", "before", "active", "description"],
+					["PR", "State machine", "before", "inactive", "description"],
+					["PR", "State set", "before", "active", "description"],
+					["PR", "State set", "before", "inactive", "description"],
+					["PR", "received command", "before", "active", "description"],
+					["PR", "received command", "before", "inactive", "description"],
+					["PR", "Received command", "before", "active", "description"],
+					["PR", "Received command", "before", "inactive", "description"],
+					["SY", "***+CCP|TCP", "before", "active", "description"],
+					["SY", "Updating gantry speed RPM", "before", "active", "both"],
+					["SY", "State transition", "before", "active", "time"],
+					["SY", "Top relevant interlock", "before", "active", "description"],
+					["SY", "Top relevant interlock", "during", "both", "description"]
+					
+				]
+	},
+	"column_names": {
+				"KV": ["HV Status (before active)",
+					   "HV Status (before inactive)",
+					   "BEL Open",
+					   "Machine State (before active)",
+					   "Machine State (before inactive)",
+					   "Node State (before active)",
+					   "Node State (before inactive)",
+					   "Last Command (before active)",
+					   "Last Command (before inactive)",
+					   "Last User Command (before active)",
+					   "Last User Command (before inactive)",
+					   "Last User Input",
+					   "Gantry Speed",
+					   "Sysnode Restart",
+					   "Top Relevant Interlocks (before active)",
+					   "Top Relevant Interlocks (during)"
+				],
+				"PR": ["HV Status (before active)",
+					   "HV Status (before inactive)",
+					   "BEL Open",
+					   "Machine State (before active)",
+					   "Machine State (before inactive)",
+					   "Node State (before active)",
+					   "Node State (before inactive)",
+					   "Last Command (before active)",
+					   "Last Command (before inactive)",
+					   "Last User Command (before active)",
+					   "Last User Command (before inactive)",
+					   "Last User Input",
+					   "Gantry Speed",
+					   "Sysnode Restart",
+					   "Top Relevant Interlocks (before active)",
+					   "Top Relevant Interlocks (during)"
+				]
+	},
+	"parse_column_entries": {
+				"KV": {"HV Status (before active)": "Set HV (.*)",
+					   "HV Status (before inactive)": "Set HV (.*)",
+					   "Machine State (before active)": "to state: (.*)",
+					   "Machine State (before inactive)": "to state: (.*)",
+					   "Node State (before active)": "State set to (.*)",
+					   "Node State (before inactive)": "State set to (.*)",
+					   "Last Command (before active)": "- (.*): received command",
+					   "Last Command (before inactive)": "- (.*): received command",
+					   "Last User Command (before active)": "Received command (.*)",
+					   "Last User Command (before inactive)": "Received command (.*)",
+					   "Last User Input": "event name = (.*) from node" 
+				},
+				"PR": {"HV Status (before active)": "Set HV (.*)",
+					   "HV Status (before inactive)": "Set HV (.*)",
+					   "Machine State (before active)": "to state: (.*)",
+					   "Machine State (before inactive)": "to state: (.*)",
+					   "Node State (before active)": "State set to (.*)",
+					   "Node State (before inactive)": "State set to (.*)",
+					   "Last Command (before active)": "- (.*): received command",
+					   "Last Command (before inactive)": "- (.*): received command",
+					   "Last User Command (before active)": "Received command (.*)",
+					   "Last User Command (before inactive)": "Received command (.*)",
+					   "Last User Input": "event name = (.*) from node" 
+				}
+	},
+	"FilterByDescriptionAndTime": {
+			"KV": {"Description": {"ViewAvgTooHigh": [["", "in", "Top Relevant Interlocks (before active)"]],
+								   "ExternalTriggerInvalid": [["", "in", "Top Relevant Interlocks (before active)"]],
+								   "SysHeartbeatTimeout": [["", "in", "Top Relevant Interlocks (before active)"]],
+								   "HVG": [
+											["IDLE", "in", "Node State (before active)"], 
+										    ["IDLE", "in", "Node State (before inactive)"]
+										   ],
+								   "AnodeStatusMismatch": [
+															["AnodeRampDown", "in", "Machine State (before active)"],
+															["AnodeRampDown", "in", "Machine State (before inactive)"]
+														   ],
+								   "ContactorStatusMismatch": [
+																["ContactorOn", "in", "Machine State (before active)"],
+																["ContactorOn", "in", "Machine State (before inactive)"]
+															  ],
+								   "HVG": [
+											["IDLE", "in", "Node State (before active)"],
+											["IDLE", "in", "Node State (before inactive)"]
+										  ],
+								   "Couch": [[]]
+				   },
+				   "Time": {"HvOnStatusMismatch": [["before", "BEL Open", "<", 0.1]]
+				   },
+				   "DescriptionAndTime": {
+										   "BadViewCounterChanged": [
+																		{
+																			"Description":["speed RPM = 0", "in", "Gantry Speed"], 
+																			"Time": ["before", "Gantry Speed", "<", 10]
+																		},
+																		{
+																			"Description":["speed RPM = 60", "in", "Gantry Speed"], 
+																			"Time": ["before", "Gantry Speed", "<", 70]
+																		}
+																	],
+											"DMS.Status.RCB.CRC_Error": [
+																		{
+																			"Description":["speed RPM = 0", "in", "Gantry Speed"], 
+																			"Time": ["before", "Gantry Speed", "<", 10]
+																		},
+																		{
+																			"Description":["speed RPM = 60", "in", "Gantry Speed"], 
+																			"Time": ["before", "Gantry Speed", "<", 70]
+																		}
+																	],
+											"DMS.DRB.DMSPositionError": [
+																		{
+																			"Description":["speed RPM = 0", "in", "Gantry Speed"], 
+																			"Time": ["before", "Gantry Speed", "<", 10]
+																		},
+																		{
+																			"Description":["speed RPM = 60", "in", "Gantry Speed"], 
+																			"Time": ["before", "Gantry Speed", "<", 70]
+																		}
+																	],
+											"DMS.DRB.DMSViewCounterError": [
+																		{
+																			"Description":["speed RPM = 0", "in", "Gantry Speed"], 
+																			"Time": ["before", "Gantry Speed", "<", 10]
+																		},
+																		{
+																			"Description":["speed RPM = 60", "in", "Gantry Speed"], 
+																			"Time": ["before", "Gantry Speed", "<", 70]
+																		}
+																	]
+					}
+			},
+			"PR": {"Description": {"PR.Infra": [["", "in", "Top Relevant Interlocks (before active)"]]
+								  }	
+		    }
+	},
+	"FilterRelativeToOtherInterlocks": {
+		"KV": {"BadViewCounterChanged": [["ExternalTriggerInvalid", 10, "within", "both"]],
+			   "DMS.Status.RCB.CRC_Error": [["ExternalTriggerInvalid", 10, "within", "both"]]
+				}
+	}
+}

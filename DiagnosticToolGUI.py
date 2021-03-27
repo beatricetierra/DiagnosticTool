@@ -9,11 +9,11 @@ import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import tkinter.font as font
 from tkcalendar import DateEntry
-
-import DiagnosticToolGUISubfunctions as Subfunctions
-from GetRemoteLogs import GetRemoteLogs 
-from GetInterlocks import GetInterlocks as get
 from threading import Thread
+
+from DiagnosticToolGUISubfunctions import Subfunctions as sub
+from GetRemoteLogs import GetRemoteLogs
+import ProcessLogs
 
 class Page(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -47,7 +47,7 @@ class Page1(Page):
        
        columns = ['File', 'Size', 'Path']
        Page1.tree["columns"] = columns
-       [Page1.tree.heading(col, text=col, anchor='w', command=lambda c=col: Subfunctions.sortby(Page1.tree, c, 0, True)) for col in columns]
+       [Page1.tree.heading(col, text=col, anchor='w', command=lambda c=col: sub.sortby(Page1.tree, c, 0, True)) for col in columns]
        Page1.tree.column('File', width=250, stretch='no')
        Page1.tree.column('Size', width=100, stretch='no')
        Page1.tree.column('Path', width=400, stretch='no')
@@ -154,7 +154,7 @@ class Page1(Page):
        button_delete = tk.Button(editFrame, text='Delete All', font=15, command=self.deleteFile_all)
        button_delete.place(relx=0.01, rely=0.3, relwidth=0.99,relheight=0.2)
        
-       button_view = tk.Button(editFrame, text='View Results', command=lambda: Subfunctions.DisplayEntries(Page2, Page3, MainView))
+       button_view = tk.Button(editFrame, text='View Results', command=lambda: sub.DisplayEntries(Page2, Page3, MainView))
        button_view.place()
        
        button_find = tk.Button(editFrame, text='Find Interlocks', command=lambda: Thread(
@@ -165,7 +165,7 @@ class Page1(Page):
        folder = filedialog.askdirectory()
        
        if output == 'files':
-           files = Subfunctions.GetFiles(folder)
+           files = ProcessLogs.FindLogs(folder)
            Page1.addFileDetails(self.tree, files)
        elif output == 'folderpath':
            self.outputEntry.delete(0, 'end')
@@ -194,9 +194,9 @@ class Page1(Page):
        
    def findInterlocks(self,button_view):
        global files
-       global kvct_df, kvct_filtered, kvct_unfiltered, filtered_couchinterlocks
-       global recon_df, recon_filtered, recon_unfiltered
-       global system, dates
+       global kvct_filtered, kvct_unfiltered
+       global recon_filtered, recon_unfiltered
+       global system
        
        # Clear old entries, restart progress bar, and reset toggled buttons
        [widget.destroy() for widget in Page2.Frame.winfo_children()]
@@ -205,7 +205,17 @@ class Page1(Page):
        Page3.toggleButton.config(relief="raised")
        MainView.progress['value'] = 0
        
-       # store all files listed in window and find interlocks
+       # store all files listed in window and get chosen logtype
+       files = self.GetFilenamesFromWindow()
+       logtype = self.CheckChosenNode()
+       
+       #Find interlock dataframes
+       system, kvct_unfiltered, kvct_filtered, recon_unfiltered, recon_filtered = sub.FindInterlockDataframes(files, logtype)
+       # View dataframes
+       button_view.invoke()
+       return       
+   
+   def GetFilenamesFromWindow(self):
        files=[]
        if not self.tree.get_children():
            messagebox.showerror("Error", "No files found.")
@@ -213,38 +223,25 @@ class Page1(Page):
        else:
            for child in self.tree.get_children():
               files.append(self.tree.item(child)["values"][-1]+'/'+self.tree.item(child)["values"][0])
-              
+       return files
+   
+   def CheckChosenNode(self):
        # Check if given files and node selected match
        node = self.node.get()
        if node == 1:
            if any(['-log-' in file for file in files]):
+               return 'LogNode'
                pass
            else:
                messagebox.showerror(message='No LogNode files found. Select \'KVCT , Pet_Recon, Sysnode\'.')
                return
        elif node == 2:
            if any(['-kvct-' in file or '-pet_recon-' in file or '-sysnode-' in file for file in files]):
+               return 'SeparateNodes'
                pass
            else:
                messagebox.showerror(message='KVCT, Pet_Recon, and/or Sysnode files were not found. Select \'LogNode\'.')
                return
-      
-       # Find interlock dataframes
-       try:
-           system, kvct_df, recon_df, dates = Subfunctions.FindEntries(files, node)
-           if kvct_df.empty and recon_df.empty:         # Return if both dataframes are empty
-               messagebox.showerror("Error", "No KVCT or Recon interlocks found.")
-               return
-           else:
-               pass
-       except:
-           messagebox.showerror("Error", "Cannot find entries for listed files.")
-           return
-       # Filter interlock dataframes
-       kvct_filtered, kvct_unfiltered, filtered_couchinterlocks, recon_filtered, recon_unfiltered = Subfunctions.FilterEntries(kvct_df, recon_df)
-       # View dataframes
-       button_view.invoke()
-       return
 
 class Page2(Page):
     def __init__(self, *args, **kwargs):
@@ -276,12 +273,12 @@ class Page2(Page):
        if Page2.toggleButton.config('relief')[-1] == 'sunken':
            Page2.toggleButton.config(relief="raised")
            [widget.destroy() for widget in Page2.Frame.winfo_children()]
-           Subfunctions.df_tree(kvct_unfiltered, Page2.Frame)
+           sub.df_tree(kvct_unfiltered, Page2.Frame)
            Page2.menubar_filter(kvct_unfiltered, Page2.menubar)
        else:
            Page2.toggleButton.config(relief="sunken")
            [widget.destroy() for widget in Page2.Frame.winfo_children()]
-           Subfunctions.df_tree(kvct_filtered, Page2.Frame)
+           sub.df_tree(kvct_filtered, Page2.Frame)
            Page2.menubar_filter(kvct_filtered, Page2.menubar)
             
     def menubar_filter(df, menubar):
@@ -310,11 +307,11 @@ class Page2(Page):
         if Page2.toggleButton.config('relief')[-1] == 'raised':
             df1 = kvct_unfiltered[kvct_unfiltered['Interlock Number'].isin(interlock_list)]
             [widget.destroy() for widget in Page2.Frame.winfo_children()]
-            Subfunctions.df_tree(df1, Page2.Frame)
+            sub.df_tree(df1, Page2.Frame)
         elif Page2.toggleButton.config('relief')[-1] == 'sunken':
             df2 = kvct_filtered[kvct_filtered['Interlock Number'].isin(interlock_list)]
             [widget.destroy() for widget in Page2.Frame.winfo_children()]
-            Subfunctions.df_tree(df2, Page2.Frame)
+            sub.df_tree(df2, Page2.Frame)
 
     def selectall():
         for interlock, var in kvct_interlock_set.items():
@@ -355,12 +352,12 @@ class Page3(Page):
        if Page3.toggleButton.config('relief')[-1] == 'sunken':
            Page3.toggleButton.config(relief="raised")
            [widget.destroy() for widget in Page3.Frame.winfo_children()]
-           Subfunctions.df_tree(recon_unfiltered, Page3.Frame)
+           sub.df_tree(recon_unfiltered, Page3.Frame)
            Page3.menubar_filter(recon_unfiltered, Page3.menubar)
        else:
            Page3.toggleButton.config(relief="sunken")
            [widget.destroy() for widget in Page3.Frame.winfo_children()]
-           Subfunctions.df_tree(recon_filtered, Page3.Frame)
+           sub.df_tree(recon_filtered, Page3.Frame)
            Page3.menubar_filter(recon_filtered, Page3.menubar)
             
     def menubar_filter(df, menubar):
@@ -389,11 +386,11 @@ class Page3(Page):
         if Page3.toggleButton.config('relief')[-1] == 'raised':
             df1 = recon_unfiltered[recon_unfiltered['Interlock Number'].isin(interlock_list)]
             [widget.destroy() for widget in Page3.Frame.winfo_children()]
-            Subfunctions.df_tree(df1, Page3.Frame)
+            sub.df_tree(df1, Page3.Frame)
         elif Page3.toggleButton.config('relief')[-1] == 'sunken':
             df2 = recon_filtered[recon_filtered['Interlock Number'].isin(interlock_list)]
             [widget.destroy() for widget in Page3.Frame.winfo_children()]
-            Subfunctions.df_tree(df2, Page3.Frame)
+            sub.df_tree(df2, Page3.Frame)
 
     def selectall():
         for interlock, var in recon_interlock_set.items():
@@ -412,11 +409,7 @@ class MainView(tk.Frame):
         menubar = tk.Menu(self)
         file = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label='File', menu = file)
-        file.add_command(label='Save Results', command = Subfunctions.exportExcel)
-        
-        analyze = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label='Analyze', menu = analyze)
-        analyze.add_command(label='Summary Report', command = Subfunctions.SummarizeResults)
+        file.add_command(label='Save Results', command = sub.exportExcel)
         root.config(menu=menubar)
         
         # Navigate between pages
@@ -448,15 +441,14 @@ class MainView(tk.Frame):
         # Progress Bar
         MainView.progress_style = ttk.Style(root)
         # add label in the layout
-        MainView.progress_style.layout('text.Horizontal.TProgressbar', 
-                     [('Horizontal.Progressbar.trough',
-                       {'children': [('Horizontal.Progressbar.pbar',
-                                      {'side': 'left', 'sticky': 'ns'})],
-                        'sticky': 'nswe'}), 
-                      ('Horizontal.Progressbar.label', {'sticky': ''})])
+        MainView.progress_style.layout('text.Horizontal.TProgressbar', [('Horizontal.Progressbar.trough',
+                                                                       {'children': [('Horizontal.Progressbar.pbar',
+                                                                                      {'side': 'left', 'sticky': 'ns'})],
+                                                                                        'sticky': 'nswe'}), 
+                                                                                      ('Horizontal.Progressbar.label', {'sticky': ''})])
         MainView.progress = ttk.Progressbar(self, style='text.Horizontal.TProgressbar', orient='horizontal', mode='determinate')
         MainView.progress.pack(side='bottom', fill='x')
-        get(MainView.progress, MainView.progress_style, root)
+        sub(MainView.progress, MainView.progress_style, root)
         
     def SwitchPage(page):
         page.lift()
@@ -480,4 +472,3 @@ if __name__ == "__main__":
     root.wm_geometry("1200x800")
     root.title('KVCT Diagnostic Tool')
     root.mainloop()
-
