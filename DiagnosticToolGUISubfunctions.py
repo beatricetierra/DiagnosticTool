@@ -71,11 +71,12 @@ class Subfunctions(threading.Thread):
        
        grouped_entries_per_node = GetInterlocks.BreakdownEntries(entries_per_node)
        interlocks_per_node = GetInterlocks.GetInterlocksPerNode(grouped_entries_per_node, endpoints_per_node)
+       interlocks_per_node = GetInterlocks.InsertKVTubeUsage(grouped_entries_per_node, interlocks_per_node)
        Subfunctions.UpdateProgress(10)
        
        interlocks_per_node_time_details = GetDetails.AddTimeDetails(interlocks_per_node, endpoints_per_node)
        interlocks_per_node_event_details = GetDetails.AddEventDetails(interlocks_per_node_time_details, grouped_entries_per_node)
-           # progress bar updated in GetDetail > AddEventDetails function
+        # progress bar updated in GetDetail > AddEventDetails function
            
        final_dfs = CleanUp.CleanDataframes(interlocks_per_node_event_details)
        unfiltered_dfs, filtered_dfs = Filter.FilterExpectedInterlocks(final_dfs)
