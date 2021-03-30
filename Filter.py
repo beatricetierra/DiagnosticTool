@@ -71,8 +71,8 @@ class Filters():
         
         try:
             filter_conditions = var.FilterByDescriptionAndTime[node]  
-        except KeyError:
-            return expected_interlocks_idx, filter_types
+        except:
+            return all_expected_interlocks_idx, all_filter_types
         
         for filter_on, conditions in filter_conditions.items():
             expected_interlocks_idx, filter_types = self.GetConditionalRows(node)                 
@@ -178,7 +178,7 @@ class Filters():
         
         try:
             filter_conditions = var.FilterRelativeToOtherInterlocks[node]  
-        except KeyError:
+        except:
             return expected_interlocks_idx, filter_types
     
         for filter_interlock, conditions in filter_conditions.items():
