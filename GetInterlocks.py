@@ -85,8 +85,7 @@ def CreateInterlockDataframe(node_dictionary):
     return interlocks_df
 
 def FindInterlockEntries(node_dictionary):
-    active_interlocks = pd.concat([node_dictionary['is active'], node_dictionary['KV.Error']], 
-                                    ignore_index=True)
+    active_interlocks = pd.concat([node_dictionary[col] for col in var.rows], ignore_index=True)
     active_interlocks.reset_index(drop=True, inplace=True)
     active_interlocks.sort_values(by='Datetime', inplace=True)
     

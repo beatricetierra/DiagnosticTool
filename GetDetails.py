@@ -47,7 +47,7 @@ def InsertStartDelta(df):
     
     # find all indices of interlock entries 
     # (only find node start delta for interlocks)
-    interlocks = df_with_startdelta[df_with_startdelta['Interlock Number'].str.contains('Interlock|KV.Error|voltage')]
+    interlocks = df_with_startdelta[df_with_startdelta['Interlock Number'].str.contains('|'.join(var.rows))]
     interlocks_idx = interlocks.index.values
     
     # Find differece between each interlock and
@@ -71,7 +71,7 @@ def InsertInterlockDuration(df):
     
     # find all indices of interlock entries 
     # (only find node start delta for interlocks)
-    interlocks = df_with_duration[df_with_duration['Interlock Number'].str.contains('Interlock|KV.Error|voltage')]
+    interlocks = df_with_duration[df_with_duration['Interlock Number'].str.contains('|'.join(var.rows))]
     interlocks_idx = interlocks.index.values
     
     for row, active, inactive in zip(interlocks_idx, interlocks['Active Time'], interlocks['Inactive Time']):
@@ -123,7 +123,7 @@ def InsertLastEntry(interlocks_df, entries_df):
     logstart = df[df['Interlock Number'].str.contains("LOG START")]
     logstart_times = logstart['Active Time']
 
-    interlock_rows = df[df['Interlock Number'].str.contains('Interlock|KV.Error|voltage')]
+    interlock_rows = df[df['Interlock Number'].str.contains('|'.join(var.rows))]
     interlock_idx = interlock_rows.index.values
     
     for row, time in zip(interlock_idx, InterlockTimeColumn(interlock_rows)):
